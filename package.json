@@ -2,6 +2,11 @@
   "name": "asf-ui",
   "version": "0.0.0",
   "description": "The official web interface for ASF",
+  "private": true,
+  "packageManager": "pnpm@11.5.1",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "serve": "webpack serve --config webpack/config.js",
     "serve:ci": "webpack serve --config webpack/config.ci.js",
@@ -11,7 +16,6 @@
     "build:analyze": "webpack --config webpack/config.analyze.js",
     "deploy": "webpack --config webpack/config.deploy.js"
   },
-  "private": true,
   "devDependencies": {
     "@babel/core": "7.29.7",
     "@babel/eslint-parser": "7.29.7",

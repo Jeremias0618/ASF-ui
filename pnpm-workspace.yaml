@@ -1,0 +1,5 @@
+# Root-only workspace (ASF-ui is a single package)
+shamefullyHoist: true
+confirmModulesPurge: false
+allowBuilds:
+  '@parcel/watcher': true
