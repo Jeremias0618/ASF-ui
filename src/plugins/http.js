@@ -90,6 +90,10 @@ export function post(endpoint, data, options = {}) {
   return http.post(endpoint, data, options).then(processResponse).catch(catchError);
 }
 
+export function put(endpoint, data, options = {}) {
+  return http.put(endpoint, data, options).then(processResponse).catch(catchError);
+}
+
 export function del(endpoint, options = {}) {
   return http.delete(endpoint, options).then(processResponse).catch(catchError);
 }
@@ -112,6 +116,7 @@ export default {
       authenticate,
       get,
       post,
+      put,
       del,
       command,
       botAction,

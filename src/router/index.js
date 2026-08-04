@@ -3,6 +3,7 @@ import VueRouter from 'vue-router';
 import VueMeta from 'vue-meta';
 import store from '../store';
 import * as storage from '../utils/storage';
+import { installUnsavedChangesGuards } from '../utils/unsaved-changes';
 import routes from './routes';
 
 Vue.use(VueRouter);
@@ -14,15 +15,23 @@ const router = new VueRouter({
   mode: 'history',
 });
 
+installUnsavedChangesGuards(router, () => {
+  if (Vue.i18n && typeof Vue.i18n.translate === 'function') {
+    return Vue.i18n.translate('unsaved-changes-confirm');
+  }
+
+  return 'You have unsaved changes. Leave without saving?';
+});
+
 router.beforeEach(async (routeTo, routeFrom, next) => {
   const noPasswordRequired = routeTo.matched.every(route => route.meta.noPasswordRequired);
   if (storage.get('first-time', true) && routeTo.name !== 'welcome') next({ name: 'welcome' });
   else if (noPasswordRequired || await store.dispatch('auth/validate')) next();
-  else next({ name: 'setup' });
+  else next({ name: 'login' });
 });
 
 router.afterEach(to => {
-  if (to.name === 'setup') return;
+  if (to.name === 'setup' || to.name === 'login') return;
   storage.set('last-visited-page', to.name);
 });
 

@@ -1,5 +1,5 @@
 <template>
-  <main class="main-container main-container--fullheight bots-overview">
+  <main class="bots-overview home2-page-body">
     <AsfFarmingInfo></AsfFarmingInfo>
     <AsfBots></AsfBots>
     <AsfBotsFilter></AsfBotsFilter>
@@ -28,5 +28,10 @@
     grid-gap: 1rem;
     grid-template-columns: 1fr;
     grid-template-rows: min-content min-content;
+  }
+
+  .home2-page-body {
+    margin: 0;
+    min-width: 0;
   }
 </style>

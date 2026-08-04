@@ -30,8 +30,9 @@
           param: this.$t('default-page'),
           paramName: 'defaultView',
           type: 'enum',
-          defaultValue: 'bots',
+          defaultValue: 'home',
           values: {
+            [this.$t('home')]: 'home',
             [this.$t('bots')]: 'bots',
             [this.$t('commands')]: 'commands',
             [this.$t('releases')]: 'releases',

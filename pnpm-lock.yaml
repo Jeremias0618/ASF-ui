@@ -93,6 +93,9 @@ importers:
       clean-webpack-plugin:
         specifier: 4.0.0
         version: 4.0.0(webpack@5.101.0)
+      commander:
+        specifier: 12.1.0
+        version: 12.1.0
       copy-webpack-plugin:
         specifier: 13.0.1
         version: 13.0.1(webpack@5.101.0)

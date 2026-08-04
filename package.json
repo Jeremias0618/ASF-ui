@@ -25,6 +25,7 @@
     "babel-loader": "10.1.1",
     "before-build-webpack": "0.2.15",
     "clean-webpack-plugin": "4.0.0",
+    "commander": "12.1.0",
     "copy-webpack-plugin": "13.0.1",
     "css-loader": "7.1.4",
     "eslint": "8.57.1",

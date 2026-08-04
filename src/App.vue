@@ -1,13 +1,23 @@
 <template>
-  <div class="app" :class="[{ 'app--not-authorized': !authenticated, 'app--small-navigation': smallNavigation, 'app--boxed-layout': boxedLayout, 'app--dark-mode': darkMode }, themeClass]">
-    <AppHeader></AppHeader>
-    <AppNavigation></AppNavigation>
-    <AppSideMenu></AppSideMenu>
-
-    <section class="content">
+  <div class="app" :class="[{ 'app--not-authorized': !authenticated, 'app--small-navigation': smallNavigation, 'app--boxed-layout': boxedLayout, 'app--dark-mode': darkMode, 'app--home-shell': isHomeShell, 'app--bare': isBareLayout }, themeClass]">
+    <HomeShell v-if="isHomeShell">
       <router-view></router-view>
-      <AppFooter @click="smallNavigation = !smallNavigation"></AppFooter>
-    </section>
+    </HomeShell>
+
+    <template v-else-if="isBareLayout">
+      <router-view></router-view>
+    </template>
+
+    <template v-else>
+      <AppHeader></AppHeader>
+      <AppNavigation></AppNavigation>
+      <AppSideMenu></AppSideMenu>
+
+      <section class="content">
+        <router-view></router-view>
+        <AppFooter @click="smallNavigation = !smallNavigation"></AppFooter>
+      </section>
+    </template>
 
     <AppModal></AppModal>
     <vue-snotify></vue-snotify>
@@ -21,6 +31,8 @@
   import AppFooter from './components/App/Footer.vue';
   import AppSideMenu from './components/App/SideMenu.vue';
   import AppModal from './components/App/Modal.vue';
+  import HomeShell from './components/Home/Shell.vue';
+  import { usesHome2Shell } from './utils/home-shell';
   import { STATUS } from './utils/getStatus';
 
   export default {
@@ -30,7 +42,7 @@
       titleTemplate: 'ASF | %s',
     },
     components: {
-      AppHeader, AppNavigation, AppFooter, AppSideMenu, AppModal,
+      AppHeader, AppNavigation, AppFooter, AppSideMenu, AppModal, HomeShell,
     },
     computed: {
       ...mapGetters({
@@ -46,6 +58,12 @@
       }),
       themeClass() {
         return `theme-${this.theme}`;
+      },
+      isHomeShell() {
+        return usesHome2Shell(this.$route.name);
+      },
+      isBareLayout() {
+        return Boolean(this.$route.meta && this.$route.meta.bare);
       },
     },
     watch: {
@@ -64,12 +82,19 @@
       status: {
         immediate: true,
         handler(value) {
+          const routeName = this.$route.name;
           switch (value) {
+            case STATUS.UNAUTHORIZED:
+              if (routeName && routeName !== 'login' && routeName !== 'welcome') {
+                this.$router.replace({ name: 'login' });
+              }
+              break;
             case STATUS.GATEWAY_TIMEOUT:
             case STATUS.RATE_LIMITED:
-            case STATUS.UNAUTHORIZED:
             case STATUS.NETWORK_ERROR:
-              if (this.$route.name && this.$route.name !== 'setup') this.$router.replace({ name: 'setup' });
+              if (routeName && routeName !== 'setup' && routeName !== 'login' && routeName !== 'welcome') {
+                this.$router.replace({ name: 'setup' });
+              }
               break;
           }
         },
@@ -153,14 +178,49 @@
   }
 
   ::-webkit-scrollbar {
-    background-color: var(--color-background-dark);
-    height: 10px;
-    width: 10px;
+    background: transparent;
+    height: 8px;
+    width: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
   }
 
   ::-webkit-scrollbar-thumb {
-    background: #333;
-    border-radius: 2px;
+    background: #c4c9d4;
+    background-clip: padding-box;
+    border: 2px solid transparent;
+    border-radius: 999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #98a2b3;
+    background-clip: padding-box;
+    border: 2px solid transparent;
+  }
+
+  * {
+    scrollbar-color: #c4c9d4 transparent;
+    scrollbar-width: thin;
+  }
+
+  .app--dark-mode {
+    * {
+      scrollbar-color: #64748b transparent;
+    }
+
+    *::-webkit-scrollbar-thumb {
+      background: #475569;
+      background-clip: padding-box;
+      border: 2px solid transparent;
+    }
+
+    *::-webkit-scrollbar-thumb:hover {
+      background: #64748b;
+      background-clip: padding-box;
+      border: 2px solid transparent;
+    }
   }
 
   a {
@@ -265,5 +325,26 @@
     @media screen and (max-width: 700px) {
       padding-left: $size-navigation-small;
     }
+  }
+
+  .app--home-shell {
+    background: transparent;
+
+    .content {
+      padding: 0;
+    }
+
+    .content > main.main-container--fullheight,
+    .content > main.home-page,
+    .home2-shell__content-inner > main.bots-overview {
+      height: auto;
+      min-height: 0;
+    }
+  }
+
+  .app--bare {
+    background: transparent;
+    min-height: 100vh;
+    min-height: 100dvh;
   }
 </style>

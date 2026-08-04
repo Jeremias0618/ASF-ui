@@ -1,0 +1,677 @@
+<template>
+  <aside
+    class="home2-sidebar"
+    :class="{
+      'is-expanded': expanded || mobileOpen,
+      'is-mobile-open': mobileOpen,
+      'is-collapsed': !expanded && !mobileOpen,
+    }"
+    :aria-label="$t('home2-nav-label')"
+  >
+    <div class="home2-sidebar__mobile-top">
+      <router-link class="home2-sidebar__brand" :to="{ name: 'home' }">
+        <img class="home2-sidebar__logo" :src="logoSrc" alt="" width="36" height="36" aria-hidden="true">
+        <span class="home2-sidebar__title">{{ $t('home-brand') }}</span>
+      </router-link>
+      <button
+        type="button"
+        class="home2-sidebar__close"
+        :aria-label="$t('home2-close-menu')"
+        @click="$emit('toggle-mobile')"
+      >
+        <FontAwesomeIcon icon="times"></FontAwesomeIcon>
+      </button>
+    </div>
+
+    <div class="home2-sidebar__desktop-brand">
+      <router-link class="home2-sidebar__brand" :to="{ name: 'home' }">
+        <img class="home2-sidebar__logo" :src="logoSrc" alt="" width="36" height="36" aria-hidden="true">
+        <span class="home2-sidebar__title" :class="{ 'is-hidden': collapsed }">{{ $t('home-brand') }}</span>
+      </router-link>
+    </div>
+
+    <div class="home2-sidebar__search-wrap" :class="{ 'is-collapsed': collapsed }">
+      <button
+        type="button"
+        class="home2-sidebar__search"
+        :class="{ 'is-collapsed': collapsed }"
+        :title="$t('home2-search-open')"
+        :aria-label="$t('home2-search-open')"
+        @click="$emit('open-search')"
+      >
+        <FontAwesomeIcon icon="search" class="home2-sidebar__search-icon" fixedWidth></FontAwesomeIcon>
+        <span v-if="!collapsed" class="home2-sidebar__search-label">{{ $t('home2-search-quick') }}</span>
+        <kbd v-if="!collapsed" class="home2-sidebar__search-kbd" aria-hidden="true">Ctrl K</kbd>
+      </button>
+    </div>
+
+    <div class="home2-sidebar__scroll">
+      <nav class="home2-sidebar__nav">
+        <div
+          v-for="section in sections"
+          :key="section.titleKey"
+          class="home2-sidebar__section"
+        >
+          <h2 class="home2-sidebar__section-title">
+            <span :class="{ 'is-hidden': collapsed }">{{ $t(section.titleKey) }}</span>
+            <span
+              class="home2-sidebar__section-rail"
+              :class="{ 'is-visible': collapsed }"
+              role="separator"
+              aria-hidden="true"
+            ></span>
+          </h2>
+          <ul class="home2-sidebar__list">
+            <li v-for="item in section.items" :key="item.route">
+              <router-link
+                class="home2-menu-item"
+                :class="{
+                  'is-active': isActive(item.route),
+                  'is-rail': collapsed,
+                }"
+                :to="{ name: item.route }"
+                :title="collapsed ? $t(item.labelKey) : null"
+                :aria-label="$t(item.labelKey)"
+                @click.native="$emit('close-mobile')"
+              >
+                <span class="home2-menu-item__icon" aria-hidden="true">
+                  <FontAwesomeIcon :icon="item.icon" fixedWidth></FontAwesomeIcon>
+                </span>
+                <span class="home2-menu-item__text" :class="{ 'is-collapsed': collapsed }">
+                  {{ $t(item.labelKey) }}
+                </span>
+              </router-link>
+            </li>
+          </ul>
+        </div>
+      </nav>
+    </div>
+
+    <div class="home2-sidebar__footer" :class="{ 'is-collapsed': collapsed }">
+      <div class="home2-theme" :class="{ 'is-collapsed': collapsed }" role="group" :aria-label="$t('home2-theme')">
+        <button
+          type="button"
+          class="home2-theme__btn"
+          :class="{ 'is-active': !darkMode }"
+          :aria-pressed="!darkMode ? 'true' : 'false'"
+          @click="setDark(false)"
+        >
+          <FontAwesomeIcon icon="sun" fixedWidth></FontAwesomeIcon>
+          <span v-if="!collapsed">{{ $t('home2-theme-light') }}</span>
+        </button>
+        <button
+          type="button"
+          class="home2-theme__btn"
+          :class="{ 'is-active': darkMode }"
+          :aria-pressed="darkMode ? 'true' : 'false'"
+          @click="setDark(true)"
+        >
+          <FontAwesomeIcon icon="moon" fixedWidth></FontAwesomeIcon>
+          <span v-if="!collapsed">{{ $t('home2-theme-dark') }}</span>
+        </button>
+      </div>
+
+      <div class="home2-user" :class="{ 'is-collapsed': collapsed }">
+        <template v-if="collapsed">
+          <span class="home2-user__avatar" :title="userLabel" :aria-label="userLabel">
+            <FontAwesomeIcon icon="user" fixedWidth></FontAwesomeIcon>
+          </span>
+        </template>
+        <template v-else>
+          <span class="home2-user__avatar" aria-hidden="true">
+            <FontAwesomeIcon icon="user" fixedWidth></FontAwesomeIcon>
+          </span>
+          <div class="home2-user__copy">
+            <p class="home2-user__name">{{ userLabel }}</p>
+            <p class="home2-user__meta">{{ versionLabel }}</p>
+          </div>
+          <button
+            v-if="status === 'AUTHENTICATED' && password"
+            type="button"
+            class="home2-user__logout"
+            :title="$t('logout-title')"
+            :aria-label="$t('logout-title')"
+            @click="logout"
+          >
+            <FontAwesomeIcon icon="sign-out-alt"></FontAwesomeIcon>
+          </button>
+        </template>
+      </div>
+    </div>
+  </aside>
+</template>
+
+<script>
+  import { mapGetters } from 'vuex';
+
+  const SECTIONS = [
+    {
+      titleKey: 'home2-section-menu',
+      items: [
+        { route: 'home', labelKey: 'home2-nav-dashboard', icon: 'home' },
+        { route: 'bots', labelKey: 'bots', icon: 'users' },
+        { route: 'commands', labelKey: 'commands', icon: 'laptop' },
+        { route: 'log', labelKey: 'log', icon: 'file-alt' },
+        { route: 'plugins', labelKey: 'plugins', icon: 'puzzle-piece' },
+        { route: 'releases', labelKey: 'releases', icon: 'code-branch' },
+      ],
+    },
+    {
+      titleKey: 'home2-section-config',
+      items: [
+        { route: 'configuration', labelKey: 'configuration', icon: 'cogs' },
+        { route: 'asf-config', labelKey: 'asf-config', icon: 'edit' },
+        { route: 'mass-editor', labelKey: 'mass-editor', icon: 'paste' },
+        { route: 'ui-config', labelKey: 'ui-config', icon: 'wrench' },
+        { route: 'asf-bans', labelKey: 'asf-bans', icon: 'ban' },
+      ],
+    },
+  ];
+
+  export default {
+    name: 'HomeSidebar',
+    props: {
+      expanded: { type: Boolean, required: true },
+      mobileOpen: { type: Boolean, required: true },
+    },
+    data() {
+      return { sections: SECTIONS };
+    },
+    computed: {
+      ...mapGetters({
+        darkMode: 'storage/darkMode',
+        status: 'auth/status',
+        password: 'auth/password',
+        version: 'asf/version',
+        buildVariant: 'asf/buildVariant',
+      }),
+      collapsed() {
+        return !this.expanded && !this.mobileOpen;
+      },
+      logoSrc() {
+        return (window.__BASE_PATH__) ? `${window.__BASE_PATH__}images/logo.webp` : '/images/logo.webp';
+      },
+      userLabel() {
+        return this.$t('home-brand');
+      },
+      versionLabel() {
+        if (!this.version) return 'ASF';
+        return this.buildVariant ? `ASF ${this.version}` : `ASF ${this.version}`;
+      },
+    },
+    methods: {
+      isActive(routeName) {
+        return this.$route.name === routeName;
+      },
+      setDark(value) {
+        if (this.darkMode === value) return;
+        this.$store.dispatch('storage/toggleDarkMode');
+      },
+      async logout() {
+        await this.$store.dispatch('auth/setPassword');
+        window.location.reload();
+      },
+    },
+  };
+</script>
+
+<style lang="scss">
+  .home2-sidebar {
+    background: var(--h2-sidebar);
+    border-right: 1px solid var(--h2-border);
+    box-sizing: border-box;
+    color: var(--h2-ink);
+    display: flex;
+    flex-direction: column;
+    left: 0;
+    overflow: hidden;
+    padding: 0 1rem;
+    position: fixed;
+    top: 0;
+    z-index: 160;
+
+    @media screen and (max-width: 1023px) {
+      border-radius: 0 1.5rem 1.5rem 0;
+      bottom: 0;
+      box-shadow: 0 25px 50px -12px rgba(16, 24, 40, 0.35);
+      height: 100dvh;
+      max-width: min(20rem, 88vw);
+      padding-bottom: 1.5rem;
+      padding-top: calc(1rem + env(safe-area-inset-top, 0px));
+      transform: translateX(-105%);
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      width: min(20rem, 88vw);
+      z-index: 1200;
+
+      &.is-mobile-open {
+        transform: translateX(0);
+      }
+    }
+
+    @media screen and (min-width: 1024px) {
+      height: 100vh;
+      padding: 0 1.25rem;
+      transition: width 0.3s ease-in-out;
+      width: var(--h2-wide);
+
+      &.is-collapsed {
+        width: var(--h2-rail);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      transition: none;
+    }
+  }
+
+  .home2-sidebar__mobile-top {
+    align-items: center;
+    display: flex;
+    gap: 0.75rem;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+
+    @media screen and (min-width: 1024px) {
+      display: none;
+    }
+  }
+
+  .home2-sidebar__desktop-brand {
+    display: none;
+
+    @media screen and (min-width: 1024px) {
+      display: flex;
+      padding: 2rem 0 1.5rem;
+    }
+  }
+
+  .home2-sidebar__brand {
+    align-items: center;
+    color: inherit;
+    display: flex;
+    gap: 0.75rem;
+    min-width: 0;
+    text-decoration: none;
+  }
+
+  .home2-sidebar__logo {
+    flex-shrink: 0;
+    height: 2.25rem;
+    object-fit: contain;
+    width: 2.25rem;
+  }
+
+  .home2-sidebar__title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    &.is-hidden {
+      max-width: 0;
+      opacity: 0;
+      overflow: hidden;
+      pointer-events: none;
+      width: 0;
+    }
+  }
+
+  .home2-sidebar__close {
+    align-items: center;
+    background: transparent;
+    border: 1px solid var(--h2-border);
+    border-radius: 0.75rem;
+    color: var(--h2-muted-2);
+    cursor: pointer;
+    display: inline-flex;
+    flex-shrink: 0;
+    height: 2.5rem;
+    justify-content: center;
+    width: 2.5rem;
+
+    &:hover,
+    &:focus-visible {
+      background: var(--h2-soft);
+      outline: none;
+    }
+  }
+
+  .home2-sidebar__search-wrap {
+    margin-bottom: 1rem;
+
+    &.is-collapsed {
+      display: flex;
+      justify-content: center;
+    }
+
+    @media screen and (max-width: 1023px) {
+      margin-top: 0.25rem;
+    }
+  }
+
+  .home2-sidebar__search {
+    align-items: center;
+    background: var(--h2-surface);
+    border: 1px solid var(--h2-border);
+    border-radius: 0.65rem;
+    color: var(--h2-muted);
+    cursor: pointer;
+    display: flex;
+    gap: 0.55rem;
+    padding: 0.55rem 0.7rem;
+    text-align: left;
+    transition: border-color 0.15s ease, background 0.15s ease;
+    width: 100%;
+
+    &:hover,
+    &:focus-visible {
+      background: var(--h2-soft);
+      border-color: #93c5fd;
+      color: var(--h2-ink);
+      outline: none;
+    }
+
+    &.is-collapsed {
+      background: transparent;
+      border: 0;
+      border-radius: 0.5rem;
+      box-shadow: none;
+      color: var(--h2-muted-2);
+      height: 2.25rem;
+      justify-content: center;
+      padding: 0;
+      width: 2.25rem;
+
+      &:hover,
+      &:focus-visible {
+        background: var(--h2-soft);
+        border: 0;
+        color: var(--h2-ink);
+      }
+    }
+  }
+
+  .home2-sidebar__search-icon {
+    flex-shrink: 0;
+  }
+
+  .home2-sidebar__search-label {
+    flex: 1;
+    font-size: 0.82rem;
+    font-weight: 500;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .home2-sidebar__search-kbd {
+    background: var(--h2-shell);
+    border: 1px solid var(--h2-border);
+    border-radius: 0.4rem;
+    color: var(--h2-muted);
+    flex-shrink: 0;
+    font-size: 0.68rem;
+    padding: 0.15rem 0.35rem;
+  }
+
+  .home2-sidebar__scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  .home2-sidebar__nav {
+    display: grid;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .home2-sidebar__section-title {
+    align-items: center;
+    color: #98a2b3;
+    display: flex;
+    font-size: 0.72rem;
+    font-weight: 600;
+    height: 1.25rem;
+    letter-spacing: 0.04em;
+    margin: 0 0 0.85rem;
+    text-transform: uppercase;
+
+    .app--dark-mode & {
+      color: #94a3b8;
+    }
+
+    .is-hidden {
+      max-width: 0;
+      opacity: 0;
+      overflow: hidden;
+      pointer-events: none;
+      width: 0;
+    }
+  }
+
+  .home2-sidebar__section-rail {
+    background: #d0d5dd;
+    border-radius: 999px;
+    display: none;
+    flex-shrink: 0;
+    height: 0.125rem;
+    width: 2rem;
+
+    &.is-visible {
+      display: block;
+      margin: 0 auto;
+    }
+  }
+
+  .home2-sidebar__list {
+    display: grid;
+    gap: 0.25rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .home2-menu-item {
+    align-items: center;
+    border-radius: 0.5rem;
+    color: var(--h2-muted-2);
+    display: flex;
+    font-size: 0.875rem;
+    font-weight: 500;
+    gap: 0.75rem;
+    justify-content: flex-start;
+    padding: 0.5rem 0.75rem;
+    position: relative;
+    text-decoration: none;
+    width: 100%;
+
+    &:hover {
+      background: var(--h2-soft);
+      color: var(--h2-ink);
+    }
+
+    &.is-active {
+      background: var(--h2-brand-50);
+      color: var(--h2-brand-600);
+
+      &::before {
+        background: var(--h2-brand-600);
+        border-radius: 0 3px 3px 0;
+        bottom: 0.4rem;
+        content: '';
+        left: 0;
+        position: absolute;
+        top: 0.4rem;
+        width: 3px;
+      }
+    }
+
+    &.is-rail.is-active::before {
+      display: none;
+    }
+  }
+
+  .home2-menu-item__icon {
+    align-items: center;
+    display: inline-flex;
+    flex-shrink: 0;
+    height: 1.5rem;
+    justify-content: center;
+    width: 1.5rem;
+  }
+
+  .home2-menu-item__text {
+    flex: 1 1 auto;
+    max-width: 14rem;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    &.is-collapsed {
+      flex: 0 0 0;
+      max-width: 0;
+      margin: 0;
+      opacity: 0;
+      pointer-events: none;
+    }
+  }
+
+  .home2-sidebar__footer {
+    border-top: 1px solid var(--h2-border);
+    margin-top: auto;
+    padding: 0.75rem 0 0.5rem;
+
+    &.is-collapsed {
+      align-items: center;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+  }
+
+  .home2-theme {
+    background: var(--h2-soft);
+    border-radius: 1rem;
+    display: flex;
+    gap: 0.15rem;
+    margin-bottom: 0.75rem;
+    padding: 0.25rem;
+
+    &.is-collapsed {
+      flex-direction: column;
+      margin-bottom: 0;
+      width: 100%;
+    }
+  }
+
+  .home2-theme__btn {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: 0.55rem;
+    color: var(--h2-muted);
+    cursor: pointer;
+    display: inline-flex;
+    flex: 1;
+    font: inherit;
+    font-size: 0.75rem;
+    font-weight: 600;
+    gap: 0.4rem;
+    justify-content: center;
+    min-height: 2.25rem;
+    padding: 0.4rem 0.55rem;
+
+    &.is-active {
+      background: var(--h2-shell);
+      box-shadow: 0 1px 2px rgba(16, 24, 40, 0.08);
+      color: var(--h2-ink);
+    }
+
+    &:focus-visible {
+      outline: 2px solid rgba(9, 104, 229, 0.4);
+      outline-offset: 1px;
+    }
+  }
+
+  .home2-user {
+    align-items: center;
+    display: flex;
+    gap: 0.65rem;
+    min-width: 0;
+
+    &.is-collapsed {
+      justify-content: center;
+    }
+  }
+
+  .home2-user__avatar {
+    align-items: center;
+    background: var(--h2-brand-50);
+    border: 1px solid var(--h2-border);
+    border-radius: 999px;
+    box-shadow: 0 0 0 2px var(--h2-shell);
+    color: var(--h2-brand);
+    display: inline-flex;
+    flex-shrink: 0;
+    font-size: 0.95rem;
+    height: 2.5rem;
+    justify-content: center;
+    width: 2.5rem;
+  }
+
+  .home2-user__copy {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .home2-user__name,
+  .home2-user__meta {
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .home2-user__name {
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  .home2-user__meta {
+    color: var(--h2-muted);
+    font-size: 0.72rem;
+  }
+
+  .home2-user__logout {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: 0.75rem;
+    color: var(--h2-muted);
+    cursor: pointer;
+    display: inline-flex;
+    flex-shrink: 0;
+    height: 2.25rem;
+    justify-content: center;
+    width: 2.25rem;
+
+    &:hover,
+    &:focus-visible {
+      background: var(--h2-soft);
+      color: var(--h2-error);
+      outline: none;
+    }
+  }
+</style>

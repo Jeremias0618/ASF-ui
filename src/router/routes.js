@@ -15,8 +15,10 @@ const routes = {
   botInput: 'bot-input',
   bots: 'bots',
   commands: 'commands',
+  configuration: 'configuration',
   home: 'home',
   log: 'log',
+  login: 'login',
   massEditor: 'mass-editor',
   notFound: '404',
   passwordEncrypt: 'password-encrypt',
@@ -31,8 +33,8 @@ const routes = {
 let defaultView = store.getters['settings/defaultView'];
 if (defaultView === '_last-visited-page') defaultView = storage.get('last-visited-page', routes.home);
 if (!Object.values(routes).includes(defaultView)) {
-  defaultView = routes.bots;
-  store.dispatch('settings/setDefaultView', routes.bots);
+  defaultView = routes.home;
+  store.dispatch('settings/setDefaultView', routes.home);
 }
 
 export default [
@@ -43,6 +45,7 @@ export default [
   {
     path: '/home',
     name: routes.home,
+    component: () => import('../views/Home.vue'),
     async beforeEnter(to, from, next) {
       const setupComplete = storage.get('setup-complete', false);
       const botsDetected = await store.dispatch('bots/detectBots');
@@ -57,17 +60,14 @@ export default [
 
       if (botsDetected) {
         storage.set('setup-complete', true);
-        let defaultView = store.getters['settings/defaultView'];
-        if (defaultView === '_last-visited-page') defaultView = storage.get('last-visited-page', routes.bots);
-        if (!Object.values(routes).includes(defaultView) || defaultView === routes.home) {
-          defaultView = routes.bots;
-          store.dispatch('settings/setDefaultView', routes.bots);
-        }
-        return next({ name: defaultView });
       }
 
-      return next({ name: routes.bots });
+      return next();
     },
+  },
+  {
+    path: '/home2',
+    redirect: { name: routes.home },
   },
   {
     path: '/setup',
@@ -78,6 +78,12 @@ export default [
       restart: false,
       update: false,
     },
+  },
+  {
+    path: '/login',
+    name: routes.login,
+    component: () => import('../views/Login.vue'),
+    meta: { noPasswordRequired: true, bare: true },
   },
   {
     path: '/ui-config',
@@ -238,6 +244,11 @@ export default [
     path: '/commands',
     name: routes.commands,
     component: () => import('../views/Commands.vue'),
+  },
+  {
+    path: '/configuration',
+    name: routes.configuration,
+    component: () => import('../views/Configuration.vue'),
   },
   {
     path: '/log',

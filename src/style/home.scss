@@ -1,0 +1,253 @@
+@import 'scrollbar';
+
+.home2-page {
+  margin: 0;
+  min-height: 100vh;
+  padding: 0;
+}
+
+.home2-shell {
+  --h2-surface: #f7f9fb;
+  --h2-shell: #ffffff;
+  --h2-sidebar: #ffffff;
+  --h2-ink: #101828;
+  --h2-muted: #667085;
+  --h2-muted-2: #475467;
+  --h2-border: #e4e7ec;
+  --h2-border-soft: rgba(228, 231, 236, 0.9);
+  --h2-soft: #f2f4f7;
+  --h2-brand: #0968e5;
+  --h2-brand-600: #0757c2;
+  --h2-brand-50: #eff6ff;
+  --h2-error: #d92d20;
+  --h2-rail: 90px;
+  --h2-wide: 290px;
+  --h2-font: 'Segoe UI Variable', Candara, 'Noto Sans', sans-serif;
+
+  background: var(--h2-surface);
+  box-sizing: border-box;
+  color: var(--h2-ink);
+  display: flex;
+  flex-direction: column;
+  font-family: var(--h2-font);
+  max-height: 100dvh;
+  min-height: 100dvh;
+  overflow: hidden;
+
+  @media screen and (min-width: 1280px) {
+    flex-direction: row;
+    height: 100vh;
+    max-height: 100vh;
+  }
+
+  .app--dark-mode & {
+    --h2-surface: #111827;
+    --h2-shell: #1b2233;
+    --h2-sidebar: #1b2233;
+    --h2-ink: #f8fafc;
+    --h2-muted: #94a3b8;
+    --h2-muted-2: #cbd5e1;
+    --h2-border: rgba(255, 255, 255, 0.06);
+    --h2-border-soft: rgba(255, 255, 255, 0.06);
+    --h2-soft: #232c40;
+    --h2-brand: #4f8cff;
+    --h2-brand-600: #3b6fd4;
+    --h2-brand-50: rgba(79, 140, 255, 0.12);
+    --h2-error: #fca5a5;
+  }
+}
+
+.home2-shell__main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  transition: margin-left 0.3s ease-in-out;
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+
+  @media screen and (min-width: 1024px) {
+    margin-left: var(--h2-wide);
+
+    .home2-shell--collapsed & {
+      margin-left: var(--h2-rail);
+    }
+  }
+}
+
+.home2-shell__content {
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  padding: 1rem 1rem 1.25rem;
+  @include h2-scrollbar;
+
+  @media screen and (min-width: 768px) {
+    padding: 1.5rem 1.5rem 1.5rem;
+  }
+}
+
+.app--home-shell.app--dark-mode .home2-shell__content {
+  @include h2-scrollbar-dark;
+}
+
+.home2-shell__content-inner {
+  min-width: 0;
+}
+
+/* Commands / Log fill the shell content area; panels scroll inside. */
+.home2-shell__content:has(.commands),
+.home2-shell__content:has(.log) {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.home2-shell__content:has(.commands) .home2-shell__content-inner,
+.home2-shell__content:has(.log) .home2-shell__content-inner {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.home2-shell__content:has(.commands) .commands,
+.home2-shell__content:has(.log) .log {
+  flex: 1;
+  min-height: 0;
+}
+
+.home2-backdrop {
+  background: rgba(16, 24, 40, 0.55);
+  backdrop-filter: blur(3px);
+  bottom: 0;
+  left: 0;
+  opacity: 0;
+  pointer-events: none;
+  position: fixed;
+  right: 0;
+  top: 0;
+  transition: opacity 0.3s ease;
+  z-index: 1100;
+
+  &.is-open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  @media screen and (min-width: 1024px) {
+    display: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}
+
+.app--home-shell.app--dark-mode .home2-page,
+.app--home-shell.app--dark-mode .home2-shell {
+  background: #111827;
+}
+
+.app--home-shell:not(.app--dark-mode) .home2-page,
+.app--home-shell:not(.app--dark-mode) .home2-shell {
+  background: #f7f9fb;
+}
+
+/* Map legacy ASF card tokens to home2 palette inside the new shell. */
+.home2-shell {
+  --color-background-light: var(--h2-shell);
+  --color-background: var(--h2-surface);
+  --color-theme: var(--h2-brand);
+  --color-theme-dark: var(--h2-brand-600);
+  --color-theme-light: var(--h2-brand);
+  --color-text-dark: var(--h2-ink);
+  --color-text-secondary: var(--h2-muted-2);
+  --color-border: var(--h2-border);
+
+  .info-card {
+    background: var(--h2-shell);
+    border: 1px solid var(--h2-border);
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+    color: var(--h2-ink);
+    overflow: hidden;
+  }
+
+  .info-card__icon {
+    /* Soft brand well + brand ink — balanced for light and dark. */
+    background: var(--h2-brand-50);
+    color: var(--h2-brand-600);
+  }
+
+  .app--dark-mode & .info-card__icon {
+    background: var(--h2-brand-50);
+    color: var(--h2-brand);
+  }
+
+  .info-card__title {
+    color: var(--h2-muted);
+  }
+
+  .info-card__value {
+    color: var(--h2-ink);
+  }
+
+  .bot,
+  .bot-placeholder {
+    background: var(--h2-shell);
+    border: 1px solid var(--h2-border);
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+    color: var(--h2-ink);
+  }
+
+  .bot-filter {
+    color: var(--h2-muted-2);
+
+    &__reset {
+      color: var(--h2-brand-600);
+    }
+  }
+}
+
+/* Soft scrollbars for pages and modals inside home2 shell. */
+.app--home-shell {
+  .modal__main,
+  .modal__main .main-container,
+  .asf-modal__body {
+    @include h2-scrollbar;
+  }
+
+  &.app--dark-mode {
+    .modal__main,
+    .modal__main .main-container,
+    .asf-modal__body {
+      @include h2-scrollbar-dark;
+    }
+
+    .modal__main {
+      background: var(--h2-shell, #1b2233);
+      border: 1px solid var(--h2-border, rgba(255, 255, 255, 0.06));
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.45);
+    }
+
+    .modal__close,
+    .modal__arrow {
+      color: var(--h2-muted, #94a3b8);
+    }
+  }
+
+  &:not(.app--dark-mode) .modal__main {
+    background: var(--h2-shell, #fff);
+    border: 1px solid var(--h2-border, #e4e7ec);
+    border-radius: 0.75rem;
+    box-shadow: 0 25px 50px -12px rgba(16, 24, 40, 0.25);
+  }
+}

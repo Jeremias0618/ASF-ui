@@ -1,7 +1,7 @@
 <template>
-  <main class="main-container main-container--fullheight commands">
-    <div class="container">
-      <div ref="terminal" class="terminal" @click="focusInput">
+  <main class="commands home2-page-body">
+    <div class="commands__panel">
+      <div ref="terminal" class="terminal commands__terminal" @click="focusInput">
         <div v-for="({ type, time, message }, i) in log" :key="i" class="terminal-message">
           <span v-if="timestamps" class="terminal-message__time timestamp">[{{ time }}]</span>
           <span class="terminal-message__sign" :class="`terminal-message__sign--${type}`" v-text="type === 'out' ? '>' : '<'"></span>
@@ -401,12 +401,69 @@
 </script>
 
 <style lang="scss">
+  @import '../style/scrollbar';
+
   .commands {
     display: grid;
     grid-template-rows: 1fr;
+    min-height: 0;
+  }
 
-    > div {
-      min-height: 0;
+  .commands__panel {
+    background: var(--h2-shell, var(--color-background-light));
+    border: 1px solid var(--h2-border, var(--color-border));
+    border-radius: 0.85rem;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .commands__terminal.terminal {
+    background: #0f172a;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    color: #e2e8f0;
+    flex: 1;
+    min-height: 0;
+    @include h2-scrollbar;
+    @include h2-scrollbar-dark;
+
+    .terminal-message__sign {
+      color: #64748b;
+    }
+
+    .terminal-message__sign--in,
+    .sign-input {
+      color: #60a5fa;
+    }
+
+    .terminal-message__time,
+    .terminal-message__process,
+    .terminal__input--autocomplete {
+      color: #64748b;
+    }
+
+    .terminal__input-wrapper .terminal-message__sign,
+    .terminal__input {
+      color: #e2e8f0;
+    }
+  }
+
+  .app--dark-mode .commands__terminal.terminal {
+    background: #0b1220;
+    color: #f1f5f9;
+
+    .terminal__input-wrapper .terminal-message__sign,
+    .terminal__input {
+      color: #f1f5f9;
+    }
+
+    .terminal-message__sign--in,
+    .sign-input {
+      color: #93c5fd;
     }
   }
 

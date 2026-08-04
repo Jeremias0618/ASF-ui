@@ -14,6 +14,12 @@ module.exports = {
   devServer: {
     historyApiFallback: true,
     open: true,
+    client: {
+      overlay: {
+        errors: true,
+        warnings: false,
+      },
+    },
     proxy: [
       {
         context: ['/api', '/swagger'],
@@ -68,7 +74,17 @@ module.exports = {
               esModule: false,
             },
           },
-          'sass-loader',
+          {
+            loader: 'sass-loader',
+            options: {
+              // Modern Sass API (removes legacy-js-api deprecation).
+              api: 'modern',
+              // Upstream ASF-ui still uses @import / darken(); silence until a full @use migration.
+              sassOptions: {
+                silenceDeprecations: ['import', 'global-builtin', 'color-functions', 'legacy-js-api'],
+              },
+            },
+          },
         ],
       },
       {

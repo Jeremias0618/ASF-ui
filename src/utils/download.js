@@ -22,3 +22,14 @@ export function downloadConfig(model, name) {
 export function downloadLog(log) {
   handleDownload(log, false, 'log', 'txt');
 }
+
+/** Download raw text with an exact filename (e.g. IPC.config). */
+export function downloadRaw(filename, text) {
+  const element = document.createElement('a');
+  element.setAttribute('href', `data:text/plain;charset=utf-8,${encodeURIComponent(text)}`);
+  element.setAttribute('download', filename);
+  element.style.display = 'none';
+  document.body.appendChild(element);
+  element.click();
+  document.body.removeChild(element);
+}

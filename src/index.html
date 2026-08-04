@@ -8,7 +8,8 @@
     <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
     <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600" rel="stylesheet">
     <link href="/manifest.json" rel="manifest" crossorigin="use-credentials">
-    <link href="/images/logo.png" rel="shortcut icon">
+    <link href="/images/logo.ico" rel="shortcut icon" type="image/x-icon">
+    <link href="/images/logo.ico" rel="icon" type="image/x-icon">
   </head>
   <body>
     <div id="app"></div>
@@ -53,7 +54,10 @@
             return;
           }
 
-          document.querySelector('link[rel="shortcut icon"]').setAttribute('href', `${__BASE_PATH__}images/logo.png`);
+          document.querySelector('link[rel="shortcut icon"]').setAttribute('href', `${__BASE_PATH__}images/logo.ico`);
+          document.querySelectorAll('link[rel="icon"]').forEach(link => {
+            link.setAttribute('href', `${__BASE_PATH__}images/logo.ico`);
+          });
           document.querySelector('link[rel="manifest"]').setAttribute('href', `${__BASE_PATH__}manifest.json`);
         };
       }

@@ -195,10 +195,14 @@
           case STATUS.AUTHENTICATED:
             this.redirect();
             break;
+          case STATUS.UNAUTHORIZED:
+            this.cancelAutoUpdate();
+            await this.resetPassword();
+            this.$router.replace({ name: 'login' });
+            break;
           case STATUS.RATE_LIMITED:
             this.cancelAutoUpdate();
             break;
-          case STATUS.UNAUTHORIZED:
           case STATUS.NO_IPC_PASSWORD:
             this.cancelAutoUpdate();
             await this.resetPassword();

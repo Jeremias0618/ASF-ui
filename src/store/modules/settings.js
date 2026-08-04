@@ -1,7 +1,7 @@
 import * as storage from '../../utils/storage';
 
 export const state = {
-  defaultView: 'bots',
+  defaultView: 'home',
   notificationPosition: 'rightBottom',
   notifyRelease: true,
   nicknames: false,
@@ -38,7 +38,7 @@ export const mutations = {
 
 export const actions = {
   init({ commit }) {
-    commit('setDefaultView', storage.get('settings:default-view', 'bots'));
+    commit('setDefaultView', storage.get('settings:default-view', 'home'));
     commit('setNotificationPosition', storage.get('settings:notification-position', 'rightBottom'));
     commit('setNotifyRelease', storage.get('settings:notify-release', true));
     commit('setNicknames', storage.get('settings:nicknames', false));

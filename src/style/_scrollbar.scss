@@ -1,0 +1,42 @@
+@mixin h2-scrollbar {
+  scrollbar-color: #c4c9d4 transparent;
+  scrollbar-width: thin;
+
+  &::-webkit-scrollbar {
+    background: transparent;
+    height: 8px;
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 0.35rem 0;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #c4c9d4;
+    background-clip: padding-box;
+    border: 2px solid transparent;
+    border-radius: 999px;
+
+    &:hover {
+      background: #98a2b3;
+      background-clip: padding-box;
+      border: 2px solid transparent;
+    }
+  }
+}
+
+@mixin h2-scrollbar-dark {
+  scrollbar-color: #64748b transparent;
+
+  &::-webkit-scrollbar-thumb {
+    background: #475569;
+    background-clip: padding-box;
+
+    &:hover {
+      background: #64748b;
+      background-clip: padding-box;
+    }
+  }
+}

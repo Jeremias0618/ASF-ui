@@ -1,0 +1,44 @@
+$asf-modal-duration: 200ms;
+$asf-modal-ease: cubic-bezier(0.16, 1, 0.3, 1);
+
+.asf-modal-enter-active,
+.asf-modal-leave-active {
+  .asf-modal__backdrop {
+    transition: opacity $asf-modal-duration ease;
+  }
+
+  .asf-modal__panel {
+    transition:
+      opacity $asf-modal-duration $asf-modal-ease,
+      transform $asf-modal-duration $asf-modal-ease;
+  }
+}
+
+.asf-modal-enter,
+.asf-modal-leave-to {
+  .asf-modal__backdrop {
+    opacity: 0;
+  }
+
+  .asf-modal__panel {
+    opacity: 0;
+    transform: translateY(-0.5rem) scale(0.96);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .asf-modal-enter-active,
+  .asf-modal-leave-active {
+    .asf-modal__backdrop,
+    .asf-modal__panel {
+      transition: none;
+    }
+  }
+
+  .asf-modal-enter,
+  .asf-modal-leave-to {
+    .asf-modal__panel {
+      transform: none;
+    }
+  }
+}

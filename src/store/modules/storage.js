@@ -19,7 +19,7 @@ export const actions = {
       const localTheme = storage.get('layout:theme');
       const localDarkMode = storage.get('layout:dark-mode');
       if (localTheme) commit('changeTheme', localTheme);
-      if (typeof darkMode === 'boolean') commit('setDarkMode', localDarkMode);
+      if (typeof localDarkMode === 'boolean') commit('setDarkMode', localDarkMode);
       else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) commit('setDarkMode', true);
 
       // get and set config from ASF
@@ -27,7 +27,7 @@ export const actions = {
       const response = await http.get('/storage/asfui-settings');
       const { theme: asfTheme, darkMode: asfDarkmode } = response;
       if (asfTheme) commit('changeTheme', asfTheme);
-      if (asfDarkmode) commit('setDarkMode', asfDarkmode);
+      if (typeof asfDarkmode === 'boolean') commit('setDarkMode', asfDarkmode);
     } catch (err) {
       console.warn(err.message);
     }
@@ -37,7 +37,7 @@ export const actions = {
     storage.set('layout:theme', theme);
     http.post('/storage/asfui-settings', state);
   },
-  toggleDarkMode: ({ commit, getters }) => {
+  toggleDarkMode: ({ commit, getters, state }) => {
     commit('toggleDarkMode');
     storage.set('layout:dark-mode', getters.darkMode);
     http.post('/storage/asfui-settings', state);
