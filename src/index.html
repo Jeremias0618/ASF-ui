@@ -6,6 +6,29 @@
     <meta name="robots" content="noindex">
     <meta content="IE=edge,chrome=1" http-equiv="X-UA-Compatible">
     <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
+    <script>
+      (function () {
+        try {
+          var raw = localStorage.getItem('asf-ui:layout:dark-mode');
+          var dark = raw != null
+            ? JSON.parse(raw)
+            : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          if (dark) document.documentElement.classList.add('asf-boot-dark');
+          else document.documentElement.classList.add('asf-boot-light');
+        } catch (e) {
+          document.documentElement.classList.add('asf-boot-light');
+        }
+      })();
+    </script>
+    <style>
+      html, body { height: 100%; margin: 0; }
+      html.asf-boot-dark, html.asf-boot-dark body, html.asf-boot-dark #app {
+        background: #111827;
+      }
+      html.asf-boot-light, html.asf-boot-light body, html.asf-boot-light #app {
+        background: #f7f9fb;
+      }
+    </style>
     <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600" rel="stylesheet">
     <link href="/manifest.json" rel="manifest" crossorigin="use-credentials">
     <link href="/images/logo.ico" rel="shortcut icon" type="image/x-icon">

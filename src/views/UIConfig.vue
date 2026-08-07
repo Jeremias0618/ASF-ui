@@ -1,6 +1,12 @@
 <template>
-  <main class="main-container main-container--fullheight">
-    <div class="container">
+  <main class="ui-config-page home2-page-body">
+    <header class="home2-page-intro">
+      <p class="home2-page-eyebrow">{{ $t('home2-section-config') }}</p>
+      <h1 class="home2-page-title">{{ $t('ui-config') }}</h1>
+      <p class="home2-page-lead">{{ $t('ui-config-lead') }}</p>
+    </header>
+
+    <div class="home2-page-panel">
       <ConfigEditor :fields="fields" :categories="displayCategories ? categories : null" :model="model"></ConfigEditor>
 
       <div class="form-item">

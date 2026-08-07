@@ -1,6 +1,12 @@
 <template>
   <main class="commands home2-page-body">
-    <div class="commands__panel">
+    <header class="home2-page-intro">
+      <p class="home2-page-eyebrow">{{ $t('control') }}</p>
+      <h1 class="home2-page-title">{{ $t('commands') }}</h1>
+      <p class="home2-page-lead">{{ $t('commands-lead') }}</p>
+    </header>
+
+    <div class="home2-page-panel commands__panel">
       <div ref="terminal" class="terminal commands__terminal" @click="focusInput">
         <div v-for="({ type, time, message }, i) in log" :key="i" class="terminal-message">
           <span v-if="timestamps" class="terminal-message__time timestamp">[{{ time }}]</span>
@@ -405,19 +411,20 @@
 
   .commands {
     display: grid;
-    grid-template-rows: 1fr;
+    gap: 1rem;
+    grid-template-rows: auto minmax(0, 1fr);
     min-height: 0;
   }
 
   .commands__panel {
-    background: var(--h2-shell, var(--color-background-light));
-    border: 1px solid var(--h2-border, var(--color-border));
-    border-radius: 0.85rem;
-    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+    background: transparent;
+    border: 0;
+    box-shadow: none;
     display: flex;
     flex-direction: column;
     min-height: 0;
     overflow: hidden;
+    padding: 0;
   }
 
   .commands__terminal.terminal {

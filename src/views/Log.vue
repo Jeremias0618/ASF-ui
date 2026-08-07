@@ -1,6 +1,12 @@
 <template>
   <main class="log home2-page-body">
-    <div class="log__panel">
+    <header class="home2-page-intro">
+      <p class="home2-page-eyebrow">{{ $t('control') }}</p>
+      <h1 class="home2-page-title">{{ $t('log') }}</h1>
+      <p class="home2-page-lead">{{ $t('log-lead') }}</p>
+    </header>
+
+    <div class="home2-page-panel log__panel">
       <AsfLog></AsfLog>
     </div>
   </main>
@@ -25,20 +31,20 @@
 
   .log {
     display: grid;
-    grid-template-rows: 1fr;
+    gap: 1rem;
+    grid-template-rows: auto minmax(0, 1fr);
     min-height: 0;
   }
 
   .log__panel {
-    background: var(--h2-shell, var(--color-background-light));
-    border: 1px solid var(--h2-border, var(--color-border));
-    border-radius: 0.85rem;
-    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+    background: transparent;
+    border: 0;
+    box-shadow: none;
     display: flex;
     flex-direction: column;
     min-height: 0;
     overflow: hidden;
-    padding: 1rem;
+    padding: 0;
   }
 
   .home2-shell .log {

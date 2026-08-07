@@ -1,11 +1,16 @@
 <template>
-  <main class="main-container main-container--fullheight">
-    <div class="container">
-      <template v-if="loading">
-        <h3 class="subtitle">
-          <FontAwesomeIcon icon="spinner" size="lg" spin></FontAwesomeIcon>
-        </h3>
-      </template>
+  <main class="asf-config-page home2-page-body">
+    <header class="home2-page-intro">
+      <p class="home2-page-eyebrow">{{ $t('home2-section-config') }}</p>
+      <h1 class="home2-page-title">{{ $t('asf-config') }}</h1>
+      <p class="home2-page-lead">{{ $t('asf-config-lead') }}</p>
+    </header>
+
+    <div class="home2-page-panel">
+      <div v-if="loading" class="home2-page-loading" role="status">
+        <FontAwesomeIcon icon="spinner" size="lg" spin></FontAwesomeIcon>
+      </div>
+
       <template v-else>
         <ConfigEditor
           :fields="fields"
@@ -69,7 +74,7 @@
       $route: {
         immediate: true,
         async handler() {
-          if (this.$route.name !== 'asf-config') return;
+          if (this.$route.name !== 'asf-config' && this.$route.name !== 'password-hash') return;
           await this.loadConfig();
         },
       },

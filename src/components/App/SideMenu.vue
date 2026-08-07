@@ -83,22 +83,36 @@
             ></button>
           </div>
         </section>
+
+        <SideMenuActions @request-confirm="onInstanceConfirmRequest"></SideMenuActions>
       </div>
 
       <footer class="side-menu__footer">
         <p class="side-menu__info" v-html="$t('sidebar-info')"></p>
       </footer>
     </aside>
+
+    <SideMenuInstanceModal
+      :action="instanceAction"
+      @close="instanceAction = null"
+    ></SideMenuInstanceModal>
   </div>
 </template>
 
 <script>
   import { mapActions, mapGetters } from 'vuex';
   import SideMenuLanguage from './partials/SideMenuLanguage.vue';
+  import SideMenuActions from './partials/SideMenuActions.vue';
+  import SideMenuInstanceModal from './partials/SideMenuInstanceModal.vue';
 
   export default {
     name: 'AppSideMenu',
-    components: { SideMenuLanguage },
+    components: { SideMenuLanguage, SideMenuActions, SideMenuInstanceModal },
+    data() {
+      return {
+        instanceAction: null,
+      };
+    },
     computed: mapGetters({
       sideMenu: 'layout/sideMenu',
       availableThemes: 'layout/availableThemes',
@@ -114,8 +128,14 @@
       closeMenu() {
         if (this.sideMenu) this.setSideMenu(false);
       },
+      onInstanceConfirmRequest(action) {
+        this.instanceAction = action;
+      },
       onKeydown(event) {
-        if (event.key === 'Escape') this.closeMenu();
+        if (event.key === 'Escape') {
+          if (this.instanceAction) return;
+          this.closeMenu();
+        }
       },
     },
     watch: {

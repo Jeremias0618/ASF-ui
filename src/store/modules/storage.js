@@ -1,9 +1,20 @@
 import * as http from '../../plugins/http';
 import * as storage from '../../utils/storage';
 
+function initialDarkMode() {
+  const localDarkMode = storage.get('layout:dark-mode');
+  if (typeof localDarkMode === 'boolean') return localDarkMode;
+  if (typeof window !== 'undefined' && window.matchMedia
+    && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    return true;
+  }
+  return false;
+}
+
 export const state = {
-  theme: 'blue',
-  darkMode: false,
+  theme: storage.get('layout:theme') || 'blue',
+  // Sync from localStorage before first paint to avoid light→dark FOUC.
+  darkMode: initialDarkMode(),
 };
 
 export const mutations = {

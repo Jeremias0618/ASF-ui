@@ -1,15 +1,19 @@
 <template>
-  <main class="main-container main-container--fullheight">
-    <div class="container">
+  <main class="mass-editor-page home2-page-body">
+    <header class="home2-page-intro">
+      <p class="home2-page-eyebrow">{{ $t('home2-section-config') }}</p>
+      <h1 class="home2-page-title">{{ $t('mass-editor') }}</h1>
+      <p class="home2-page-lead">{{ $t('mass-editor-lead') }}</p>
+    </header>
+
+    <div class="home2-page-panel">
       <template v-if="loading || noBotsFound">
-        <h3 v-if="loading" class="subtitle">
+        <div v-if="loading" class="home2-page-loading" role="status">
           <FontAwesomeIcon icon="spinner" size="lg" spin></FontAwesomeIcon>
-        </h3>
+        </div>
 
         <template v-if="noBotsFound">
-          <h3 class="subtitle">
-            {{ $t('mass-editor-no-bots') }}
-          </h3>
+          <p class="mass-editor-page__empty">{{ $t('mass-editor-no-bots') }}</p>
           <div class="mass-editor__info">
             <a @click="$router.push({ name: 'bot-create' })">{{ $t('mass-editor-create-bot') }}</a>
           </div>
@@ -251,12 +255,13 @@
 
 <style lang="scss">
   .mass-editor__title {
-    background: var(--color-background);
-    color: var(--color-text-dark);
-    padding: 1em;
+    background: var(--h2-soft, var(--color-background));
+    border-bottom: 1px solid var(--h2-border, var(--color-text-dark));
+    border-radius: 0.55rem 0.55rem 0 0;
+    color: var(--h2-ink, var(--color-text-dark));
     display: flex;
     align-items: center;
-    border-bottom: 1px solid var(--color-text-dark);
+    padding: 1em;
   }
 
   .mass-editor__navigation {
@@ -266,14 +271,27 @@
   }
 
   .mass-editor__content {
-    padding: 1em;
-    background: var(--color-background-modal);
+    background: var(--h2-shell, var(--color-background-modal));
+    border-radius: 0 0 0.55rem 0.55rem;
     display: block;
+    padding: 1em;
   }
 
   .mass-editor__info {
+    color: var(--h2-brand, var(--color-theme));
     cursor: pointer;
-    color: var(--color-theme);
     text-align: center;
+  }
+
+  .mass-editor-page__empty {
+    color: var(--h2-muted);
+    margin: 0 0 0.75rem;
+    text-align: center;
+  }
+
+  .home2-shell .mass-editor-page {
+    .button {
+      border-radius: 0.55rem;
+    }
   }
 </style>

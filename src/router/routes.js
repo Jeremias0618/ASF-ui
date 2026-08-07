@@ -73,7 +73,7 @@ export default [
     path: '/setup',
     name: routes.setup,
     component: () => import('../views/Setup.vue'),
-    meta: { noPasswordRequired: true },
+    meta: { noPasswordRequired: true, bare: true },
     params: {
       restart: false,
       update: false,
@@ -94,7 +94,7 @@ export default [
     path: '/welcome',
     name: routes.welcome,
     component: () => import('../views/Welcome.vue'),
-    meta: { noPasswordRequired: true },
+    meta: { noPasswordRequired: true, bare: true },
   },
   {
     path: '/releases',

@@ -1,6 +1,12 @@
 <template>
   <main class="plugins-page home2-page-body">
-    <div class="plugins-page__panel">
+    <header class="home2-page-intro">
+      <p class="home2-page-eyebrow">{{ $t('control') }}</p>
+      <h1 class="home2-page-title">{{ $t('plugins') }}</h1>
+      <p class="home2-page-lead">{{ $t('plugins-lead') }}</p>
+    </header>
+
+    <div class="home2-page-panel plugins-page__panel">
       <AsfPlugins></AsfPlugins>
     </div>
   </main>
@@ -22,12 +28,11 @@
 
 <style lang="scss">
   .plugins-page__panel {
-    background: var(--h2-shell, var(--color-background-light));
-    border: 1px solid var(--h2-border, var(--color-border));
-    border-radius: 0.85rem;
-    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+    background: transparent;
+    border: 0;
+    box-shadow: none;
     color: var(--h2-ink, var(--color-text-dark));
-    padding: 1.25rem 1.5rem;
+    padding: 0;
   }
 
   .home2-shell .plugins-page {

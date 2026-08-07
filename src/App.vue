@@ -4,18 +4,8 @@
       <router-view></router-view>
     </HomeShell>
 
-    <template v-else-if="isBareLayout">
-      <router-view></router-view>
-    </template>
-
     <template v-else>
-      <AppHeader></AppHeader>
-      <AppNavigation></AppNavigation>
-
-      <section class="content">
-        <router-view></router-view>
-        <AppFooter @click="smallNavigation = !smallNavigation"></AppFooter>
-      </section>
+      <router-view></router-view>
     </template>
 
     <AppSideMenu></AppSideMenu>
@@ -26,14 +16,13 @@
 
 <script>
   import { mapGetters, mapActions } from 'vuex';
-  import AppHeader from './components/App/Header.vue';
-  import AppNavigation from './components/App/Navigation.vue';
-  import AppFooter from './components/App/Footer.vue';
   import AppSideMenu from './components/App/SideMenu.vue';
   import AppModal from './components/App/Modal.vue';
   import HomeShell from './components/Home/Shell.vue';
-  import { usesHome2Shell } from './utils/home-shell';
   import { STATUS } from './utils/getStatus';
+  import './style/home.scss';
+
+  const BARE_ROUTES = new Set(['login', 'setup', 'welcome']);
 
   export default {
     name: 'App',
@@ -42,7 +31,7 @@
       titleTemplate: 'ASF | %s',
     },
     components: {
-      AppHeader, AppNavigation, AppFooter, AppSideMenu, AppModal, HomeShell,
+      AppSideMenu, AppModal, HomeShell,
     },
     computed: {
       ...mapGetters({
@@ -59,11 +48,16 @@
       themeClass() {
         return `theme-${this.theme}`;
       },
-      isHomeShell() {
-        return usesHome2Shell(this.$route.name);
-      },
       isBareLayout() {
-        return Boolean(this.$route.meta && this.$route.meta.bare);
+        const name = this.$route.name;
+        const path = this.$route.path || '';
+        if (this.$route.meta && this.$route.meta.bare) return true;
+        if (name && BARE_ROUTES.has(name)) return true;
+        return BARE_ROUTES.has(path.replace(/^\//, '').split('/')[0]);
+      },
+      isHomeShell() {
+        // All authenticated app routes use home2. Never fall back to classic chrome (FOUC).
+        return !this.isBareLayout;
       },
     },
     watch: {
@@ -76,7 +70,7 @@
       $route: {
         immediate: true,
         handler(value) {
-          document.body.style.overflowY = (value.meta.modal) ? 'hidden' : 'auto';
+          document.body.style.overflowY = (value.meta && value.meta.modal) ? 'hidden' : 'auto';
         },
       },
       status: {
@@ -163,6 +157,18 @@
     background: var(--color-background-dark);
     height: 100%;
     margin: 0;
+  }
+
+  body:has(.app--home-shell.app--dark-mode) {
+    background: #111827;
+  }
+
+  body:has(.app--home-shell:not(.app--dark-mode)) {
+    background: #f7f9fb;
+  }
+
+  body:has(.app--bare) {
+    background: var(--color-background-dark);
   }
 
   @media screen and (max-height: 835px), screen and (max-width: 1366px) {
@@ -367,7 +373,11 @@
   }
 
   .app--home-shell {
-    background: transparent;
+    background: #f7f9fb;
+
+    &.app--dark-mode {
+      background: #111827;
+    }
 
     .content {
       padding: 0;
@@ -382,8 +392,18 @@
   }
 
   .app--bare {
-    background: transparent;
+    background: var(--color-background-dark);
     min-height: 100vh;
     min-height: 100dvh;
+
+    .main-container {
+      padding-left: 0;
+      padding-top: 0;
+    }
+
+    .main-container--center {
+      min-height: 100vh;
+      min-height: 100dvh;
+    }
   }
 </style>
