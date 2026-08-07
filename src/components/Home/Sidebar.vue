@@ -614,6 +614,26 @@
         top: 0.4rem;
         width: 3px;
       }
+
+      .app--dark-mode & {
+        background: color-mix(in srgb, var(--h2-brand) 28%, transparent);
+        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--h2-brand) 42%, transparent);
+        color: var(--h2-brand);
+
+        &::before {
+          background: var(--h2-brand);
+          bottom: 0.35rem;
+          top: 0.35rem;
+          width: 3px;
+        }
+      }
+
+      @supports not (background: color-mix(in srgb, red 50%, blue)) {
+        .app--dark-mode & {
+          background: rgba(91, 159, 255, 0.28);
+          box-shadow: inset 0 0 0 1px rgba(91, 159, 255, 0.45);
+        }
+      }
     }
 
     &.is-rail {
@@ -724,7 +744,7 @@
     }
 
     &:focus-visible {
-      outline: 2px solid rgba(9, 104, 229, 0.4);
+      outline: 2px solid color-mix(in srgb, var(--h2-brand) 55%, transparent);
       outline-offset: 1px;
     }
   }

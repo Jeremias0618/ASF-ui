@@ -16,9 +16,10 @@
   --h2-border: #e4e7ec;
   --h2-border-soft: rgba(228, 231, 236, 0.9);
   --h2-soft: #f2f4f7;
-  --h2-brand: #0968e5;
-  --h2-brand-600: #0757c2;
-  --h2-brand-50: #eff6ff;
+  /* Accent follows selected ASF theme (.theme-* on .app). */
+  --h2-brand: var(--color-theme, #367fa9);
+  --h2-brand-600: var(--color-theme-dark, #2f6d91);
+  --h2-brand-50: color-mix(in srgb, var(--color-theme, #367fa9) 12%, transparent);
   --h2-error: #d92d20;
   --h2-rail: 3.75rem;
   --h2-wide: 15rem;
@@ -52,10 +53,18 @@
     --h2-border: rgba(255, 255, 255, 0.06);
     --h2-border-soft: rgba(255, 255, 255, 0.06);
     --h2-soft: #232c40;
-    --h2-brand: #4f8cff;
-    --h2-brand-600: #3b6fd4;
-    --h2-brand-50: rgba(79, 140, 255, 0.12);
+    --h2-brand: var(--color-theme-light, var(--color-theme, #5b9fff));
+    --h2-brand-600: var(--color-theme-light, var(--color-theme, #5b9fff));
+    --h2-brand-50: color-mix(in srgb, var(--color-theme, #5b9fff) 26%, transparent);
     --h2-error: #fca5a5;
+  }
+
+  @supports not (background: color-mix(in srgb, red 50%, blue)) {
+    --h2-brand-50: rgba(54, 127, 169, 0.12);
+
+    .app--dark-mode & {
+      --h2-brand-50: rgba(91, 159, 255, 0.26);
+    }
   }
 }
 
@@ -162,13 +171,11 @@
   background: #f7f9fb;
 }
 
-/* Map legacy ASF card tokens to home2 palette inside the new shell. */
+/* Map legacy ASF card tokens to home2 palette inside the new shell.
+   Do not override --color-theme here — it must stay driven by .theme-* on .app. */
 .home2-shell {
   --color-background-light: var(--h2-shell);
   --color-background: var(--h2-surface);
-  --color-theme: var(--h2-brand);
-  --color-theme-dark: var(--h2-brand-600);
-  --color-theme-light: var(--h2-brand);
   --color-text-dark: var(--h2-ink);
   --color-text-secondary: var(--h2-muted-2);
   --color-border: var(--h2-border);

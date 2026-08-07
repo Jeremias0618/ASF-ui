@@ -1,16 +1,19 @@
 <template>
-  <section class="side-menu__card" aria-labelledby="side-menu-language-label">
+  <section class="side-menu__section side-menu__section--language" aria-labelledby="side-menu-language-label">
     <div id="side-menu-language-label" class="side-menu__category">
       <span class="side-menu__category-icon" aria-hidden="true">
         <FontAwesomeIcon icon="language" fixedWidth></FontAwesomeIcon>
       </span>
-      <div>
+      <div class="side-menu__category-text">
         <p class="side-menu__category-title">{{ $t('sidebar-language') }}</p>
         <p class="side-menu__category-help">{{ $t('sidebar-language-help') }}</p>
       </div>
     </div>
 
-    <div class="side-menu__locale" :class="{ 'is-open': open }">
+    <div
+      class="side-menu__locale"
+      :class="{ 'is-open': open, 'is-searching': isSearching }"
+    >
       <label class="side-menu__locale-field" :for="inputId">
         <span class="side-menu__locale-selected" aria-hidden="true">
           <Flag :key="currentLocale" :country="getFlagCountry(currentLocale)"></Flag>
@@ -29,9 +32,9 @@
           aria-autocomplete="list"
           :aria-controls="listId"
           :aria-activedescendant="activeOptionId"
-          :placeholder="$t('sidebar-language-search')"
+          :placeholder="inputPlaceholder"
           @focus="onFocus"
-          @input="openList"
+          @input="onInput"
           @keydown="onInputKeydown"
         >
 
@@ -51,38 +54,53 @@
         </button>
       </label>
 
-      <ul
-        v-show="open"
-        :id="listId"
-        class="side-menu__locale-list"
-        role="listbox"
-        :aria-label="$t('language-title')"
-      >
-        <li v-if="!filteredLocales.length" class="side-menu__locale-empty" role="presentation">
-          {{ $t('sidebar-language-empty') }}
-        </li>
+      <div v-show="open" class="side-menu__locale-panel">
+        <p v-if="isSearching" class="side-menu__locale-count">
+          {{ $t('sidebar-language-results', { n: filteredLocales.length }) }}
+        </p>
 
-        <li
-          v-for="(option, index) in filteredLocales"
-          :id="optionId(index)"
-          :key="option.locale"
-          class="side-menu__locale-option"
-          :class="{
-            'is-active': option.locale === currentLocale,
-            'is-highlighted': index === highlightIndex,
-          }"
-          role="option"
-          :aria-selected="option.locale === currentLocale ? 'true' : 'false'"
-          @mousedown.prevent="selectLocale(option.locale)"
-          @mouseenter="highlightIndex = index"
+        <ul
+          :id="listId"
+          class="side-menu__locale-list"
+          role="listbox"
+          :aria-label="$t('language-title')"
         >
-          <Flag :country="option.country"></Flag>
-          <span class="side-menu__locale-meta">
-            <span class="side-menu__locale-name">{{ option.name }}</span>
-            <span class="side-menu__locale-region">{{ option.region }} · {{ option.locale }}</span>
-          </span>
-        </li>
-      </ul>
+          <li v-if="!filteredLocales.length" class="side-menu__locale-empty" role="presentation">
+            {{ $t('sidebar-language-empty') }}
+          </li>
+
+          <li
+            v-for="(option, index) in filteredLocales"
+            :id="optionId(index)"
+            :key="option.locale"
+            class="side-menu__locale-option"
+            :class="{
+              'is-active': option.locale === currentLocale,
+              'is-highlighted': index === highlightIndex,
+            }"
+            role="option"
+            :aria-selected="option.locale === currentLocale ? 'true' : 'false'"
+            @mousedown.prevent="selectLocale(option.locale)"
+            @mouseenter="highlightIndex = index"
+          >
+            <span class="side-menu__locale-flag">
+              <Flag :country="option.country"></Flag>
+            </span>
+            <span class="side-menu__locale-meta">
+              <span class="side-menu__locale-name">{{ option.nativeName || option.name }}</span>
+              <span class="side-menu__locale-region">
+                <template v-if="showEnglishAlias(option)">
+                  {{ option.englishName }} ·
+                </template>
+                {{ option.region }} · {{ option.locale }}
+              </span>
+            </span>
+            <span v-if="option.locale === currentLocale" class="side-menu__locale-check" aria-hidden="true">
+              <FontAwesomeIcon icon="check-circle" fixedWidth></FontAwesomeIcon>
+            </span>
+          </li>
+        </ul>
+      </div>
     </div>
   </section>
 </template>
@@ -90,12 +108,12 @@
 <script>
   import * as storage from '../../../utils/storage';
   import isAprilFoolsDay from '../../../utils/isAprilFoolsDay';
+  import {
+    describeLocale,
+    getFlagCountry,
+    localeMatchesQuery,
+  } from '../../../utils/locale-display';
   import Flag from '../../utils/Flag.vue';
-
-  const SPECIAL_NAMES = {
-    'lol-US': { name: 'LOLCAT', region: 'United States' },
-    'sr-CS': { name: 'Srpski', region: 'Serbia' },
-  };
 
   let instanceCounter = 0;
 
@@ -116,23 +134,23 @@
       currentLocale() {
         return this.$i18n.locale;
       },
+      currentOption() {
+        return describeLocale(this.currentLocale, this.currentLocale);
+      },
+      isSearching() {
+        return this.open && this.query.trim().length > 0;
+      },
+      inputPlaceholder() {
+        return this.$t('sidebar-language-search');
+      },
       localeOptions() {
         return this.$i18n.availableLocales
-          .map(locale => this.describeLocale(locale))
-          .sort((a, b) => a.name.localeCompare(b.name, this.currentLocale));
+          .map(locale => describeLocale(locale, this.currentLocale))
+          .sort((a, b) => (a.nativeName || a.name).localeCompare(b.nativeName || b.name, this.currentLocale));
       },
       filteredLocales() {
-        const needle = this.normalize(this.query);
-        if (!needle) return this.localeOptions;
-
-        return this.localeOptions.filter(option => (
-          this.normalize(option.locale).includes(needle)
-          || this.normalize(option.name).includes(needle)
-          || this.normalize(option.region).includes(needle)
-          || this.normalize(option.languageCode).includes(needle)
-          || this.normalize(option.country).includes(needle)
-          || this.normalize(option.searchText).includes(needle)
-        ));
+        if (!this.isSearching) return this.localeOptions;
+        return this.localeOptions.filter(option => localeMatchesQuery(option, this.query));
       },
       activeOptionId() {
         if (!this.open || !this.filteredLocales.length) return null;
@@ -142,8 +160,8 @@
     watch: {
       currentLocale: {
         immediate: true,
-        handler(locale) {
-          if (!this.open) this.query = this.describeLocale(locale).name;
+        handler() {
+          if (!this.open) this.syncClosedQuery();
         },
       },
       filteredLocales() {
@@ -157,7 +175,7 @@
         } else {
           window.removeEventListener('click', this.onWindowClick, true);
           window.removeEventListener('keydown', this.onWindowKeydown, true);
-          this.query = this.describeLocale(this.currentLocale).name;
+          this.syncClosedQuery();
           this.highlightIndex = 0;
         }
       },
@@ -167,48 +185,14 @@
       window.removeEventListener('keydown', this.onWindowKeydown, true);
     },
     methods: {
-      normalize(value) {
-        return String(value || '')
-          .normalize('NFD')
-          .replace(/[\u0300-\u036f]/g, '')
-          .toLowerCase()
-          .trim();
+      getFlagCountry,
+      syncClosedQuery() {
+        this.query = this.currentOption.nativeName || this.currentOption.name;
       },
-      getFlagCountry(locale) {
-        if (locale === 'sr-CS') return 'rs';
-        if (locale === 'lol-US') return 'lol';
-        const parts = locale.split('-');
-        return (parts[1] || parts[0] || '').toLowerCase();
-      },
-      describeLocale(locale) {
-        const special = SPECIAL_NAMES[locale];
-        const [languageCode, regionCode] = locale.split('-');
-        const country = this.getFlagCountry(locale);
-
-        let name = special ? special.name : languageCode;
-        let region = special ? special.region : (regionCode || languageCode);
-
-        try {
-          if (typeof Intl !== 'undefined' && Intl.DisplayNames) {
-            const languageNames = new Intl.DisplayNames([this.currentLocale, 'en'], { type: 'language' });
-            const regionNames = new Intl.DisplayNames([this.currentLocale, 'en'], { type: 'region' });
-            if (!special) {
-              name = languageNames.of(languageCode) || name;
-              if (regionCode) region = regionNames.of(regionCode) || regionCode;
-            }
-          }
-        } catch (err) {
-          // Keep fallback labels when Intl.DisplayNames is unavailable.
-        }
-
-        return {
-          locale,
-          country,
-          languageCode,
-          name,
-          region,
-          searchText: `${name} ${region} ${locale} ${languageCode} ${country}`,
-        };
+      showEnglishAlias(option) {
+        const primary = (option.nativeName || option.name || '').toLowerCase();
+        const english = (option.englishName || '').toLowerCase();
+        return english && english !== primary;
       },
       optionId(index) {
         return `${this.listId}-option-${index}`;
@@ -218,11 +202,13 @@
         const activeIndex = this.filteredLocales.findIndex(option => option.locale === this.currentLocale);
         this.highlightIndex = activeIndex >= 0 ? activeIndex : 0;
       },
-      onFocus(event) {
+      onFocus() {
+        this.query = '';
         this.openList();
-        this.$nextTick(() => {
-          if (event && event.target && event.target.select) event.target.select();
-        });
+      },
+      onInput() {
+        if (!this.open) this.open = true;
+        this.highlightIndex = 0;
       },
       closeList() {
         this.open = false;
@@ -230,6 +216,7 @@
       toggleList() {
         if (this.open) this.closeList();
         else {
+          this.query = '';
           this.openList();
           this.$nextTick(() => {
             if (this.$refs.input) this.$refs.input.focus();
@@ -307,10 +294,7 @@
       },
       async selectLocale(locale) {
         this.closeList();
-        if (locale === this.currentLocale) {
-          this.query = this.describeLocale(locale).name;
-          return;
-        }
+        if (locale === this.currentLocale) return;
 
         const year = new Date().getFullYear();
         if (isAprilFoolsDay()) storage.set(`fooled-${year}`, true);
@@ -318,8 +302,6 @@
         await this.$i18n.load(locale);
         await this.$i18n.set(locale);
         storage.set('locale', locale);
-
-        this.query = this.describeLocale(locale).name;
         this.displayTranslationStatus();
       },
     },
@@ -327,32 +309,44 @@
 </script>
 
 <style lang="scss">
-  .side-menu__locale {
-    padding: 0.15rem 0.45rem 0.65rem;
+  .side-menu__section--language {
     position: relative;
+    z-index: 8;
+  }
+
+  .side-menu__locale {
+    padding: 0;
+    position: relative;
+    z-index: 2;
+  }
+
+  .side-menu__locale.is-open {
+    z-index: 9;
   }
 
   .side-menu__locale-field {
     align-items: center;
-    background: var(--sm-shell, #fff);
-    border: 1px solid var(--sm-border, #e4e7ec);
-    border-radius: 0.7rem;
+    background: var(--sm-field, var(--sm-shell));
+    border: 1px solid var(--sm-border);
+    border-radius: 0.75rem;
     box-sizing: border-box;
     display: flex;
-    gap: 0.45rem;
-    min-height: 2.65rem;
-    padding: 0.35rem 0.4rem 0.35rem 0.55rem;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    padding: 0.4rem 0.4rem 0.4rem 0.6rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
     width: 100%;
 
     .side-menu__locale.is-open & {
-      border-color: var(--sm-brand, #0968e5);
-      box-shadow: 0 0 0 2px rgba(9, 104, 229, 0.16);
+      border-color: var(--sm-brand);
+      box-shadow: 0 0 0 3px var(--sm-brand-soft);
     }
 
     .flag-icon {
-      box-shadow: none;
+      border-radius: 2px;
+      box-shadow: 0 0 0 1px var(--sm-border);
       display: block;
-      width: 1.25rem;
+      width: 1.35rem;
     }
   }
 
@@ -366,10 +360,11 @@
     appearance: none;
     background: transparent;
     border: 0;
-    color: inherit;
+    color: var(--sm-ink);
+    caret-color: var(--sm-brand);
     flex: 1;
     font: inherit;
-    font-size: 0.88rem;
+    font-size: 0.9rem;
     font-weight: 600;
     min-width: 0;
     outline: none;
@@ -381,8 +376,9 @@
     }
 
     &::placeholder {
-      color: var(--sm-muted, #667085);
+      color: var(--sm-muted);
       font-weight: 500;
+      opacity: 1;
     }
   }
 
@@ -390,20 +386,20 @@
     align-items: center;
     background: transparent;
     border: 0;
-    border-radius: 0.45rem;
-    color: var(--sm-muted, #667085);
+    border-radius: 0.5rem;
+    color: var(--sm-muted);
     cursor: pointer;
     display: inline-flex;
     flex-shrink: 0;
-    height: 1.85rem;
+    height: 1.9rem;
     justify-content: center;
     padding: 0;
-    width: 1.85rem;
+    width: 1.9rem;
 
     &:hover,
     &:focus-visible {
-      background: var(--sm-soft, #f2f4f7);
-      color: inherit;
+      background: var(--sm-soft);
+      color: var(--sm-ink);
       outline: none;
     }
   }
@@ -420,80 +416,125 @@
     }
   }
 
+  .side-menu__locale-panel {
+    background: var(--sm-elevated, var(--sm-shell));
+    border: 1px solid var(--sm-border);
+    border-radius: 0.85rem;
+    box-shadow: var(--sm-dropdown-shadow);
+    left: 0;
+    margin-top: 0;
+    overflow: hidden;
+    position: absolute;
+    right: 0;
+    top: calc(100% + 0.4rem);
+    z-index: 12;
+  }
+
+  .side-menu__locale-count {
+    border-bottom: 1px solid var(--sm-border);
+    color: var(--sm-muted);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    margin: 0;
+    padding: 0.55rem 0.75rem 0.5rem;
+  }
+
   .side-menu__locale-list {
-    background: var(--sm-shell, #fff);
-    border: 1px solid var(--sm-border, #e4e7ec);
-    border-radius: 0.75rem;
-    box-shadow: 0 10px 28px rgba(16, 24, 40, 0.16);
-    box-sizing: border-box;
-    left: 0.45rem;
     list-style: none;
-    margin: 0.35rem 0 0;
-    max-height: 14rem;
+    margin: 0;
+    max-height: 15.5rem;
     overflow-x: hidden;
     overflow-y: auto;
     padding: 0.35rem;
-    position: absolute;
-    right: 0.45rem;
-    top: 100%;
-    z-index: 5;
 
-    .app--dark-mode & {
-      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+    .side-menu__locale.is-searching & {
+      max-height: 17rem;
     }
   }
 
   .side-menu__locale-empty {
-    color: var(--sm-muted, #667085);
-    font-size: 0.8rem;
-    padding: 0.7rem 0.55rem;
+    color: var(--sm-muted);
+    font-size: 0.82rem;
+    padding: 1rem 0.65rem;
     text-align: center;
   }
 
   .side-menu__locale-option {
     align-items: center;
-    border-radius: 0.55rem;
+    border: 1px solid transparent;
+    border-radius: 0.65rem;
+    color: var(--sm-ink);
     cursor: pointer;
     display: flex;
-    gap: 0.6rem;
-    padding: 0.5rem 0.55rem;
+    gap: 0.7rem;
+    padding: 0.58rem 0.55rem;
+    transition: background 0.12s ease, border-color 0.12s ease;
 
-    .flag-icon {
-      box-shadow: none;
-      flex-shrink: 0;
-      width: 1.25rem;
-    }
-
-    &.is-highlighted,
-    &:hover {
-      background: var(--sm-soft, #f2f4f7);
+    &.is-highlighted {
+      background: var(--sm-brand-soft);
+      border-color: var(--sm-brand);
     }
 
     &.is-active {
-      box-shadow: inset 0 0 0 1px var(--sm-brand, #0968e5);
+      background: var(--sm-brand-soft);
+      border-color: var(--sm-brand);
+    }
+
+    &.is-active .side-menu__locale-check {
+      color: var(--sm-brand);
+      opacity: 1;
+    }
+  }
+
+  .side-menu__locale-flag {
+    align-items: center;
+    background: var(--sm-soft);
+    border: 1px solid var(--sm-border);
+    border-radius: 0.5rem;
+    display: inline-flex;
+    flex-shrink: 0;
+    height: 2rem;
+    justify-content: center;
+    width: 2rem;
+
+    .flag-icon {
+      border-radius: 2px;
+      box-shadow: none;
+      width: 1.25rem;
     }
   }
 
   .side-menu__locale-meta {
     display: flex;
+    flex: 1;
     flex-direction: column;
-    gap: 0.12rem;
+    gap: 0.15rem;
     min-width: 0;
   }
 
   .side-menu__locale-name {
-    font-size: 0.86rem;
-    font-weight: 600;
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
   .side-menu__locale-region {
-    color: var(--sm-muted, #667085);
+    color: var(--sm-muted);
     font-size: 0.72rem;
+    line-height: 1.3;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .side-menu__locale-check {
+    color: var(--sm-brand);
+    flex-shrink: 0;
+    font-size: 0.95rem;
+    opacity: 0;
   }
 </style>

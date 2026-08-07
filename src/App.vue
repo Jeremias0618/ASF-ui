@@ -301,6 +301,45 @@
     --color-theme-light: #{lighten($color-theme-orange, 5)};
   }
 
+  /* Brighter accents in dark home2 so theme selection stays readable. */
+  .app--home-shell.app--dark-mode {
+    &.theme-blue {
+      --color-theme: #5b9fff;
+      --color-theme-dark: #4f8cff;
+      --color-theme-light: #7eb3ff;
+    }
+
+    &.theme-red {
+      --color-theme: #f87171;
+      --color-theme-dark: #ef4444;
+      --color-theme-light: #fca5a5;
+    }
+
+    &.theme-teal {
+      --color-theme: #2dd4bf;
+      --color-theme-dark: #14b8a6;
+      --color-theme-light: #5eead4;
+    }
+
+    &.theme-purple {
+      --color-theme: #a78bfa;
+      --color-theme-dark: #8b5cf6;
+      --color-theme-light: #c4b5fd;
+    }
+
+    &.theme-green {
+      --color-theme: #34d399;
+      --color-theme-dark: #10b981;
+      --color-theme-light: #6ee7b7;
+    }
+
+    &.theme-orange {
+      --color-theme: #fbbf24;
+      --color-theme-dark: #f59e0b;
+      --color-theme-light: #fcd34d;
+    }
+  }
+
   .content {
     box-sizing: border-box;
     display: grid;
