@@ -235,8 +235,7 @@
         return this.$route.name === routeName;
       },
       setDark(value) {
-        if (this.darkMode === value) return;
-        this.$store.dispatch('storage/toggleDarkMode');
+        this.$store.dispatch('storage/setThemeMode', value ? 'dark' : 'light');
       },
       async logout() {
         await this.$store.dispatch('auth/setPassword');

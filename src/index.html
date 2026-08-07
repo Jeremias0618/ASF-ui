@@ -9,10 +9,19 @@
     <script>
       (function () {
         try {
-          var raw = localStorage.getItem('asf-ui:layout:dark-mode');
-          var dark = raw != null
-            ? JSON.parse(raw)
-            : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          var modeRaw = localStorage.getItem('asf-ui:layout:theme-mode');
+          var mode = modeRaw != null ? JSON.parse(modeRaw) : null;
+          var dark;
+          if (mode === 'dark') dark = true;
+          else if (mode === 'light') dark = false;
+          else if (mode === 'system') {
+            dark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+          } else {
+            var raw = localStorage.getItem('asf-ui:layout:dark-mode');
+            dark = raw != null
+              ? JSON.parse(raw)
+              : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          }
           if (dark) document.documentElement.classList.add('asf-boot-dark');
           else document.documentElement.classList.add('asf-boot-light');
         } catch (e) {

@@ -122,7 +122,7 @@
     methods: {
       ...mapActions({
         changeTheme: 'storage/changeTheme',
-        toggleDarkMode: 'storage/toggleDarkMode',
+        setThemeMode: 'storage/setThemeMode',
         setSideMenu: 'layout/setSideMenu',
       }),
       closeMenu() {
@@ -130,6 +130,9 @@
       },
       onInstanceConfirmRequest(action) {
         this.instanceAction = action;
+      },
+      toggleDarkMode() {
+        this.setThemeMode(this.darkMode ? 'light' : 'dark');
       },
       onKeydown(event) {
         if (event.key === 'Escape') {
