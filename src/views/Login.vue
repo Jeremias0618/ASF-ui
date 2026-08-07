@@ -21,9 +21,10 @@
         <p class="login-page__lead">{{ $t('login-lead') }}</p>
       </div>
 
-      <p v-if="statusMessage" class="login-page__status" role="status">{{ statusMessage }}</p>
+      <p v-if="checking" class="login-page__status" role="status">{{ $t('connection') }}…</p>
+      <p v-else-if="statusMessage" class="login-page__status" role="status">{{ statusMessage }}</p>
 
-      <form class="login-page__form" @submit.prevent="onSubmit">
+      <form v-if="showForm" class="login-page__form" @submit.prevent="onSubmit">
         <label class="login-page__label" for="login-password">{{ $t('password') }}</label>
         <div class="login-page__field">
           <input
@@ -58,7 +59,7 @@
 <script>
   import { mapGetters } from 'vuex';
   import { STATUS } from '../utils/getStatus';
-  import * as storage from '../utils/storage';
+  import { clearAuthenticationRequiredCache } from '../utils/ipc-password-status';
 
   export default {
     name: 'Login',
@@ -71,6 +72,7 @@
       return {
         password: '',
         processing: false,
+        checking: true,
         inputHidden: true,
       };
     },
@@ -89,21 +91,38 @@
         if (this.status === STATUS.RATE_LIMITED) return this.$t('setup-rate-limited');
         return null;
       },
-    },
-    watch: {
-      status: {
-        immediate: true,
-        handler(value) {
-          if (value === STATUS.AUTHENTICATED) this.redirect();
-        },
+      showForm() {
+        return !this.checking && this.status !== STATUS.AUTHENTICATED;
       },
     },
-    mounted() {
-      this.$nextTick(() => {
-        if (this.$refs.passwordInput) this.$refs.passwordInput.focus();
-      });
+    watch: {
+      status(value) {
+        if (value === STATUS.AUTHENTICATED) this.redirect();
+      },
+    },
+    async created() {
+      await this.recheckAccess();
     },
     methods: {
+      async recheckAccess() {
+        this.checking = true;
+        try {
+          clearAuthenticationRequiredCache();
+          await this.$store.dispatch('auth/setPassword', null);
+          await this.$store.dispatch('auth/updateStatus');
+          if (this.status === STATUS.AUTHENTICATED) {
+            this.redirect();
+            return;
+          }
+        } catch (err) {
+          this.$error(err.message);
+        } finally {
+          this.checking = false;
+          this.$nextTick(() => {
+            if (this.showForm && this.$refs.passwordInput) this.$refs.passwordInput.focus();
+          });
+        }
+      },
       toggleTheme() {
         this.$store.dispatch('storage/toggleDarkMode');
       },
@@ -113,7 +132,7 @@
       async onSubmit() {
         if (this.processing || !this.password) return;
         this.processing = true;
-        storage.remove('cache:authentication-required');
+        clearAuthenticationRequiredCache();
 
         try {
           await this.$store.dispatch('auth/setPassword', this.password);

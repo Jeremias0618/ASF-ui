@@ -77,9 +77,13 @@ function catchError(err) {
   throw new NotificationError(err.message);
 }
 
+export function getAuthenticationHeader() {
+  return http.defaults.headers.common.Authentication || null;
+}
+
 export function authenticate(password) {
   if (password) http.defaults.headers.common.Authentication = password;
-  else delete axios.defaults.headers.common.Authentication;
+  else delete http.defaults.headers.common.Authentication;
 }
 
 export function get(endpoint, params = {}, options = {}) {
@@ -114,6 +118,7 @@ export default {
   install(Vue) {
     Vue.prototype.$http = {
       authenticate,
+      getAuthenticationHeader,
       get,
       post,
       put,

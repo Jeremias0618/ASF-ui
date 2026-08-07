@@ -41,7 +41,7 @@
 <script>
   import { mapGetters } from 'vuex';
   import { STATUS } from '../utils/getStatus';
-  import * as storage from '../utils/storage';
+  import { clearAuthenticationRequiredCache } from '../utils/ipc-password-status';
   import waitForRestart from '../utils/waitForRestart';
 
   export default {
@@ -131,6 +131,10 @@
       async handleWaiting(mode = 'restart') {
         this.processing = true;
         await waitForRestart();
+        // Re-probe after restart: sticky 401 cache / stale auth header must not force login.
+        clearAuthenticationRequiredCache();
+        await this.$store.dispatch('auth/setPassword', null);
+        await this.$store.dispatch('auth/updateStatus');
         if (mode === 'restart') this.$success(this.$t('restart-complete'));
         else if (mode === 'update') this.$success(this.$t('update-complete'));
         this.processing = false;
@@ -153,7 +157,7 @@
       async updatePassword() {
         this.processing = true;
 
-        storage.remove('cache:authentication-required');
+        clearAuthenticationRequiredCache();
 
         try {
           await this.$store.dispatch('auth/setPassword', this.password);
