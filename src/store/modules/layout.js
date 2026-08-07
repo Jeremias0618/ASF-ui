@@ -44,7 +44,7 @@ export const actions = {
     commit('toggleBoxed');
     storage.set('layout:boxed-layout', getters.boxed);
   },
-  setSideMenu: ({ commit, value }) => {
+  setSideMenu: ({ commit }, value) => {
     commit('setSideMenu', value);
   },
 };

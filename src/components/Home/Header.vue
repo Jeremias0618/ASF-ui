@@ -18,14 +18,25 @@
         <span class="home2-header__mobile-sub">{{ $t('home2-subtitle') }}</span>
       </router-link>
 
-      <button
-        type="button"
-        class="home2-burger home2-burger--icon"
-        :aria-label="$t('home2-search-open')"
-        @click="$emit('open-search')"
-      >
-        <FontAwesomeIcon icon="search"></FontAwesomeIcon>
-      </button>
+      <div class="home2-header__actions home2-header__actions--mobile">
+        <button
+          type="button"
+          class="home2-burger home2-burger--icon"
+          :aria-label="$t('home2-search-open')"
+          @click="$emit('open-search')"
+        >
+          <FontAwesomeIcon icon="search"></FontAwesomeIcon>
+        </button>
+        <button
+          type="button"
+          class="home2-header__settings"
+          :aria-label="$t('sidebar-toggle')"
+          :aria-expanded="sideMenu ? 'true' : 'false'"
+          @click="toggleSideMenu"
+        >
+          <FontAwesomeIcon icon="cogs" fixedWidth></FontAwesomeIcon>
+        </button>
+      </div>
     </div>
 
     <div class="home2-header__desktop">
@@ -43,20 +54,56 @@
       <div class="home2-header__spacer" aria-hidden="true"></div>
 
       <div class="home2-header__actions">
-        <NavigationLanguageSwitch></NavigationLanguageSwitch>
+        <button
+          type="button"
+          class="home2-header__settings"
+          :aria-label="$t('sidebar-toggle')"
+          :aria-expanded="sideMenu ? 'true' : 'false'"
+          @click="toggleSideMenu"
+        >
+          <FontAwesomeIcon icon="cogs" fixedWidth></FontAwesomeIcon>
+        </button>
       </div>
     </div>
   </header>
 </template>
 
 <script>
-  import NavigationLanguageSwitch from '../Navigation/LanguageSwitch.vue';
+  import { mapActions, mapGetters } from 'vuex';
 
   export default {
     name: 'HomeHeader',
-    components: { NavigationLanguageSwitch },
     props: {
       mobileOpen: { type: Boolean, default: false },
+    },
+    computed: {
+      ...mapGetters({
+        sideMenu: 'layout/sideMenu',
+      }),
+    },
+    watch: {
+      sideMenu(value) {
+        if (value) window.addEventListener('click', this.onWindowClick);
+        else window.removeEventListener('click', this.onWindowClick);
+      },
+    },
+    beforeDestroy() {
+      window.removeEventListener('click', this.onWindowClick);
+    },
+    methods: {
+      ...mapActions({
+        toggleSideMenu: 'layout/toggleSideMenu',
+      }),
+      onWindowClick(event) {
+        const path = event.path || (event.composedPath && event.composedPath());
+        const sideMenu = document.getElementById('side-menu');
+        if ((path && (path.includes(this.$el) || path.includes(sideMenu)))
+          || (this.$el && this.$el.contains(event.target))
+          || (sideMenu && sideMenu.contains(event.target))) {
+          return;
+        }
+        this.toggleSideMenu();
+      },
     },
   };
 </script>
@@ -189,26 +236,35 @@
   }
 
   .home2-header__actions {
+    align-items: center;
+    display: flex;
+    gap: 0.4rem;
     margin-left: auto;
+
+    &--mobile {
+      flex-shrink: 0;
+      margin-left: 0;
+    }
   }
 
-  .home2-header .navigation__language-switch {
-    margin: 0;
-  }
-
-  .home2-header .navigation__button {
+  .home2-header__settings {
     align-items: center;
     background: transparent;
     border: 1px solid var(--h2-border);
     border-radius: 0.75rem;
     color: var(--h2-ink);
+    cursor: pointer;
     display: inline-flex;
+    flex-shrink: 0;
     height: 2.75rem;
     justify-content: center;
+    padding: 0;
     width: 2.75rem;
 
-    &:hover {
+    &:hover,
+    &:focus-visible {
       background: var(--h2-soft);
+      outline: none;
     }
   }
 </style>

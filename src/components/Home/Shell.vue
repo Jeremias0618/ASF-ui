@@ -71,6 +71,9 @@
       $route() {
         this.closeMobile();
         this.closeSearch();
+        if (this.$store.getters['layout/sideMenu']) {
+          this.$store.dispatch('layout/setSideMenu', false);
+        }
       },
     },
     mounted() {

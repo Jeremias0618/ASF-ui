@@ -5,11 +5,12 @@
     <div class="login-page__top">
       <button
         type="button"
-        class="login-page__theme"
-        :aria-label="darkMode ? $t('home2-theme-light') : $t('home2-theme-dark')"
-        @click="toggleTheme"
+        class="login-page__settings"
+        :aria-label="$t('sidebar-toggle')"
+        :aria-expanded="sideMenu ? 'true' : 'false'"
+        @click="toggleSideMenu"
       >
-        <FontAwesomeIcon :icon="darkMode ? 'sun' : 'moon'" fixedWidth></FontAwesomeIcon>
+        <FontAwesomeIcon icon="cogs" fixedWidth></FontAwesomeIcon>
       </button>
     </div>
 
@@ -57,7 +58,7 @@
 </template>
 
 <script>
-  import { mapGetters } from 'vuex';
+  import { mapActions, mapGetters } from 'vuex';
   import { STATUS } from '../utils/getStatus';
   import { clearAuthenticationRequiredCache } from '../utils/ipc-password-status';
 
@@ -80,6 +81,7 @@
       ...mapGetters({
         status: 'auth/status',
         darkMode: 'storage/darkMode',
+        sideMenu: 'layout/sideMenu',
       }),
       logoSrc() {
         return (window.__BASE_PATH__) ? `${window.__BASE_PATH__}images/logo.webp` : '/images/logo.webp';
@@ -99,11 +101,32 @@
       status(value) {
         if (value === STATUS.AUTHENTICATED) this.redirect();
       },
+      sideMenu(value) {
+        if (value) window.addEventListener('click', this.onWindowClick);
+        else window.removeEventListener('click', this.onWindowClick);
+      },
     },
     async created() {
       await this.recheckAccess();
     },
+    beforeDestroy() {
+      window.removeEventListener('click', this.onWindowClick);
+    },
     methods: {
+      ...mapActions({
+        toggleSideMenu: 'layout/toggleSideMenu',
+      }),
+      onWindowClick(event) {
+        const path = event.path || (event.composedPath && event.composedPath());
+        const sideMenu = document.getElementById('side-menu');
+        const top = this.$el && this.$el.querySelector('.login-page__top');
+        if ((path && ((top && path.includes(top)) || path.includes(sideMenu)))
+          || (top && top.contains(event.target))
+          || (sideMenu && sideMenu.contains(event.target))) {
+          return;
+        }
+        this.toggleSideMenu();
+      },
       async recheckAccess() {
         this.checking = true;
         try {
@@ -122,9 +145,6 @@
             if (this.showForm && this.$refs.passwordInput) this.$refs.passwordInput.focus();
           });
         }
-      },
-      toggleTheme() {
-        this.$store.dispatch('storage/toggleDarkMode');
       },
       switchInputType() {
         this.inputHidden = !this.inputHidden;
@@ -214,7 +234,9 @@
   }
 
   .login-page__top {
+    align-items: center;
     display: flex;
+    gap: 0.4rem;
     justify-content: flex-end;
     position: absolute;
     right: 1.25rem;
@@ -222,11 +244,11 @@
     z-index: 2;
   }
 
-  .login-page__theme {
+  .login-page__settings {
     align-items: center;
     background: var(--login-shell);
     border: 1px solid var(--login-border);
-    border-radius: 999px;
+    border-radius: 0.75rem;
     color: var(--login-muted);
     cursor: pointer;
     display: inline-flex;

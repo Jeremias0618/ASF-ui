@@ -7,8 +7,6 @@
     </div>
 
     <div class="navigation__menu">
-      <NavigationLanguageSwitch></NavigationLanguageSwitch>
-
       <div v-tooltip="$t('sidebar-toggle')" class="navigation__button" @click="toggleSideMenu">
         <FontAwesomeIcon icon="cogs" fixedWidth></FontAwesomeIcon>
       </div>
@@ -23,11 +21,10 @@
 <script>
   import { mapActions, mapGetters } from 'vuex';
   import NavigationBrand from '../Navigation/Brand.vue';
-  import NavigationLanguageSwitch from '../Navigation/LanguageSwitch.vue';
 
   export default {
     name: 'AppHeader',
-    components: { NavigationBrand, NavigationLanguageSwitch },
+    components: { NavigationBrand },
     computed: {
       ...mapGetters({
         status: 'auth/status',

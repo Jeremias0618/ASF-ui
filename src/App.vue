@@ -11,7 +11,6 @@
     <template v-else>
       <AppHeader></AppHeader>
       <AppNavigation></AppNavigation>
-      <AppSideMenu></AppSideMenu>
 
       <section class="content">
         <router-view></router-view>
@@ -19,6 +18,7 @@
       </section>
     </template>
 
+    <AppSideMenu></AppSideMenu>
     <AppModal></AppModal>
     <vue-snotify></vue-snotify>
   </div>

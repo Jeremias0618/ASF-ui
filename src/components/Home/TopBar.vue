@@ -6,8 +6,6 @@
     </div>
 
     <nav class="home-topbar__actions" aria-label="home toolbar">
-      <NavigationLanguageSwitch></NavigationLanguageSwitch>
-
       <button
         type="button"
         class="home-topbar__button"
@@ -41,11 +39,9 @@
 
 <script>
   import { mapActions, mapGetters } from 'vuex';
-  import NavigationLanguageSwitch from '../Navigation/LanguageSwitch.vue';
 
   export default {
     name: 'HomeTopBar',
-    components: { NavigationLanguageSwitch },
     computed: {
       ...mapGetters({
         darkMode: 'storage/darkMode',
@@ -128,26 +124,6 @@
       border-color: var(--home-accent);
       color: var(--home-accent);
       outline: none;
-    }
-  }
-
-  .home-topbar .navigation__language-switch {
-    margin: 0;
-  }
-
-  .home-topbar .navigation__button {
-    align-items: center;
-    background: var(--home-surface);
-    border: 1px solid var(--home-border);
-    border-radius: 0.85rem;
-    color: var(--home-text);
-    display: inline-flex;
-    height: 2.35rem;
-    justify-content: center;
-    width: 2.35rem;
-
-    &:hover {
-      color: var(--home-accent);
     }
   }
 </style>
