@@ -20,7 +20,10 @@
 
       <div class="bot-profile__actions">
         <BotLink v-tooltip="$t('bot-fav-buttons-config')" icon="wrench" :link="{ name: 'bot-config', params: { bot: bot.name } }"></BotLink>
-        <BotLink v-tooltip="$t('bot-fav-buttons-social')" icon="boxes" :link="{ name: 'bot-social', params: { bot: bot.name } }"></BotLink>
+        <BotLink v-tooltip="$t('bot-fav-buttons-inventory')" icon="boxes" :link="{ name: 'bot-inventory', params: { bot: bot.name } }"></BotLink>
+        <BotLink v-tooltip="$t('bot-fav-buttons-friends')" icon="users" :link="{ name: 'bot-friends', params: { bot: bot.name } }"></BotLink>
+        <BotLink v-tooltip="$t('bot-fav-buttons-games')" icon="gamepad" :link="{ name: 'bot-games', params: { bot: bot.name } }"></BotLink>
+        <BotLink v-tooltip="$t('bot-fav-buttons-wishlist')" icon="heart" :link="{ name: 'bot-wishlist', params: { bot: bot.name } }"></BotLink>
         <BotLink v-tooltip="$t('bot-fav-buttons-bgr')" icon="key" :link="{ name: 'bot-bgr', params: { bot: bot.name } }"></BotLink>
         <BotLink v-tooltip="$t('bot-fav-buttons-2fa')" icon="lock" :link="{ name: 'bot-2fa', params: { bot: bot.name } }"></BotLink>
 
@@ -197,7 +200,7 @@
   .bot-profile__actions {
     align-items: center;
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 0.15rem;
     grid-area: actions;
     min-width: 0;
@@ -205,6 +208,10 @@
     .pull-right {
       float: none;
       margin-left: auto;
+    }
+
+    @media screen and (max-width: 530px) {
+      flex-wrap: wrap;
     }
   }
 

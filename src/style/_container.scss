@@ -5,7 +5,8 @@
 }
 
 .main-container--bot-profile {
-  width: 400px;
+  /* Wider so bot action icons (config, social, bgr, 2fa, …) fit on one row */
+  width: min(34rem, calc(100vw - 3rem));
 
   @media screen and (max-width: 530px) {
     width: auto;

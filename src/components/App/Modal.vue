@@ -29,7 +29,10 @@
     'bot-config',
     'bot-create',
     'bot-copy',
-    'bot-social',
+    'bot-inventory',
+    'bot-friends',
+    'bot-games',
+    'bot-wishlist',
   ]);
 
       const DIALOG_MODAL_ROUTES = new Set([

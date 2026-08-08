@@ -13,7 +13,11 @@ const routes = {
   botCreate: 'bot-create',
   botDelete: 'bot-delete',
   botInput: 'bot-input',
+  botFriends: 'bot-friends',
+  botGames: 'bot-games',
+  botInventory: 'bot-inventory',
   botSocial: 'bot-social',
+  botWishlist: 'bot-wishlist',
   bots: 'bots',
   commands: 'commands',
   configuration: 'configuration',
@@ -226,8 +230,8 @@ export default [
     },
   },
   {
-    path: '/bot/:bot/social',
-    name: routes.botSocial,
+    path: '/bot/:bot/inventory',
+    name: routes.botInventory,
     components: {
       default: () => import('../views/Bots.vue'),
       modal: () => import('../views/modals/BotSocial.vue'),
@@ -236,7 +240,55 @@ export default [
       modal: true,
       arrows: true,
       closeRoute: routes.bots,
+      feature: 'inventory',
     },
+  },
+  {
+    path: '/bot/:bot/friends',
+    name: routes.botFriends,
+    components: {
+      default: () => import('../views/Bots.vue'),
+      modal: () => import('../views/modals/BotSocial.vue'),
+    },
+    meta: {
+      modal: true,
+      arrows: true,
+      closeRoute: routes.bots,
+      feature: 'friends',
+    },
+  },
+  {
+    path: '/bot/:bot/games',
+    name: routes.botGames,
+    components: {
+      default: () => import('../views/Bots.vue'),
+      modal: () => import('../views/modals/BotSocial.vue'),
+    },
+    meta: {
+      modal: true,
+      arrows: true,
+      closeRoute: routes.bots,
+      feature: 'games',
+    },
+  },
+  {
+    path: '/bot/:bot/wishlist',
+    name: routes.botWishlist,
+    components: {
+      default: () => import('../views/Bots.vue'),
+      modal: () => import('../views/modals/BotSocial.vue'),
+    },
+    meta: {
+      modal: true,
+      arrows: true,
+      closeRoute: routes.bots,
+      feature: 'wishlist',
+    },
+  },
+  {
+    path: '/bot/:bot/social',
+    name: routes.botSocial,
+    redirect: to => ({ name: routes.botInventory, params: { bot: to.params.bot } }),
   },
   {
     path: '/bot/:bot/copy',
