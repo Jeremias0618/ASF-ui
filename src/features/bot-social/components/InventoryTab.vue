@@ -1,5 +1,35 @@
 <template>
-  <div class="steam-inv" :class="{ 'is-refreshing': refreshing }">
+  <div class="steam-inv" :class="{ 'is-refreshing': refreshing && panelMode === 'inventory' }">
+    <div class="steam-inv__modes" role="tablist" :aria-label="$t('bot-social-inventory-modes')">
+      <button
+        type="button"
+        role="tab"
+        class="steam-inv__mode"
+        :class="{ 'is-active': panelMode === 'inventory' }"
+        :aria-selected="panelMode === 'inventory' ? 'true' : 'false'"
+        @click="setPanelMode('inventory')"
+      >
+        {{ $t('bot-social-tab-inventory') }}
+      </button>
+      <button
+        type="button"
+        role="tab"
+        class="steam-inv__mode"
+        :class="{ 'is-active': panelMode === 'trades' }"
+        :aria-selected="panelMode === 'trades' ? 'true' : 'false'"
+        @click="setPanelMode('trades')"
+      >
+        {{ $t('bot-social-tab-trades') }}
+      </button>
+    </div>
+
+    <TradeOffersPanel
+      v-if="panelMode === 'trades'"
+      :bot-name="botName"
+      @plugin-missing="$emit('plugin-missing')"
+    ></TradeOffersPanel>
+
+    <template v-else>
     <section class="steam-inv__chrome" :aria-label="$t('bot-social-tab-inventory')">
       <div class="steam-inv__chrome-bar">
         <div class="steam-inv__searchbox">
@@ -265,6 +295,7 @@
         </aside>
       </div>
     </template>
+    </template>
 
     <TransferDialog
       :open="transferOpen"
@@ -280,7 +311,7 @@
 <script>
   import { isPluginMissingError, transferInventory } from '../api/bot-social';
   import { resolveLocalData } from '../cache/load-policy';
-  import { invalidateInventory, loadInventory } from '../cache/bot-social-queries';
+  import { invalidateInventory, invalidateTradeOffers, loadInventory } from '../cache/bot-social-queries';
   import { STEAM_APP_ID, STEAM_COMMUNITY_CONTEXT_ID } from '../constants/steam-inventory';
   import { INVENTORY_FILTERS, sortInventoryItems } from '../utils/inventory';
   import {
@@ -294,15 +325,17 @@
   } from '../utils/filter-inventory';
   import { prefetchInventoryPageIcons } from '../utils/prefetch-images';
   import TransferDialog from './transfer/dialog.vue';
+  import TradeOffersPanel from './inventory/trade-offers-panel.vue';
 
   export default {
     name: 'BotSocialInventoryTab',
-    components: { TransferDialog },
+    components: { TransferDialog, TradeOffersPanel },
     props: {
       botName: { type: String, required: true },
     },
     data() {
       return {
+        panelMode: 'inventory',
         loading: false,
         refreshing: false,
         transferring: false,
@@ -464,6 +497,7 @@
         });
       },
       resetViewState() {
+        this.panelMode = 'inventory';
         this.selectedId = '';
         this.checkedIds = [];
         this.selectMode = false;
@@ -477,6 +511,13 @@
         this.statusFilter = 'all';
         this.previewHdReady = false;
         this.error = '';
+      },
+      setPanelMode(mode) {
+        if (mode === this.panelMode) return;
+        this.panelMode = mode;
+        if (mode === 'inventory' && this.selectMode) {
+          // keep select mode; no-op
+        }
       },
       bootstrap(botName) {
         const resolved = resolveLocalData({
@@ -616,6 +657,7 @@
           this.checkedIds = [];
           this.selectMode = false;
           invalidateInventory(this.botName);
+          invalidateTradeOffers(this.botName);
           await this.fetchInventory(true);
         } catch (err) {
           if (isPluginMissingError(err)) {

@@ -10,6 +10,7 @@
       <InventoryTab
         v-if="feature === 'inventory'"
         :bot-name="bot.name"
+        @plugin-missing="pluginMissing = true"
       ></InventoryTab>
       <FriendsTab
         v-else-if="feature === 'friends'"

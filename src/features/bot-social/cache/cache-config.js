@@ -7,6 +7,7 @@ export const CACHE_TTL_MS = Object.freeze({
   friends: 2 * 60 * 1000, // friend list can change more often
   games: 10 * 60 * 1000,
   wishlist: 5 * 60 * 1000,
+  trades: 60 * 1000, // pending offers change often
   status: 30 * 60 * 1000,
 });
 
@@ -16,6 +17,7 @@ export const MIN_REFRESH_MS = Object.freeze({
   friends: 3 * 1000,
   games: 5 * 1000,
   wishlist: 6 * 1000,
+  trades: 5 * 1000,
   status: 2 * 1000,
 });
 

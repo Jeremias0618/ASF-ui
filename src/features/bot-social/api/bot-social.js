@@ -68,6 +68,10 @@ export function transferInventory(botName, {
   });
 }
 
+export function fetchTradeOffers(botName) {
+  return get(`${socialBase(botName)}/TradeOffers`);
+}
+
 export function isPluginMissingError(err) {
   const status = err?.result?.status ?? err?.response?.status;
   if (status === 404) return true;

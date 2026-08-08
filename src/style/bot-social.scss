@@ -1366,3 +1366,283 @@
   gap: 0.5rem;
   justify-content: flex-end;
 }
+
+.steam-inv__modes {
+  display: inline-flex;
+  gap: 0.25rem;
+  margin-bottom: 0.65rem;
+  padding: 0.2rem;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.4rem;
+}
+
+.steam-inv__mode {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  border-radius: 0.3rem;
+  color: #8f98a0;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 0.4rem 0.85rem;
+
+  &.is-active {
+    background: linear-gradient(180deg, #3d6c8d 0%, #2a475e 100%);
+    color: #fff;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #66c0f4;
+    outline-offset: 1px;
+  }
+}
+
+.trade-offers {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 0;
+}
+
+.trade-offers.is-refreshing .trade-offers__list {
+  opacity: 0.72;
+  transition: opacity 0.2s ease;
+}
+
+.trade-offers__toolbar {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.trade-offers__stat {
+  color: #8f98a0;
+  font-size: 0.84rem;
+  margin: 0;
+}
+
+.trade-offers__refresh {
+  appearance: none;
+  align-items: center;
+  background: linear-gradient(180deg, #3d6c8d 0%, #2a475e 100%);
+  border: 1px solid rgba(103, 193, 245, 0.3);
+  border-radius: 0.3rem;
+  color: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  gap: 0.4rem;
+  padding: 0.4rem 0.75rem;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+}
+
+.trade-offers__skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.trade-offers__skel-card {
+  animation: friends-skel 1.2s ease-in-out infinite;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.04));
+  background-size: 200% 100%;
+  border-radius: 0.25rem;
+  min-height: 10rem;
+}
+
+.trade-offers__empty {
+  color: #8f98a0;
+  padding: 2.5rem 1rem;
+  text-align: center;
+}
+
+.trade-offers__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.trade-card {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  display: flex;
+  flex-direction: column;
+}
+
+.trade-card__head {
+  align-items: center;
+  background: rgba(42, 71, 94, 0.45);
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+  padding: 0.55rem 0.7rem;
+}
+
+.trade-card__partner {
+  align-items: center;
+  color: #c6d4df;
+  display: flex;
+  gap: 0.55rem;
+  min-width: 0;
+  text-decoration: none;
+
+  &:hover .trade-card__headline {
+    color: #66c0f4;
+  }
+}
+
+.trade-card__avatar {
+  background: #1b2838;
+  display: block;
+  flex-shrink: 0;
+  height: 40px;
+  object-fit: cover;
+  width: 40px;
+
+  &--fallback {
+    align-items: center;
+    color: #66c0f4;
+    display: flex;
+    font-weight: 700;
+    justify-content: center;
+  }
+}
+
+.trade-card__headline {
+  font-size: 0.92rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trade-card__id {
+  color: #6b7785;
+  flex-shrink: 0;
+  font-size: 0.72rem;
+}
+
+.trade-card__banner {
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 0.45rem 0.75rem;
+  text-align: center;
+
+  &.is-needs_confirmation {
+    background: #c27d0e;
+  }
+
+  &.is-waiting_bot {
+    background: #1a6ea5;
+  }
+
+  &.is-waiting_partner {
+    background: #3d4450;
+  }
+}
+
+.trade-card__side {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 0.65rem 0.7rem 0.75rem;
+}
+
+.trade-card__side-title {
+  align-items: baseline;
+  color: #8f98a0;
+  display: flex;
+  font-size: 0.78rem;
+  font-weight: 600;
+  gap: 0.45rem;
+  margin: 0 0 0.5rem;
+}
+
+.trade-card__side-count {
+  color: #66c0f4;
+  font-size: 0.72rem;
+}
+
+.trade-card__grid {
+  display: grid;
+  gap: 0.45rem;
+  grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
+}
+
+.trade-card__cell {
+  background: #0e1621;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  min-height: 5.5rem;
+  overflow: hidden;
+  position: relative;
+}
+
+.trade-card__thumb {
+  display: block;
+  height: 64px;
+  margin: 0.35rem auto 0;
+  object-fit: contain;
+  width: 64px;
+}
+
+.trade-card__thumb-fallback {
+  align-items: center;
+  color: #6b7785;
+  display: flex;
+  height: 64px;
+  justify-content: center;
+}
+
+.trade-card__cell-name,
+.trade-card__cell-game {
+  font-size: 0.62rem;
+  line-height: 1.2;
+  overflow: hidden;
+  padding: 0.15rem 0.3rem;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trade-card__cell-name {
+  color: #c6d4df;
+  font-weight: 600;
+}
+
+.trade-card__cell-game {
+  color: #66c0f4;
+  padding-bottom: 0.3rem;
+  text-transform: uppercase;
+}
+
+.trade-card__qty {
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.1rem 0.3rem;
+  position: absolute;
+  right: 0.2rem;
+  top: 0.2rem;
+}
+
+.trade-card__none {
+  color: #6b7785;
+  font-size: 0.78rem;
+  margin: 0;
+}

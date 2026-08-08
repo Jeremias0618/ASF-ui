@@ -3,13 +3,32 @@ import {
   fetchGames,
   fetchSocialStatus,
   fetchSteamInventory,
+  fetchTradeOffers,
   fetchWishlist,
 } from '../api/bot-social';
-import { normalizeInventoryItems } from '../utils/inventory';
+import { normalizeInventoryItems, steamEconomyImageUrl } from '../utils/inventory';
 import { invalidate, query } from './query-cache';
 
 function unwrap(result, botName) {
   return result?.[botName] ?? result;
+}
+
+function mapTradeItem(raw) {
+  const iconPath = raw.IconUrl ?? raw.iconUrl ?? '';
+  const iconPathLarge = raw.IconUrlLarge ?? raw.iconUrlLarge ?? iconPath;
+  return {
+    assetId: String(raw.AssetId ?? raw.assetId ?? ''),
+    appId: Number(raw.AppId ?? raw.appId ?? 0),
+    contextId: String(raw.ContextId ?? raw.contextId ?? ''),
+    amount: Number(raw.Amount ?? raw.amount ?? 1),
+    classId: String(raw.ClassId ?? raw.classId ?? ''),
+    name: raw.Name ?? raw.name ?? '',
+    type: raw.Type ?? raw.type ?? '',
+    game: raw.Game ?? raw.game ?? '',
+    iconUrl: steamEconomyImageUrl(iconPath, '96fx96f'),
+    iconUrlLarge: steamEconomyImageUrl(iconPathLarge, '330x192'),
+    backgroundColor: String(raw.BackgroundColor ?? raw.backgroundColor ?? '').replace(/^#/, ''),
+  };
 }
 
 export function loadInventory(botName, { force = false } = {}) {
@@ -96,6 +115,40 @@ export function loadWishlist(botName, { force = false } = {}) {
   });
 }
 
+export function loadTradeOffers(botName, { force = false } = {}) {
+  return query({
+    resource: 'trades',
+    botName,
+    force,
+    fetcher: async () => {
+      const result = await fetchTradeOffers(botName);
+      const payload = unwrap(result, botName);
+      const list = payload?.Offers ?? payload?.offers ?? [];
+      const offers = list.map(raw => {
+        const partnerSteamId = String(raw.PartnerSteamId ?? raw.partnerSteamId ?? '');
+        const avatarHash = raw.PartnerAvatarHash ?? raw.partnerAvatarHash;
+        return {
+          tradeOfferId: String(raw.TradeOfferId ?? raw.tradeOfferId ?? ''),
+          state: String(raw.State ?? raw.state ?? ''),
+          direction: String(raw.Direction ?? raw.direction ?? ''),
+          waitingFor: String(raw.WaitingFor ?? raw.waitingFor ?? ''),
+          partnerSteamId,
+          partnerName: raw.PartnerName ?? raw.partnerName ?? partnerSteamId,
+          partnerAvatarUrl: avatarHash
+            ? `https://avatars.steamstatic.com/${avatarHash}_medium.jpg`
+            : '',
+          itemsToGive: (raw.ItemsToGive ?? raw.itemsToGive ?? []).map(mapTradeItem),
+          itemsToReceive: (raw.ItemsToReceive ?? raw.itemsToReceive ?? []).map(mapTradeItem),
+        };
+      });
+      return {
+        offers,
+        total: payload?.Total ?? payload?.total ?? offers.length,
+      };
+    },
+  });
+}
+
 export function loadStatus(botName, { force = false } = {}) {
   return query({
     resource: 'status',
@@ -115,4 +168,8 @@ export function invalidateWishlist(botName) {
 
 export function invalidateInventory(botName) {
   invalidate('inventory', botName);
+}
+
+export function invalidateTradeOffers(botName) {
+  invalidate('trades', botName);
 }
