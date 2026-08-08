@@ -1,12 +1,12 @@
 <template>
-  <main v-if="bot" class="main-container bot-social">
+  <main v-if="bot" class="main-container bot-social" :class="{ 'bot-social--inventory': feature === 'inventory' }">
     <header class="bot-social__header">
       <p class="bot-social__eyebrow">{{ bot.viewableName }}</p>
       <h2 class="bot-social__title">{{ title }}</h2>
-      <p class="bot-social__lead">{{ lead }}</p>
+      <p v-if="feature !== 'inventory'" class="bot-social__lead">{{ lead }}</p>
     </header>
 
-    <div class="bot-social__body">
+    <div class="bot-social__body" :class="{ 'bot-social__body--inventory': feature === 'inventory' }">
       <InventoryTab
         v-if="feature === 'inventory'"
         :bot-name="bot.name"
