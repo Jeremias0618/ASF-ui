@@ -31,9 +31,11 @@
     'bot-copy',
   ]);
 
-  const DIALOG_MODAL_ROUTES = new Set([
+      const DIALOG_MODAL_ROUTES = new Set([
     'password-encrypt',
     'password-hash',
+    'bot-delete',
+    'bot-2fa-delete',
   ]);
 
   const MEDIUM_MODAL_ROUTES = new Set([

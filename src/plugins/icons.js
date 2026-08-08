@@ -7,7 +7,7 @@ import {
   faQuestion, faPlus, faSpinner, faKey, faTrash, faCloudDownloadAlt, faSignOutAlt, faAngleDown,
   faLanguage, faGamepad, faClone, faLock, faBookOpen, faCodeBranch, faHourglassEnd, faPaste,
   faHourglassHalf, faHourglassStart, faRedoAlt, faClipboard, faPuzzlePiece, faUndoAlt, faEye,
-  faEyeSlash, faChevronLeft, faChevronRight, faExclamation, faComments, faBan, faSearch, faSun,
+  faEyeSlash, faChevronLeft, faChevronRight, faExclamation, faExclamationTriangle, faComments, faBan, faSearch, faSun,
   faSave, faCopy, faDownload,
 } from '@fortawesome/free-solid-svg-icons';
 
@@ -50,6 +50,7 @@ library.add(
   faBookOpen,
   faPaste,
   faExclamation,
+  faExclamationTriangle,
   faCodeBranch,
   faHourglassEnd,
   faHourglassHalf,

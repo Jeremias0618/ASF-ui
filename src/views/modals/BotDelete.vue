@@ -1,25 +1,44 @@
 <template>
-  <main v-if="bot" class="main-container main-container--bot-profile">
-    <h2 v-tooltip="bot.name" class="title">{{ $t('confirmation-title') }}</h2>
+  <main v-if="bot" class="confirm-danger">
+    <div class="confirm-danger__icon" aria-hidden="true">
+      <FontAwesomeIcon icon="exclamation-triangle"></FontAwesomeIcon>
+    </div>
 
-    <p class="info" v-html="$t('bot-delete-warning', { name: bot.viewableName })"></p>
+    <h2 class="confirm-danger__title">
+      {{ $t('bot-delete-title', { name: bot.viewableName }) }}
+    </h2>
 
-    <div class="form-item">
-      <div class="form-item__confirmation">
-        <label for="input" class="form-item__label" v-html="$t('confirmation', { name: bot.viewableName })"></label>
-        <input id="input" v-model="confirmationText" class="form-item__input" type="text" autocomplete="off">
-      </div>
+    <p class="confirm-danger__body" v-html="$t('bot-delete-body', { name: bot.viewableName })"></p>
 
-      <div class="form-item__buttons form-item__buttons--center">
-        <button class="button button--cancel" :disabled="!confirmed" @click="onDelete">
-          <FontAwesomeIcon v-if="deleting" icon="spinner" spin></FontAwesomeIcon>
-          <span v-else>{{ $t('delete') }}</span>
-        </button>
+    <div class="confirm-danger__confirm">
+      <label for="bot-delete-confirm" class="confirm-danger__label" v-html="$t('confirmation', { name: bot.viewableName })"></label>
+      <input
+        id="bot-delete-confirm"
+        ref="confirmInput"
+        v-model="confirmationText"
+        class="confirm-danger__input"
+        :class="{ 'is-ready': confirmed }"
+        type="text"
+        autocomplete="off"
+        spellcheck="false"
+        :placeholder="bot.viewableName"
+        @keydown.enter.prevent="onEnter"
+      >
+    </div>
 
-        <button class="button button--confirm" @click="$parent.back()">
-          {{ $t('cancel') }}
-        </button>
-      </div>
+    <div class="confirm-danger__actions">
+      <button type="button" class="button confirm-danger__cancel" :disabled="deleting" @click="$parent.back()">
+        {{ $t('cancel') }}
+      </button>
+      <button
+        type="button"
+        class="button confirm-danger__delete"
+        :disabled="!confirmed || deleting"
+        @click="onDelete"
+      >
+        <FontAwesomeIcon v-if="deleting" icon="spinner" spin fixedWidth aria-hidden="true"></FontAwesomeIcon>
+        <span v-else>{{ $t('delete') }}</span>
+      </button>
     </div>
   </main>
 </template>
@@ -46,8 +65,18 @@
     created() {
       if (!this.bot) this.$router.replace({ name: 'bots' });
     },
+    mounted() {
+      this.$nextTick(() => {
+        if (this.$refs.confirmInput) this.$refs.confirmInput.focus();
+      });
+    },
     methods: {
+      onEnter() {
+        if (this.confirmed && !this.deleting) this.onDelete();
+      },
       async onDelete() {
+        if (!this.confirmed || this.deleting) return;
+
         this.deleting = true;
 
         try {
@@ -62,17 +91,3 @@
     },
   };
 </script>
-
-<style lang="scss" scoped>
-  .form-item__label ::v-deep {
-    font-weight: 400;
-    display: block;
-    margin-bottom: 4px;
-    height: inherit;
-    font-size: inherit;
-
-    strong {
-      color: var(--color-theme);
-    }
-  }
-</style>
