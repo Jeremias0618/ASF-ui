@@ -5,7 +5,7 @@
       <button
         type="button"
         class="trade-offers__refresh"
-        :disabled="loading || refreshing"
+        :disabled="loading || refreshing || mutating"
         @click="refresh"
       >
         <FontAwesomeIcon :icon="refreshing ? 'spinner' : 'redo-alt'" :spin="refreshing"></FontAwesomeIcon>
@@ -114,20 +114,45 @@
               </div>
               <p v-else class="trade-card__none">{{ $t('bot-social-trades-no-items') }}</p>
             </section>
+
+            <div class="trade-card__footer">
+              <button
+                type="button"
+                class="trade-card__cancel-link"
+                :disabled="mutating"
+                :aria-label="cancelAria(offer)"
+                @click="askCancel(offer)"
+              >
+                {{ cancelButtonLabel(offer) }}
+              </button>
+            </div>
           </article>
         </li>
       </ul>
     </template>
+
+    <CancelDialog
+      :open="Boolean(pendingCancel)"
+      :partner-name="pendingCancel?.partnerName || ''"
+      :trade-offer-id="pendingCancel?.tradeOfferId || ''"
+      :direction="pendingCancel?.direction || 'sent'"
+      :waiting-for="pendingCancel?.waitingFor || ''"
+      :submitting="mutating"
+      @cancel="pendingCancel = null"
+      @confirm="confirmCancel"
+    ></CancelDialog>
   </div>
 </template>
 
 <script>
-  import { isPluginMissingError } from '../../api/bot-social';
-  import { loadTradeOffers } from '../../cache/bot-social-queries';
+  import { cancelTradeOffer, isPluginMissingError } from '../../api/bot-social';
+  import { invalidateTradeOffers, loadTradeOffers } from '../../cache/bot-social-queries';
   import { resolveLocalData } from '../../cache/load-policy';
+  import CancelDialog from './cancel-dialog.vue';
 
   export default {
     name: 'BotSocialTradeOffersPanel',
+    components: { CancelDialog },
     props: {
       botName: { type: String, required: true },
     },
@@ -135,9 +160,11 @@
       return {
         loading: false,
         refreshing: false,
+        mutating: false,
         error: '',
         offers: [],
         brokenAvatars: {},
+        pendingCancel: null,
         loadToken: 0,
       };
     },
@@ -147,6 +174,7 @@
         handler() {
           this.brokenAvatars = {};
           this.error = '';
+          this.pendingCancel = null;
           this.bootstrap();
         },
       },
@@ -198,7 +226,7 @@
         }
       },
       refresh() {
-        if (this.loading || this.refreshing) return;
+        if (this.loading || this.refreshing || this.mutating) return;
         this.load(true);
       },
       profileUrl(steamId) {
@@ -230,6 +258,51 @@
       },
       giveTitle() {
         return this.$t('bot-social-trades-you-give');
+      },
+      cancelButtonLabel(offer) {
+        return offer.direction === 'received'
+          ? this.$t('bot-social-trades-decline')
+          : this.$t('bot-social-trades-cancel');
+      },
+      cancelAria(offer) {
+        return offer.direction === 'received'
+          ? this.$t('bot-social-trades-decline-aria', { name: offer.partnerName })
+          : this.$t('bot-social-trades-cancel-aria', { name: offer.partnerName });
+      },
+      askCancel(offer) {
+        if (this.mutating) return;
+        this.pendingCancel = offer;
+      },
+      async confirmCancel() {
+        const offer = this.pendingCancel;
+        if (!offer || this.mutating) return;
+        this.mutating = true;
+        try {
+          const result = await cancelTradeOffer(this.botName, {
+            tradeOfferId: offer.tradeOfferId,
+            direction: offer.direction,
+          });
+          const payload = result?.[this.botName] ?? result;
+          if (!payload?.Ok) {
+            this.$error(payload?.Message || this.$t('bot-social-trades-cancel-failed'));
+            return;
+          }
+          this.$success(
+            offer.direction === 'received'
+              ? this.$t('bot-social-trades-decline-success')
+              : this.$t('bot-social-trades-cancel-success'),
+          );
+          this.pendingCancel = null;
+          invalidateTradeOffers(this.botName);
+          await this.load(true);
+        } catch (err) {
+          if (isPluginMissingError(err)) this.$emit('plugin-missing');
+          else if (err?.result?.status === 429 || err?.code === 'RATE_LIMITED') {
+            this.$error(this.$t('bot-social-rate-limited'));
+          } else this.$error(err.message || this.$t('bot-social-trades-cancel-failed'));
+        } finally {
+          this.mutating = false;
+        }
       },
     },
   };

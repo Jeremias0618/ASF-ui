@@ -72,6 +72,13 @@ export function fetchTradeOffers(botName) {
   return get(`${socialBase(botName)}/TradeOffers`);
 }
 
+export function cancelTradeOffer(botName, { tradeOfferId, direction }) {
+  return post(`${socialBase(botName)}/TradeOffers/Cancel`, {
+    TradeOfferId: tradeOfferId,
+    Direction: direction,
+  });
+}
+
 export function isPluginMissingError(err) {
   const status = err?.result?.status ?? err?.response?.status;
   if (status === 404) return true;

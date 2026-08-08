@@ -1556,6 +1556,40 @@
   }
 }
 
+.trade-card__footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0.35rem 0.7rem 0.65rem;
+}
+
+.trade-card__cancel-link {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: #c6d4df;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.82rem;
+  padding: 0.2rem 0;
+  text-align: right;
+  text-decoration: none;
+
+  &:hover:not(:disabled) {
+    color: #fff;
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #66c0f4;
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+}
+
 .trade-card__side {
   border-top: 1px solid rgba(255, 255, 255, 0.06);
   padding: 0.65rem 0.7rem 0.75rem;
