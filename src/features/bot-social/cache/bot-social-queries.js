@@ -39,7 +39,8 @@ export function loadFriends(botName, { force = false } = {}) {
         return {
           steamId,
           name: raw.Name ?? raw.name ?? steamId,
-          relationship: raw.Relationship ?? raw.relationship ?? '',
+          relationship: String(raw.Relationship ?? raw.relationship ?? ''),
+          personaState: String(raw.PersonaState ?? raw.personaState ?? ''),
           avatarUrl: avatarHash
             ? `https://avatars.steamstatic.com/${avatarHash}_medium.jpg`
             : '',
