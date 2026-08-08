@@ -506,6 +506,8 @@
   max-height: 88%;
   max-width: 88%;
   object-fit: contain;
+  // Prefer cached paint; avoid lazy-load delay on an already-visible 5×5 grid.
+  pointer-events: none;
   width: auto;
 }
 

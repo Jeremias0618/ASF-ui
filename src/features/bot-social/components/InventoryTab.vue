@@ -117,8 +117,9 @@
                   class="steam-inv__thumb"
                   :src="item.iconUrl"
                   :alt="item.name"
-                  loading="lazy"
+                  loading="eager"
                   decoding="async"
+                  draggable="false"
                 >
                 <span v-else class="steam-inv__thumb-fallback" aria-hidden="true">?</span>
               </span>
@@ -231,6 +232,7 @@
     isLegacyInventoryShape,
     paginateItems,
   } from '../utils/filter-inventory';
+  import { prefetchInventoryPageIcons } from '../utils/prefetch-images';
 
   export default {
     name: 'BotSocialInventoryTab',
@@ -376,9 +378,19 @@
       filteredItems() {
         if (this.page !== this.pagination.page) this.page = this.pagination.page;
         this.ensureSelectionInFilter();
+        this.warmNearbyIcons();
+      },
+      page() {
+        this.warmNearbyIcons();
       },
     },
     methods: {
+      warmNearbyIcons() {
+        // Browser HTTP cache only — never ASF/IPC. Softens page-change thumbnail flash.
+        this.$nextTick(() => {
+          prefetchInventoryPageIcons(this.filteredItems, this.page, INVENTORY_PAGE_SIZE);
+        });
+      },
       resetViewState() {
         this.selectedId = '';
         this.page = 1;
@@ -406,6 +418,7 @@
           this.items = resolved.data;
           this.ensureSelectionInFilter();
           this.$emit('loaded', { total: this.items.length });
+          this.warmNearbyIcons();
           return;
         }
 
@@ -474,6 +487,7 @@
           }
           this.ensureSelectionInFilter();
           this.$emit('loaded', { total: this.items.length });
+          this.warmNearbyIcons();
         } catch (err) {
           if (token !== this.loadToken) return;
           if (err?.code === 'RATE_LIMITED') {
