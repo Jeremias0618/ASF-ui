@@ -8,9 +8,14 @@ export default {
 
     Vue.use(Snotify, {
       toast: {
-        timeout: 3500,
+        timeout: 3200,
         position: get('settings:notification-position', 'rightBottom'),
         pauseOnHover: true,
+        showProgressBar: true,
+        closeOnClick: true,
+        preventDuplicates: false,
+        bodyMaxLength: 140,
+        titleMaxLength: 32,
       },
     });
 

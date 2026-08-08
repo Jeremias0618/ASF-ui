@@ -32,6 +32,23 @@
           </button>
         </header>
 
+        <nav
+          v-if="navGroups.length"
+          class="commands-help__nav"
+          :aria-label="$t('commands-help-nav-label')"
+        >
+          <button
+            v-for="group in navGroups"
+            :key="`nav-${group.id}`"
+            type="button"
+            class="commands-help__nav-chip"
+            @click="scrollToGroup(group.id)"
+          >
+            <span>{{ $t(`commands-help-category-${group.id}`) }}</span>
+            <span class="commands-help__nav-count">{{ group.commands.length }}</span>
+          </button>
+        </nav>
+
         <div class="commands-help__search">
           <FontAwesomeIcon icon="search" class="commands-help__search-icon" aria-hidden="true"></FontAwesomeIcon>
           <input
@@ -46,13 +63,14 @@
           >
         </div>
 
-        <div class="commands-help__body">
+        <div ref="body" class="commands-help__body">
           <p v-if="!filteredGroups.length" class="commands-help__empty">
             {{ $t('commands-help-empty') }}
           </p>
 
           <section
             v-for="group in filteredGroups"
+            :id="groupAnchorId(group.id)"
             :key="group.id"
             class="commands-help__group"
           >
@@ -67,11 +85,23 @@
                 :key="`${group.id}:${entry.command}`"
                 class="commands-help__item"
               >
-                <div class="commands-help__item-top">
-                  <code class="commands-help__command">{{ entry.command }}</code>
-                  <span v-if="entry.access" class="commands-help__access">{{ entry.access }}</span>
+                <div class="commands-help__item-main">
+                  <div class="commands-help__item-top">
+                    <code class="commands-help__command">{{ entry.command }}</code>
+                    <span v-if="entry.access" class="commands-help__access">{{ entry.access }}</span>
+                  </div>
+                  <p class="commands-help__description">{{ entry.description }}</p>
                 </div>
-                <p class="commands-help__description">{{ entry.description }}</p>
+
+                <button
+                  type="button"
+                  class="commands-help__copy"
+                  :aria-label="$t('commands-help-copy')"
+                  :title="$t('commands-help-copy')"
+                  @click="copyCommand(entry.command)"
+                >
+                  <FontAwesomeIcon icon="clipboard" fixedWidth></FontAwesomeIcon>
+                </button>
               </li>
             </ul>
           </section>
@@ -87,9 +117,10 @@
 </template>
 
 <script>
+  import copy from 'copy-to-clipboard';
   import ModalTransition from '../App/ModalTransition.vue';
   import { lockModalScroll, unlockModalScroll } from '../../utils/modal-transition';
-  import { groupCommandsByCategory } from '../../utils/command-categories';
+  import { getCommandBaseName, groupCommandsByCategory } from '../../utils/command-categories';
 
   export default {
     name: 'CommandsHelpModal',
@@ -125,6 +156,9 @@
       filteredGroups() {
         return groupCommandsByCategory(this.filteredEntries);
       },
+      navGroups() {
+        return groupCommandsByCategory(this.commands);
+      },
       filteredCount() {
         return this.filteredEntries.length;
       },
@@ -143,8 +177,42 @@
       if (this.open) unlockModalScroll();
     },
     methods: {
+      groupAnchorId(groupId) {
+        return `commands-help-group-${groupId}`;
+      },
+      scrollToGroup(groupId) {
+        const scroll = () => {
+          const body = this.$refs.body;
+          const target = body && body.querySelector(`#${this.groupAnchorId(groupId)}`);
+          if (!body || !target) return;
+
+          const bodyRect = body.getBoundingClientRect();
+          const targetRect = target.getBoundingClientRect();
+          const top = body.scrollTop + (targetRect.top - bodyRect.top) - 8;
+
+          body.scrollTo({
+            top: Math.max(0, top),
+            behavior: 'smooth',
+          });
+        };
+
+        // Clear search so the target category is always present in the list.
+        if (this.query) {
+          this.query = '';
+          this.$nextTick(scroll);
+          return;
+        }
+
+        this.$nextTick(scroll);
+      },
       onAfterEnter() {
         if (this.$refs.input) this.$refs.input.focus();
+      },
+      copyCommand(commandSyntax) {
+        const command = getCommandBaseName(commandSyntax);
+        if (!command) return;
+        copy(command);
+        this.$info(this.$t('commands-help-copied', { command }));
       },
       close() {
         this.$emit('close');
@@ -244,6 +312,58 @@
     }
   }
 
+  .commands-help__nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    padding: 0.75rem 1.1rem 0.15rem;
+  }
+
+  .commands-help__nav-chip {
+    align-items: center;
+    background: var(--h2-soft, rgba(127, 140, 160, 0.1));
+    border: 1px solid var(--h2-border, var(--color-border));
+    border-radius: 999px;
+    color: var(--h2-ink, var(--color-text-dark));
+    cursor: pointer;
+    display: inline-flex;
+    font: inherit;
+    font-size: 0.72rem;
+    font-weight: 650;
+    gap: 0.35rem;
+    line-height: 1.2;
+    padding: 0.35rem 0.65rem;
+    transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+
+    &:hover,
+    &:focus-visible {
+      background: var(--color-theme, #3b82f6);
+      border-color: var(--color-theme, #3b82f6);
+      color: #fff;
+      outline: none;
+
+      .commands-help__nav-count {
+        background: rgba(255, 255, 255, 0.22);
+        color: #fff;
+      }
+    }
+  }
+
+  .commands-help__nav-count {
+    background: rgba(16, 24, 40, 0.08);
+    border-radius: 999px;
+    color: var(--h2-muted, #667085);
+    font-size: 0.66rem;
+    font-weight: 700;
+    min-width: 1.15rem;
+    padding: 0.08rem 0.35rem;
+    text-align: center;
+
+    .app--dark-mode & {
+      background: rgba(255, 255, 255, 0.1);
+    }
+  }
+
   .commands-help__search {
     align-items: center;
     border-bottom: 1px solid var(--h2-border, var(--color-border));
@@ -298,6 +418,10 @@
     text-align: center;
   }
 
+  .commands-help__group {
+    scroll-margin-top: 0.5rem;
+  }
+
   .commands-help__group + .commands-help__group {
     margin-top: 1.15rem;
   }
@@ -334,10 +458,18 @@
   }
 
   .commands-help__item {
+    align-items: flex-start;
     background: var(--h2-soft, rgba(127, 140, 160, 0.08));
     border: 1px solid transparent;
     border-radius: 0.65rem;
-    padding: 0.65rem 0.75rem;
+    display: flex;
+    gap: 0.55rem;
+    padding: 0.65rem 0.65rem 0.65rem 0.75rem;
+  }
+
+  .commands-help__item-main {
+    flex: 1;
+    min-width: 0;
   }
 
   .commands-help__item-top {
@@ -346,6 +478,28 @@
     flex-wrap: wrap;
     gap: 0.45rem 0.65rem;
     margin-bottom: 0.25rem;
+  }
+
+  .commands-help__copy {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: 0.45rem;
+    color: var(--h2-muted, #667085);
+    cursor: pointer;
+    display: inline-flex;
+    flex-shrink: 0;
+    height: 1.9rem;
+    justify-content: center;
+    margin-top: 0.05rem;
+    width: 1.9rem;
+
+    &:hover,
+    &:focus-visible {
+      background: rgba(59, 130, 246, 0.12);
+      color: var(--color-theme, #3b82f6);
+      outline: none;
+    }
   }
 
   .commands-help__command {
