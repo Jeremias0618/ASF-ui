@@ -3,35 +3,43 @@
     <PluginMissing v-if="pluginMissing"></PluginMissing>
 
     <template v-else>
-      <div v-if="loading" class="bot-social__state">
+      <div class="bot-social__toolbar">
+        <p class="bot-social__stat">{{ $t('bot-social-wishlist-total', { n: items.length }) }}</p>
+        <button
+          type="button"
+          class="button button--link"
+          :disabled="loading || refreshing || mutating"
+          @click="refresh"
+        >
+          <FontAwesomeIcon v-if="refreshing" icon="spinner" spin></FontAwesomeIcon>
+          <span v-else>{{ $t('bot-social-refresh') }}</span>
+        </button>
+      </div>
+
+      <form class="bot-social__form" @submit.prevent="onAdd">
+        <input
+          v-model.trim="appIdInput"
+          class="form-item__input"
+          type="text"
+          inputmode="numeric"
+          :placeholder="$t('bot-social-wishlist-add-placeholder')"
+          :disabled="mutating"
+        >
+        <button type="submit" class="button button--confirm" :disabled="!parsedAppId || mutating">
+          <FontAwesomeIcon v-if="mutating" icon="spinner" spin></FontAwesomeIcon>
+          <span v-else>{{ $t('bot-social-wishlist-add') }}</span>
+        </button>
+      </form>
+
+      <div v-if="loading && !items.length" class="bot-social__state">
         <FontAwesomeIcon icon="spinner" spin></FontAwesomeIcon>
         <span>{{ $t('bot-social-loading') }}</span>
       </div>
-      <div v-else-if="error" class="bot-social__state bot-social__state--error">{{ error }}</div>
-
+      <div v-else-if="error && !items.length" class="bot-social__state bot-social__state--error">{{ error }}</div>
       <template v-else>
-        <div class="bot-social__toolbar">
-          <p class="bot-social__stat">{{ $t('bot-social-wishlist-total', { n: items.length }) }}</p>
-          <button type="button" class="button button--link" @click="reload">{{ $t('bot-social-refresh') }}</button>
-        </div>
-
-        <form class="bot-social__form" @submit.prevent="onAdd">
-          <input
-            v-model.trim="appIdInput"
-            class="form-item__input"
-            type="text"
-            inputmode="numeric"
-            :placeholder="$t('bot-social-wishlist-add-placeholder')"
-            :disabled="mutating"
-          >
-          <button type="submit" class="button button--confirm" :disabled="!parsedAppId || mutating">
-            <FontAwesomeIcon v-if="mutating" icon="spinner" spin></FontAwesomeIcon>
-            <span v-else>{{ $t('bot-social-wishlist-add') }}</span>
-          </button>
-        </form>
-
+        <p v-if="error" class="bot-social__inline-error">{{ error }}</p>
         <div v-if="!items.length" class="bot-social__state">{{ $t('bot-social-wishlist-empty') }}</div>
-        <ul v-else class="bot-social-list">
+        <ul v-else class="bot-social-list" :class="{ 'is-refreshing': refreshing }">
           <li v-for="item in items" :key="item.appId" class="bot-social-list__row">
             <div>
               <strong>{{ item.name }}</strong>
@@ -54,8 +62,10 @@
 
 <script>
   import {
-    addWishlist, fetchWishlist, isPluginMissingError, removeWishlist,
+    addWishlist, isPluginMissingError, removeWishlist,
   } from '../api/bot-social';
+  import { invalidateWishlist, loadWishlist } from '../cache/bot-social-queries';
+  import { peek } from '../cache/query-cache';
   import PluginMissing from './PluginMissing.vue';
 
   export default {
@@ -68,6 +78,7 @@
     data() {
       return {
         loading: false,
+        refreshing: false,
         mutating: false,
         error: '',
         items: [],
@@ -81,35 +92,64 @@
       },
     },
     watch: {
-      botName: { immediate: true, handler() { if (!this.pluginMissing) this.reload(); } },
-      pluginMissing(value) { if (!value) this.reload(); },
+      botName: {
+        immediate: true,
+        handler(name) {
+          this.hydrateFromCache(name);
+          if (!this.pluginMissing) this.load(false);
+        },
+      },
+      pluginMissing(value) {
+        if (!value) this.load(false);
+      },
     },
     methods: {
-      unwrap(result) {
-        return result?.[this.botName] ?? result;
+      hydrateFromCache(botName) {
+        const cached = peek('wishlist', botName);
+        if (cached?.data?.items) {
+          this.items = cached.data.items;
+          this.$emit('loaded', { total: cached.data.total ?? this.items.length });
+        }
       },
-      async reload() {
+      formatError(err) {
+        const msg = err?.message || String(err);
+        return /wishlist|503|unavailable|steam/i.test(msg)
+          ? this.$t('bot-social-wishlist-unavailable')
+          : msg;
+      },
+      async load(force) {
         if (this.pluginMissing) return;
-        this.loading = true;
-        this.error = '';
+        const hasData = this.items.length > 0;
+        this.loading = !hasData;
+        this.refreshing = force && hasData;
+        if (force) this.error = '';
+
         try {
-          const result = await fetchWishlist(this.botName);
-          const payload = this.unwrap(result);
-          const list = payload?.Items ?? payload?.items ?? [];
-          this.items = list.map(item => ({
-            appId: String(item.AppId ?? item.appId ?? ''),
-            name: item.Name ?? item.name ?? `App ${item.AppId ?? item.appId}`,
-          }));
-          this.$emit('loaded', { total: payload?.Total ?? payload?.total ?? this.items.length });
+          const result = await loadWishlist(this.botName, { force });
+          this.items = result.data?.items || [];
+          if (result.rateLimited) this.$error(this.$t('bot-social-rate-limited'));
+          else if (result.error && result.stale) this.error = this.formatError(result.error);
+          else this.error = '';
+          this.$emit('loaded', { total: result.data?.total ?? this.items.length });
         } catch (err) {
           if (isPluginMissingError(err)) {
             this.$emit('plugin-missing');
             return;
           }
-          this.error = err.message || String(err);
+          if (err?.code === 'RATE_LIMITED') this.$error(this.$t('bot-social-rate-limited'));
+          else if (!hasData) {
+            this.error = this.formatError(err);
+            this.items = [];
+            this.$emit('loaded', { total: null });
+          } else this.error = this.formatError(err);
         } finally {
           this.loading = false;
+          this.refreshing = false;
         }
+      },
+      refresh() {
+        if (this.loading || this.refreshing || this.mutating) return;
+        this.load(true);
       },
       async onAdd() {
         if (!this.parsedAppId || this.mutating) return;
@@ -118,7 +158,8 @@
           await addWishlist(this.botName, [this.parsedAppId]);
           this.$success(this.$t('bot-social-wishlist-add-success'));
           this.appIdInput = '';
-          await this.reload();
+          invalidateWishlist(this.botName);
+          await this.load(true);
         } catch (err) {
           if (isPluginMissingError(err)) this.$emit('plugin-missing');
           else this.$error(err.message || String(err));
@@ -134,7 +175,8 @@
         try {
           await removeWishlist(this.botName, [Number(item.appId)]);
           this.$success(this.$t('bot-social-wishlist-remove-success'));
-          await this.reload();
+          invalidateWishlist(this.botName);
+          await this.load(true);
         } catch (err) {
           if (isPluginMissingError(err)) this.$emit('plugin-missing');
           else this.$error(err.message || String(err));

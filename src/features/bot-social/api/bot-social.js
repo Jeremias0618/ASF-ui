@@ -1,8 +1,10 @@
 import { get, post } from '../../../plugins/http';
+import { STEAM_APP_ID, STEAM_COMMUNITY_CONTEXT_ID } from '../constants/steam-inventory';
 
 const inventoryBase = botName => `bot/${encodeURIComponent(botName)}/Inventory`;
 const socialBase = botName => `BotSocial/${encodeURIComponent(botName)}`;
 
+/** @deprecated Prefer fetchSteamInventory — summary scrapes /my/inventory and hits Steam rate limits. */
 export function fetchInventorySummary(botName) {
   return get(inventoryBase(botName));
 }
@@ -10,6 +12,11 @@ export function fetchInventorySummary(botName) {
 export function fetchInventoryContext(botName, appId, contextId, language) {
   const params = language ? { language } : {};
   return get(`${inventoryBase(botName)}/${appId}/${contextId}`, params);
+}
+
+/** Steam-only inventory (AppID 753 / context 6) via ASF SteamKit path — one targeted request. */
+export function fetchSteamInventory(botName, language) {
+  return fetchInventoryContext(botName, STEAM_APP_ID, STEAM_COMMUNITY_CONTEXT_ID, language);
 }
 
 export function fetchSocialStatus(botName) {

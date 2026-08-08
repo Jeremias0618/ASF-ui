@@ -3,34 +3,42 @@
     <PluginMissing v-if="pluginMissing"></PluginMissing>
 
     <template v-else>
-      <div v-if="loading" class="bot-social__state">
+      <div class="bot-social__toolbar">
+        <p class="bot-social__stat">{{ $t('bot-social-friends-total', { n: friends.length }) }}</p>
+        <button
+          type="button"
+          class="button button--link"
+          :disabled="loading || refreshing || mutating"
+          @click="refresh"
+        >
+          <FontAwesomeIcon v-if="refreshing" icon="spinner" spin></FontAwesomeIcon>
+          <span v-else>{{ $t('bot-social-refresh') }}</span>
+        </button>
+      </div>
+
+      <form class="bot-social__form" @submit.prevent="onAdd">
+        <input
+          v-model.trim="addTarget"
+          class="form-item__input"
+          type="text"
+          :placeholder="$t('bot-social-friends-add-placeholder')"
+          :disabled="mutating"
+        >
+        <button type="submit" class="button button--confirm" :disabled="!addTarget || mutating">
+          <FontAwesomeIcon v-if="mutating" icon="spinner" spin></FontAwesomeIcon>
+          <span v-else>{{ $t('bot-social-friends-add') }}</span>
+        </button>
+      </form>
+
+      <div v-if="loading && !friends.length" class="bot-social__state">
         <FontAwesomeIcon icon="spinner" spin></FontAwesomeIcon>
         <span>{{ $t('bot-social-loading') }}</span>
       </div>
-      <div v-else-if="error" class="bot-social__state bot-social__state--error">{{ error }}</div>
-
+      <div v-else-if="error && !friends.length" class="bot-social__state bot-social__state--error">{{ error }}</div>
       <template v-else>
-        <div class="bot-social__toolbar">
-          <p class="bot-social__stat">{{ $t('bot-social-friends-total', { n: friends.length }) }}</p>
-          <button type="button" class="button button--link" @click="reload">{{ $t('bot-social-refresh') }}</button>
-        </div>
-
-        <form class="bot-social__form" @submit.prevent="onAdd">
-          <input
-            v-model.trim="addTarget"
-            class="form-item__input"
-            type="text"
-            :placeholder="$t('bot-social-friends-add-placeholder')"
-            :disabled="mutating"
-          >
-          <button type="submit" class="button button--confirm" :disabled="!addTarget || mutating">
-            <FontAwesomeIcon v-if="mutating" icon="spinner" spin></FontAwesomeIcon>
-            <span v-else>{{ $t('bot-social-friends-add') }}</span>
-          </button>
-        </form>
-
+        <p v-if="error" class="bot-social__inline-error">{{ error }}</p>
         <div v-if="!friends.length" class="bot-social__state">{{ $t('bot-social-friends-empty') }}</div>
-        <ul v-else class="bot-social-list">
+        <ul v-else class="bot-social-list" :class="{ 'is-refreshing': refreshing }">
           <li v-for="friend in filteredFriends" :key="friend.steamId" class="bot-social-list__row">
             <div class="bot-social-list__identity">
               <img
@@ -63,8 +71,10 @@
 
 <script>
   import {
-    addFriends, fetchFriends, isPluginMissingError, removeFriends,
+    addFriends, isPluginMissingError, removeFriends,
   } from '../api/bot-social';
+  import { invalidateFriends, loadFriends } from '../cache/bot-social-queries';
+  import { peek } from '../cache/query-cache';
   import PluginMissing from './PluginMissing.vue';
 
   export default {
@@ -77,6 +87,7 @@
     data() {
       return {
         loading: false,
+        refreshing: false,
         mutating: false,
         error: '',
         friends: [],
@@ -95,44 +106,57 @@
       },
     },
     watch: {
-      botName: { immediate: true, handler() { if (!this.pluginMissing) this.reload(); } },
-      pluginMissing(value) { if (!value) this.reload(); },
+      botName: {
+        immediate: true,
+        handler(name) {
+          this.hydrateFromCache(name);
+          if (!this.pluginMissing) this.load(false);
+        },
+      },
+      pluginMissing(value) {
+        if (!value) this.load(false);
+      },
     },
     methods: {
-      mapFriend(raw) {
-        const steamId = String(raw.SteamId ?? raw.steamId ?? '');
-        const avatarHash = raw.AvatarHash ?? raw.avatarHash;
-        return {
-          steamId,
-          name: raw.Name ?? raw.name ?? steamId,
-          relationship: raw.Relationship ?? raw.relationship ?? '',
-          avatarUrl: avatarHash
-            ? `https://avatars.steamstatic.com/${avatarHash}_medium.jpg`
-            : '',
-        };
+      hydrateFromCache(botName) {
+        const cached = peek('friends', botName);
+        if (cached?.data?.friends) {
+          this.friends = cached.data.friends;
+          this.$emit('loaded', { total: cached.data.total ?? this.friends.length });
+        }
       },
-      unwrap(result) {
-        return result?.[this.botName] ?? result;
-      },
-      async reload() {
+      async load(force) {
         if (this.pluginMissing) return;
-        this.loading = true;
-        this.error = '';
+        const hasData = this.friends.length > 0;
+        this.loading = !hasData;
+        this.refreshing = force && hasData;
+        if (force) this.error = '';
+
         try {
-          const result = await fetchFriends(this.botName);
-          const payload = this.unwrap(result);
-          const list = payload?.Friends ?? payload?.friends ?? [];
-          this.friends = list.map(this.mapFriend);
-          this.$emit('loaded', { total: payload?.Total ?? payload?.total ?? this.friends.length });
+          const result = await loadFriends(this.botName, { force });
+          this.friends = result.data?.friends || [];
+          if (result.rateLimited) this.$error(this.$t('bot-social-rate-limited'));
+          else if (result.error && result.stale) this.error = result.error.message || String(result.error);
+          else this.error = '';
+          this.$emit('loaded', { total: result.data?.total ?? this.friends.length });
         } catch (err) {
           if (isPluginMissingError(err)) {
             this.$emit('plugin-missing');
             return;
           }
-          this.error = err.message || String(err);
+          if (err?.code === 'RATE_LIMITED') this.$error(this.$t('bot-social-rate-limited'));
+          else if (!hasData) {
+            this.error = err.message || String(err);
+            this.friends = [];
+          } else this.error = err.message || String(err);
         } finally {
           this.loading = false;
+          this.refreshing = false;
         }
+      },
+      refresh() {
+        if (this.loading || this.refreshing || this.mutating) return;
+        this.load(true);
       },
       async onAdd() {
         if (!this.addTarget || this.mutating) return;
@@ -141,7 +165,8 @@
           await addFriends(this.botName, [this.addTarget]);
           this.$success(this.$t('bot-social-friends-add-success'));
           this.addTarget = '';
-          await this.reload();
+          invalidateFriends(this.botName);
+          await this.load(true);
         } catch (err) {
           if (isPluginMissingError(err)) this.$emit('plugin-missing');
           else this.$error(err.message || String(err));
@@ -157,7 +182,8 @@
         try {
           await removeFriends(this.botName, [friend.steamId]);
           this.$success(this.$t('bot-social-friends-remove-success'));
-          await this.reload();
+          invalidateFriends(this.botName);
+          await this.load(true);
         } catch (err) {
           if (isPluginMissingError(err)) this.$emit('plugin-missing');
           else this.$error(err.message || String(err));

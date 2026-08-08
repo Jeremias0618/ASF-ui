@@ -1,76 +1,54 @@
 <template>
   <div class="bot-social-tab">
-    <div v-if="loading" class="bot-social__state">
+    <div class="bot-social__toolbar">
+      <div>
+        <p class="bot-social__stat">{{ $t('bot-social-inventory-steam-total', { n: items.length }) }}</p>
+        <p class="bot-social__hint">{{ $t('bot-social-inventory-steam-hint') }}</p>
+      </div>
+      <div class="bot-social__toolbar-actions">
+        <input
+          v-model.trim="query"
+          class="form-item__input bot-social__search"
+          type="search"
+          :placeholder="$t('bot-social-search')"
+        >
+        <button
+          type="button"
+          class="button button--link"
+          :disabled="loading || refreshing"
+          @click="refresh"
+        >
+          <FontAwesomeIcon v-if="refreshing" icon="spinner" spin></FontAwesomeIcon>
+          <span v-else>{{ $t('bot-social-refresh') }}</span>
+        </button>
+      </div>
+    </div>
+
+    <div v-if="loading && !items.length" class="bot-social__state">
       <FontAwesomeIcon icon="spinner" spin></FontAwesomeIcon>
       <span>{{ $t('bot-social-loading') }}</span>
     </div>
-
-    <div v-else-if="error" class="bot-social__state bot-social__state--error">{{ error }}</div>
-
+    <div v-else-if="error && !items.length" class="bot-social__state bot-social__state--error">{{ error }}</div>
     <template v-else>
-      <div class="bot-social__toolbar">
-        <p class="bot-social__stat">{{ $t('bot-social-inventory-apps', { n: apps.length }) }}</p>
-        <button type="button" class="button button--link" :disabled="loading" @click="reload">
-          {{ $t('bot-social-refresh') }}
-        </button>
-      </div>
-
-      <div v-if="!apps.length" class="bot-social__state">{{ $t('bot-social-inventory-empty') }}</div>
-
-      <div v-else class="bot-social-inventory">
-        <aside class="bot-social-inventory__apps">
-          <button
-            v-for="app in apps"
-            :key="app.appId"
-            type="button"
-            class="bot-social-inventory__app"
-            :class="{ 'is-active': selectedAppId === app.appId }"
-            @click="selectApp(app)"
-          >
-            <span class="bot-social-inventory__app-name">{{ app.name }}</span>
-            <span class="bot-social-inventory__app-meta">{{ app.totalAssets }}</span>
-          </button>
-        </aside>
-
-        <section class="bot-social-inventory__detail">
-          <div v-if="selectedApp" class="bot-social-inventory__contexts">
-            <button
-              v-for="ctx in selectedApp.contexts"
-              :key="ctx.contextId"
-              type="button"
-              class="bot-social-inventory__context"
-              :class="{ 'is-active': selectedContextId === ctx.contextId }"
-              @click="selectContext(ctx)"
-            >
-              {{ ctx.name }} ({{ ctx.assetsCount }})
-            </button>
+      <p v-if="error" class="bot-social__inline-error">{{ error }}</p>
+      <div v-if="!items.length" class="bot-social__state">{{ $t('bot-social-inventory-empty') }}</div>
+      <div v-else-if="!filteredItems.length" class="bot-social__state">{{ $t('bot-social-inventory-items-empty') }}</div>
+      <ul v-else class="bot-social-list" :class="{ 'is-refreshing': refreshing }">
+        <li v-for="item in filteredItems" :key="item.id" class="bot-social-list__row">
+          <div>
+            <strong>{{ item.name }}</strong>
+            <span v-if="item.type" class="bot-social-list__muted">{{ item.type }}</span>
           </div>
-
-          <div v-if="itemsLoading" class="bot-social__state">
-            <FontAwesomeIcon icon="spinner" spin></FontAwesomeIcon>
-          </div>
-          <div v-else-if="itemsError" class="bot-social__state bot-social__state--error">{{ itemsError }}</div>
-          <div v-else-if="!items.length && selectedContextId" class="bot-social__state">
-            {{ $t('bot-social-inventory-items-empty') }}
-          </div>
-          <ul v-else class="bot-social-list">
-            <li v-for="item in filteredItems" :key="item.id" class="bot-social-list__row">
-              <div>
-                <strong>{{ item.name }}</strong>
-                <span v-if="item.type" class="bot-social-list__muted">{{ item.type }}</span>
-              </div>
-              <span class="bot-social-list__badge">×{{ item.amount }}</span>
-            </li>
-          </ul>
-        </section>
-      </div>
+          <span class="bot-social-list__badge">×{{ item.amount }}</span>
+        </li>
+      </ul>
     </template>
   </div>
 </template>
 
 <script>
-  import { fetchInventoryContext, fetchInventorySummary } from '../api/bot-social';
-  import { normalizeInventoryItems, normalizeInventorySummary } from '../utils/inventory';
+  import { loadInventory } from '../cache/bot-social-queries';
+  import { peek } from '../cache/query-cache';
 
   export default {
     name: 'BotSocialInventoryTab',
@@ -80,74 +58,71 @@
     data() {
       return {
         loading: false,
+        refreshing: false,
         error: '',
-        apps: [],
-        selectedAppId: '',
-        selectedContextId: '',
         items: [],
-        itemsLoading: false,
-        itemsError: '',
+        query: '',
       };
     },
     computed: {
-      selectedApp() {
-        return this.apps.find(app => app.appId === this.selectedAppId) || null;
-      },
       filteredItems() {
-        return this.items;
+        const q = this.query.toLowerCase();
+        if (!q) return this.items;
+        return this.items.filter(item => (
+          item.name.toLowerCase().includes(q)
+          || (item.type && item.type.toLowerCase().includes(q))
+          || item.classId.includes(q)
+        ));
       },
     },
     watch: {
       botName: {
         immediate: true,
-        handler() {
-          this.reload();
+        handler(name) {
+          this.hydrateFromCache(name);
+          this.load(false);
         },
       },
     },
     methods: {
-      async reload() {
-        this.loading = true;
-        this.error = '';
-        this.items = [];
-        this.selectedContextId = '';
+      hydrateFromCache(botName) {
+        const cached = peek('inventory', botName);
+        if (cached?.data) this.items = cached.data;
+      },
+      async load(force) {
+        const hasData = this.items.length > 0;
+        this.loading = !hasData;
+        this.refreshing = force && hasData;
+        if (force) this.error = '';
 
         try {
-          const result = await fetchInventorySummary(this.botName);
-          this.apps = normalizeInventorySummary(result, this.botName);
-          if (this.apps.length) {
-            await this.selectApp(this.apps[0]);
+          const result = await loadInventory(this.botName, { force });
+          this.items = result.data || [];
+          if (result.rateLimited) {
+            this.$error(this.$t('bot-social-rate-limited'));
+          } else if (result.error && result.stale) {
+            this.error = result.error.message || String(result.error);
           } else {
-            this.selectedAppId = '';
+            this.error = '';
           }
+          this.$emit('loaded', { total: this.items.length });
         } catch (err) {
-          this.error = err.message || String(err);
-          this.apps = [];
+          if (err?.code === 'RATE_LIMITED') {
+            this.$error(this.$t('bot-social-rate-limited'));
+          } else if (!hasData) {
+            this.error = err.message || String(err);
+            this.items = [];
+          } else {
+            this.error = err.message || String(err);
+          }
         } finally {
           this.loading = false;
+          this.refreshing = false;
         }
       },
-      async selectApp(app) {
-        this.selectedAppId = app.appId;
-        this.items = [];
-        this.selectedContextId = '';
-        const first = app.contexts[0];
-        if (first) await this.selectContext(first);
-      },
-      async selectContext(ctx) {
-        this.selectedContextId = ctx.contextId;
-        this.itemsLoading = true;
-        this.itemsError = '';
-        this.items = [];
-
-        try {
-          const result = await fetchInventoryContext(this.botName, this.selectedAppId, ctx.contextId);
-          this.items = normalizeInventoryItems(result, this.botName);
-        } catch (err) {
-          this.itemsError = err.message || String(err);
-        } finally {
-          this.itemsLoading = false;
-        }
+      refresh() {
+        if (this.loading || this.refreshing) return;
+        this.load(true);
       },
     },
   };

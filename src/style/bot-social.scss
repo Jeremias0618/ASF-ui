@@ -95,18 +95,44 @@
 }
 
 .bot-social__toolbar {
-  align-items: center;
+  align-items: flex-start;
   display: flex;
   flex-wrap: wrap;
   gap: 0.65rem;
+  justify-content: space-between;
+}
+
+.bot-social__toolbar-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
 }
 
 .bot-social__stat {
   color: var(--h2-muted-2, var(--color-text));
-  flex: 1 1 auto;
   font-size: 0.875rem;
   font-weight: 600;
   margin: 0;
+}
+
+.bot-social__hint {
+  color: var(--h2-muted, var(--color-text-disabled));
+  font-size: 0.78rem;
+  line-height: 1.4;
+  margin: 0.2rem 0 0;
+}
+
+.bot-social__inline-error {
+  color: var(--color-button-cancel, #e11d48);
+  font-size: 0.8rem;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.bot-social-list.is-refreshing {
+  opacity: 0.72;
+  pointer-events: none;
 }
 
 .bot-social__search {

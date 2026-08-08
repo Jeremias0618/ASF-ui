@@ -1,23 +1,7 @@
-export function normalizeInventorySummary(result, botName) {
-  const raw = result?.[botName] ?? result;
-  if (!raw || typeof raw !== 'object') return [];
-
-  return Object.entries(raw).map(([appId, appData]) => {
-    const contexts = Object.entries(appData?.Contexts || appData?.contexts || {}).map(([contextId, ctx]) => ({
-      contextId: String(contextId),
-      name: ctx?.Name || ctx?.name || `Context ${contextId}`,
-      assetsCount: ctx?.AssetCount ?? ctx?.AssetsCount ?? ctx?.assetCount ?? 0,
-    }));
-
-    return {
-      appId: String(appId),
-      name: appData?.Name || appData?.name || `App ${appId}`,
-      contexts,
-      totalAssets: contexts.reduce((sum, c) => sum + (Number(c.assetsCount) || 0), 0),
-    };
-  }).sort((a, b) => a.name.localeCompare(b.name));
-}
-
+/**
+ * Normalize ASF IPC inventory items for one bot.
+ * Prefer GET /Api/Bot/{bot}/Inventory/753/6 (SteamKit path) over the HTML summary scrape.
+ */
 export function normalizeInventoryItems(result, botName) {
   const payload = result?.[botName] ?? result;
   const assets = payload?.Assets || payload?.assets || [];
@@ -45,4 +29,52 @@ export function normalizeInventoryItems(result, botName) {
       classId: String(classId || ''),
     };
   });
+}
+
+/**
+ * @deprecated Summary scrape hits /my/inventory and is rate-limit prone.
+ * Kept for reference / tests; InventoryTab uses Steam-only context fetch.
+ */
+export function normalizeInventorySummary(result, botName) {
+  if (result == null || typeof result !== 'object') {
+    return { apps: [], unavailable: true };
+  }
+
+  const hasBotKey = Object.prototype.hasOwnProperty.call(result, botName)
+    || Object.keys(result).some(key => key.toLowerCase() === String(botName).toLowerCase());
+
+  let raw = result[botName];
+  if (raw === undefined) {
+    const matchKey = Object.keys(result).find(key => key.toLowerCase() === String(botName).toLowerCase());
+    raw = matchKey !== undefined ? result[matchKey] : undefined;
+  }
+
+  if (hasBotKey && raw == null) {
+    return { apps: [], unavailable: true };
+  }
+
+  if (raw == null || typeof raw !== 'object' || Array.isArray(raw)) {
+    return { apps: [], unavailable: false };
+  }
+
+  const apps = Object.entries(raw).map(([appId, appData]) => {
+    if (!appData || typeof appData !== 'object') {
+      return null;
+    }
+
+    const contexts = Object.entries(appData.Contexts || appData.contexts || appData.rgContexts || {}).map(([contextId, ctx]) => ({
+      contextId: String(contextId),
+      name: ctx?.Name || ctx?.name || `Context ${contextId}`,
+      assetsCount: ctx?.AssetCount ?? ctx?.AssetsCount ?? ctx?.asset_count ?? ctx?.assetCount ?? 0,
+    }));
+
+    return {
+      appId: String(appId),
+      name: appData.Name || appData.name || `App ${appId}`,
+      contexts,
+      totalAssets: contexts.reduce((sum, c) => sum + (Number(c.assetsCount) || 0), 0),
+    };
+  }).filter(Boolean).sort((a, b) => a.name.localeCompare(b.name));
+
+  return { apps, unavailable: false };
 }

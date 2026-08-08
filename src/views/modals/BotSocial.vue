@@ -23,23 +23,28 @@
     </nav>
 
     <div class="bot-social__body">
-      <InventoryTab v-show="activeTab === 'inventory'" :bot-name="bot.name"></InventoryTab>
+      <!-- Keep mounting one tab; cache manager avoids refetch when returning -->
+      <InventoryTab
+        v-if="activeTab === 'inventory'"
+        :bot-name="bot.name"
+        @loaded="onInventoryLoaded"
+      ></InventoryTab>
       <FriendsTab
-        v-show="activeTab === 'friends'"
+        v-else-if="activeTab === 'friends'"
         :bot-name="bot.name"
         :plugin-missing="pluginMissing"
         @plugin-missing="pluginMissing = true"
         @loaded="onFriendsLoaded"
       ></FriendsTab>
       <GamesTab
-        v-show="activeTab === 'games'"
+        v-else-if="activeTab === 'games'"
         :bot-name="bot.name"
         :plugin-missing="pluginMissing"
         @plugin-missing="pluginMissing = true"
         @loaded="onGamesLoaded"
       ></GamesTab>
       <WishlistTab
-        v-show="activeTab === 'wishlist'"
+        v-else-if="activeTab === 'wishlist'"
         :bot-name="bot.name"
         :plugin-missing="pluginMissing"
         @plugin-missing="pluginMissing = true"
@@ -54,7 +59,9 @@
   import GamesTab from '../../features/bot-social/components/GamesTab.vue';
   import InventoryTab from '../../features/bot-social/components/InventoryTab.vue';
   import WishlistTab from '../../features/bot-social/components/WishlistTab.vue';
-  import { fetchSocialStatus, isPluginMissingError } from '../../features/bot-social/api/bot-social';
+  import { isPluginMissingError } from '../../features/bot-social/api/bot-social';
+  import { loadStatus } from '../../features/bot-social/cache/bot-social-queries';
+  import { invalidateBot, peek } from '../../features/bot-social/cache/query-cache';
 
   export default {
     name: 'BotSocial',
@@ -65,9 +72,11 @@
       return {
         activeTab: 'inventory',
         pluginMissing: false,
+        inventoryTotal: null,
         friendsTotal: null,
         gamesTotal: null,
         wishlistTotal: null,
+        lastBotName: '',
       };
     },
     computed: {
@@ -76,11 +85,26 @@
       },
       tabs() {
         return [
-          { id: 'inventory', label: this.$t('bot-social-tab-inventory'), badge: null },
+          { id: 'inventory', label: this.$t('bot-social-tab-inventory'), badge: this.inventoryTotal },
           { id: 'friends', label: this.$t('bot-social-tab-friends'), badge: this.friendsTotal },
           { id: 'games', label: this.$t('bot-social-tab-games'), badge: this.gamesTotal },
           { id: 'wishlist', label: this.$t('bot-social-tab-wishlist'), badge: this.wishlistTotal },
         ];
+      },
+    },
+    watch: {
+      'bot.name': {
+        immediate: true,
+        handler(name, previous) {
+          if (!name) return;
+          if (previous && previous !== name) {
+            // Keep previous bot cache; isolate by key. Reset local badges for the new bot.
+            this.resetBadgesFromCache(name);
+          } else if (!this.lastBotName) {
+            this.resetBadgesFromCache(name);
+          }
+          this.lastBotName = name;
+        },
       },
     },
     created() {
@@ -90,14 +114,30 @@
       }
       this.probePlugin();
     },
+    beforeDestroy() {
+      // Do not wipe cache on modal close — reopening the same bot should reuse TTL.
+    },
     methods: {
+      resetBadgesFromCache(botName) {
+        const inventory = peek('inventory', botName);
+        const friends = peek('friends', botName);
+        const games = peek('games', botName);
+        const wishlist = peek('wishlist', botName);
+        this.inventoryTotal = inventory?.data ? inventory.data.length : null;
+        this.friendsTotal = friends?.data?.total ?? null;
+        this.gamesTotal = games?.data?.total ?? null;
+        this.wishlistTotal = wishlist?.data?.total ?? null;
+      },
       async probePlugin() {
         try {
-          await fetchSocialStatus(this.bot.name);
+          await loadStatus(this.bot.name, { force: false });
           this.pluginMissing = false;
         } catch (err) {
           this.pluginMissing = isPluginMissingError(err);
         }
+      },
+      onInventoryLoaded({ total }) {
+        this.inventoryTotal = total;
       },
       onFriendsLoaded({ total }) {
         this.friendsTotal = total;
@@ -107,6 +147,10 @@
       },
       onWishlistLoaded({ total }) {
         this.wishlistTotal = total;
+      },
+      // Exposed for rare hard-reset needs (logout etc.)
+      clearBotCache() {
+        if (this.bot?.name) invalidateBot(this.bot.name);
       },
     },
   };

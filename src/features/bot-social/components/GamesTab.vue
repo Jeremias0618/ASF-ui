@@ -3,26 +3,34 @@
     <PluginMissing v-if="pluginMissing"></PluginMissing>
 
     <template v-else>
-      <div v-if="loading" class="bot-social__state">
+      <div class="bot-social__toolbar">
+        <p class="bot-social__stat">{{ $t('bot-social-games-total', { n: games.length }) }}</p>
+        <input
+          v-model.trim="query"
+          class="form-item__input bot-social__search"
+          type="search"
+          :placeholder="$t('bot-social-search')"
+        >
+        <button
+          type="button"
+          class="button button--link"
+          :disabled="loading || refreshing"
+          @click="refresh"
+        >
+          <FontAwesomeIcon v-if="refreshing" icon="spinner" spin></FontAwesomeIcon>
+          <span v-else>{{ $t('bot-social-refresh') }}</span>
+        </button>
+      </div>
+
+      <div v-if="loading && !games.length" class="bot-social__state">
         <FontAwesomeIcon icon="spinner" spin></FontAwesomeIcon>
         <span>{{ $t('bot-social-loading') }}</span>
       </div>
-      <div v-else-if="error" class="bot-social__state bot-social__state--error">{{ error }}</div>
-
+      <div v-else-if="error && !games.length" class="bot-social__state bot-social__state--error">{{ error }}</div>
       <template v-else>
-        <div class="bot-social__toolbar">
-          <p class="bot-social__stat">{{ $t('bot-social-games-total', { n: games.length }) }}</p>
-          <input
-            v-model.trim="query"
-            class="form-item__input bot-social__search"
-            type="search"
-            :placeholder="$t('bot-social-search')"
-          >
-          <button type="button" class="button button--link" @click="reload">{{ $t('bot-social-refresh') }}</button>
-        </div>
-
+        <p v-if="error" class="bot-social__inline-error">{{ error }}</p>
         <div v-if="!filteredGames.length" class="bot-social__state">{{ $t('bot-social-games-empty') }}</div>
-        <ul v-else class="bot-social-list">
+        <ul v-else class="bot-social-list" :class="{ 'is-refreshing': refreshing }">
           <li v-for="game in filteredGames" :key="game.appId" class="bot-social-list__row">
             <div>
               <strong>{{ game.name }}</strong>
@@ -44,7 +52,9 @@
 </template>
 
 <script>
-  import { fetchGames, isPluginMissingError } from '../api/bot-social';
+  import { isPluginMissingError } from '../api/bot-social';
+  import { loadGames } from '../cache/bot-social-queries';
+  import { peek } from '../cache/query-cache';
   import PluginMissing from './PluginMissing.vue';
 
   export default {
@@ -57,6 +67,7 @@
     data() {
       return {
         loading: false,
+        refreshing: false,
         error: '',
         games: [],
         query: '',
@@ -73,35 +84,57 @@
       },
     },
     watch: {
-      botName: { immediate: true, handler() { if (!this.pluginMissing) this.reload(); } },
-      pluginMissing(value) { if (!value) this.reload(); },
+      botName: {
+        immediate: true,
+        handler(name) {
+          this.hydrateFromCache(name);
+          if (!this.pluginMissing) this.load(false);
+        },
+      },
+      pluginMissing(value) {
+        if (!value) this.load(false);
+      },
     },
     methods: {
-      unwrap(result) {
-        return result?.[this.botName] ?? result;
+      hydrateFromCache(botName) {
+        const cached = peek('games', botName);
+        if (cached?.data?.games) {
+          this.games = cached.data.games;
+          this.$emit('loaded', { total: cached.data.total ?? this.games.length });
+        }
       },
-      async reload() {
+      async load(force) {
         if (this.pluginMissing) return;
-        this.loading = true;
-        this.error = '';
+        const hasData = this.games.length > 0;
+        this.loading = !hasData;
+        this.refreshing = force && hasData;
+        if (force) this.error = '';
+
         try {
-          const result = await fetchGames(this.botName);
-          const payload = this.unwrap(result);
-          const list = payload?.Games ?? payload?.games ?? [];
-          this.games = list.map(g => ({
-            appId: String(g.AppId ?? g.appId ?? ''),
-            name: g.Name ?? g.name ?? `App ${g.AppId ?? g.appId}`,
-          })).sort((a, b) => a.name.localeCompare(b.name));
-          this.$emit('loaded', { total: payload?.Total ?? payload?.total ?? this.games.length });
+          const result = await loadGames(this.botName, { force });
+          this.games = result.data?.games || [];
+          if (result.rateLimited) this.$error(this.$t('bot-social-rate-limited'));
+          else if (result.error && result.stale) this.error = result.error.message || String(result.error);
+          else this.error = '';
+          this.$emit('loaded', { total: result.data?.total ?? this.games.length });
         } catch (err) {
           if (isPluginMissingError(err)) {
             this.$emit('plugin-missing');
             return;
           }
-          this.error = err.message || String(err);
+          if (err?.code === 'RATE_LIMITED') this.$error(this.$t('bot-social-rate-limited'));
+          else if (!hasData) {
+            this.error = err.message || String(err);
+            this.games = [];
+          } else this.error = err.message || String(err);
         } finally {
           this.loading = false;
+          this.refreshing = false;
         }
+      },
+      refresh() {
+        if (this.loading || this.refreshing) return;
+        this.load(true);
       },
     },
   };
