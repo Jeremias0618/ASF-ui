@@ -75,7 +75,7 @@
   }
 
   .home-farming__value {
-    font-family: var(--home-font-display);
+    font-family: var(--h2-font, 'Segoe UI', system-ui, sans-serif);
     font-size: 1.15rem;
     font-weight: 700;
   }

@@ -147,17 +147,32 @@
   }
 
   .bot-profile__info {
-    display: flex;
     align-items: center;
+    display: flex;
+    gap: 0.5rem;
+    min-width: 0;
+
+    > .bot-profile__name {
+      flex: 1 1 auto;
+      min-width: 0;
+      width: auto;
+    }
+
+    .pull-right {
+      float: none;
+      margin-left: auto;
+    }
   }
 
   .bot-profile__wallet {
+    flex-shrink: 0;
     text-align: right;
     white-space: nowrap;
   }
 
   .bot-profile__name {
     margin: 0;
+    min-width: 0;
   }
 
   .bot-profile__status {
@@ -180,8 +195,16 @@
 
   .bot-profile__actions {
     align-items: center;
-    grid-area: actions;
     display: flex;
+    flex-wrap: wrap;
+    gap: 0.15rem;
+    grid-area: actions;
+    min-width: 0;
+
+    .pull-right {
+      float: none;
+      margin-left: auto;
+    }
   }
 
   .bot-farming-info {

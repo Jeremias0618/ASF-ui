@@ -1,23 +1,29 @@
 <template>
-  <div class="form-item input-option">
-    <input-label :label="label" :hasDescription="hasDescription"></input-label>
+  <div class="form-item input-option" :class="{ 'is-help-open': showDescription }">
+    <input-label
+      :label="label"
+      :field="field"
+      :hasDescription="hasDescription"
+      :helpOpen="showDescription"
+      @toggle-help="toggleDescription"
+    ></input-label>
 
     <div class="form-item__value">
       <select :id="field" v-model="selectedElement" class="form-item__input" @change="addFlag($event.target.value)">
         <option :value="null" disabled selected hidden>{{ $t('input-select-enum-value') }}</option>
         <option v-for="(enumValue, name) in flags" v-show="enumValue === 0 || !((value & enumValue) === enumValue)" :key="name" :value="enumValue">
-          {{ name }}
+          {{ translateEnum(name) }}
         </option>
       </select>
 
       <div class="input-option__items">
         <button v-for="enumValue in getSelectedFlagValues()" :key="enumValue" class="button input-option__item" @click.prevent="removeFlag(enumValue)">
-          {{ resolveFlagName(enumValue) }}
+          {{ translateEnum(resolveFlagName(enumValue)) }}
         </button>
       </div>
     </div>
 
-    <input-description v-if="hasDescription" v-show="showDescription" :description="description"></input-description>
+    <input-description v-if="hasDescription" :shown="showDescription" :description="description"></input-description>
   </div>
 </template>
 

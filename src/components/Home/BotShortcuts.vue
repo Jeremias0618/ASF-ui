@@ -102,7 +102,7 @@
   }
 
   .home-bot-card__name {
-    font-family: var(--home-font-display);
+    font-family: var(--h2-font, 'Segoe UI', system-ui, sans-serif);
     font-weight: 600;
     overflow: hidden;
     text-overflow: ellipsis;

@@ -25,7 +25,8 @@
   --h2-wide: 15rem;
   --h2-sidebar-pad-x: 0.625rem;
   --h2-icon-slot: 2.5rem;
-  --h2-font: 'Segoe UI Variable', Candara, 'Noto Sans', sans-serif;
+  --h2-font: 'Segoe UI Variable Text', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, 'Noto Sans', 'Helvetica Neue', Arial, sans-serif;
+  --h2-font-mono: ui-monospace, 'Cascadia Code', 'SF Mono', Menlo, Consolas, monospace;
 
   background: var(--h2-surface);
   box-sizing: border-box;

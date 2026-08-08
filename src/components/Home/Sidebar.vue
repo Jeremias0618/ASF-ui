@@ -169,6 +169,24 @@
     },
   ];
 
+  // Keep parent nav highlighted on nested modal routes (e.g. /bot/:bot/config → Bots).
+  const ACTIVE_ROUTE_GROUPS = {
+    bots: [
+      'bots',
+      'bot',
+      'bot-config',
+      'bot-create',
+      'bot-copy',
+      'bot-delete',
+      'bot-2fa',
+      'bot-2fa-delete',
+      'bot-bgr',
+      'bot-input',
+      'password-encrypt',
+    ],
+    'asf-config': ['asf-config', 'password-hash'],
+  };
+
   export default {
     name: 'HomeSidebar',
     props: {
@@ -232,7 +250,10 @@
         }
       },
       isActive(routeName) {
-        return this.$route.name === routeName;
+        const current = this.$route.name;
+        if (current === routeName) return true;
+        const group = ACTIVE_ROUTE_GROUPS[routeName];
+        return Array.isArray(group) && group.includes(current);
       },
       setDark(value) {
         this.$store.dispatch('storage/setThemeMode', value ? 'dark' : 'light');

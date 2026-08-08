@@ -296,7 +296,7 @@
     color: var(--setup-ink);
     display: flex;
     flex-direction: column;
-    font-family: 'Segoe UI Variable', Candara, 'Noto Sans', sans-serif;
+    font-family: var(--h2-font, 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif);
     justify-content: center;
     min-height: 100vh;
     min-height: 100dvh;

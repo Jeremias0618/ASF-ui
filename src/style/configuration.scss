@@ -9,7 +9,7 @@
   --cfg-brand: var(--h2-brand, var(--color-theme, #0968e5));
   --cfg-brand-600: var(--h2-brand-600, var(--color-theme-dark, #0757c2));
   --cfg-brand-soft: var(--h2-brand-50, rgba(9, 104, 229, 0.12));
-  --cfg-font: var(--h2-font, 'Segoe UI Variable', Candara, 'Noto Sans', sans-serif);
+  --cfg-font: var(--h2-font, 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif);
   display: flex;
   flex-direction: column;
   font-family: var(--cfg-font);

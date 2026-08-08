@@ -1,13 +1,19 @@
 <template>
-  <div class="form-item">
-    <input-label :label="label" :hasDescription="hasDescription"></input-label>
+  <div class="form-item" :class="{ 'is-help-open': showDescription }">
+    <input-label
+      :label="label"
+      :field="field"
+      :hasDescription="hasDescription"
+      :helpOpen="showDescription"
+      @toggle-help="toggleDescription"
+    ></input-label>
 
     <div class="form-item__value">
       <input :id="field" v-model="value" class="form-item__input" type="text" :name="field" :placeholder="placeholder" @blur="onBlur" @keypress="onKeyPress">
       <span v-if="hasErrors" class="form-item__error">{{ errorText }}</span>
     </div>
 
-    <input-description v-if="hasDescription" v-show="showDescription" :description="description"></input-description>
+    <input-description v-if="hasDescription" :shown="showDescription" :description="description"></input-description>
   </div>
 </template>
 

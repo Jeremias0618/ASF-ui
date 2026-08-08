@@ -1,6 +1,12 @@
 <template>
-  <div class="form-item">
-    <input-label :label="label" :hasDescription="hasDescription"></input-label>
+  <div class="form-item" :class="{ 'is-help-open': showDescription }">
+    <input-label
+      :label="label"
+      :field="field"
+      :hasDescription="hasDescription"
+      :helpOpen="showDescription"
+      @toggle-help="toggleDescription"
+    ></input-label>
 
     <div class="form-item__value">
       <div class="input-option__field input-option__field--three">
@@ -8,7 +14,7 @@
 
         <select v-if="valueIsEnum" :id="`${field}-value`" v-model="elementValue" class="form-item__input">
           <option v-for="(enumValue, name) in schema.value.values" :key="name" :value="enumValue">
-            {{ name }}
+            {{ translateEnum(name) }}
           </option>
         </select>
 
@@ -19,12 +25,12 @@
 
       <div class="input-option__items">
         <button v-for="(keyValue, key) in value" :key="key" class="button input-option__item" @click.prevent="removeElement(key)">
-          {{ key }} => {{ resolveValue(keyValue) }}
+          {{ key }} => {{ translateEnum(resolveValue(keyValue)) }}
         </button>
       </div>
     </div>
 
-    <input-description v-if="hasDescription" v-show="showDescription" :description="description"></input-description>
+    <input-description v-if="hasDescription" :shown="showDescription" :description="description"></input-description>
   </div>
 </template>
 

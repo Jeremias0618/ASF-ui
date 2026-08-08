@@ -1,6 +1,11 @@
 <template>
-  <transition name="form-item__description" @enter="enter" @after-enter="afterEnter" @leave="leave">
-    <div class="form-item__description" :class="{ 'form-item__description--shown': shown }">
+  <transition name="form-item__help">
+    <div
+      v-if="shown"
+      class="form-item__description"
+      role="region"
+      @click.stop
+    >
       <div class="form-item__description-content" v-html="description"></div>
     </div>
   </transition>
@@ -13,54 +18,91 @@
       description: String,
       shown: Boolean,
     },
-    methods: {
-      enter(element) {
-        element.style.width = getComputedStyle(element).width;
-        element.style.position = 'absolute';
-        element.style.visibility = 'hidden';
-        element.style.height = 'auto';
-
-        const { height } = getComputedStyle(element);
-
-        element.style.width = null;
-        element.style.position = null;
-        element.style.visibility = null;
-        element.style.height = 0;
-
-        setTimeout(() => (element.style.height = height), 0);
-      },
-      afterEnter(element) {
-        element.style.height = 'auto';
-      },
-      leave(element) {
-        element.style.height = getComputedStyle(element).height;
-        setTimeout(() => (element.style.height = 0), 0);
-      },
-    },
   };
 </script>
 
 <style lang="scss">
   .form-item__description {
-    backface-visibility: hidden;
-    perspective: 1000px;
-    transform: translateZ(0);
-    will-change: height;
-  }
+    background: var(--h2-soft, var(--color-background));
+    border: 1px solid var(--h2-border, var(--color-border));
+    border-radius: 0.55rem;
+    box-shadow: 0 12px 28px -10px rgba(16, 24, 40, 0.35);
+    box-sizing: border-box;
+    color: var(--h2-muted, var(--color-text-dark));
+    font-size: 0.8125rem;
+    left: 0;
+    line-height: 1.45;
+    max-height: min(14rem, 40vh);
+    overflow: auto;
+    padding: 0.75rem 0.9rem;
+    position: absolute;
+    right: 0;
+    top: calc(100% + 0.35rem);
+    z-index: 20;
+    -webkit-overflow-scrolling: touch;
 
-  .form-item__description-enter, .form-item__description-leave-to {
-    opacity: 0;
-  }
-
-  .form-item__description-enter-active, .form-item__description-leave-active {
-    transition: height .25s, opacity .25s;
+    .app--dark-mode & {
+      background: var(--h2-elevated, #151b28);
+      box-shadow: 0 16px 36px -12px rgba(0, 0, 0, 0.55);
+    }
   }
 
   .form-item__description-content {
     display: block;
-    margin-block-start: 1em;
-    margin-block-end: 1em;
-    margin-inline-start: 0px;
-    margin-inline-end: 0px;
+    margin: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+
+    > *:first-child {
+      margin-top: 0;
+    }
+
+    > *:last-child {
+      margin-bottom: 0;
+    }
+
+    a {
+      color: var(--h2-brand, var(--color-theme));
+      text-decoration: none;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+
+    table {
+      display: block;
+      max-width: 100%;
+      overflow-x: auto;
+    }
+
+    td, th {
+      padding: 0.15em 0.5em 0.15em 0;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    img {
+      height: auto;
+      max-width: 100%;
+    }
+  }
+
+  .form-item__help-enter-active,
+  .form-item__help-leave-active {
+    transition: opacity 0.18s ease, transform 0.18s ease;
+  }
+
+  .form-item__help-enter,
+  .form-item__help-leave-to {
+    opacity: 0;
+    transform: translateY(-0.25rem);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .form-item__help-enter-active,
+    .form-item__help-leave-active {
+      transition: none;
+    }
   }
 </style>

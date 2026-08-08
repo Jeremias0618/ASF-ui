@@ -1,12 +1,18 @@
 <template>
-  <div class="form-item">
-    <input-label :label="label" :hasDescription="hasDescription"></input-label>
+  <div class="form-item" :class="{ 'is-help-open': showDescription }">
+    <input-label
+      :label="label"
+      :field="field"
+      :hasDescription="hasDescription"
+      :helpOpen="showDescription"
+      @toggle-help="toggleDescription"
+    ></input-label>
 
     <div class="form-item__value">
       <select :id="field" v-model="selectedElement" class="form-item__input" :disabled="!availableEnumValues.length" @change="addElement($event.target.value)">
         <option :value="null" disabled selected hidden>{{ $t('input-select-enum-value') }}</option>
         <option v-for="(enumValue, name) in enumValues" v-show="!value.includes(enumValue)" :key="name" :value="enumValue">
-          {{ name }}
+          {{ translateEnum(name) }}
         </option>
         <option v-if="!availableEnumValues.length" :value="undefined" disabled>
           {{ $t('input-all-selected') }}
@@ -15,12 +21,12 @@
 
       <div class="input-option__items">
         <button v-for="(item, index) in value" :key="index" class="button input-option__item" @click.prevent="removeElementAtIndex(index)">
-          {{ resolveOption(item) }}
+          {{ translateEnum(resolveOption(item)) }}
         </button>
       </div>
     </div>
 
-    <input-description v-if="hasDescription" v-show="showDescription" :description="description"></input-description>
+    <input-description v-if="hasDescription" :shown="showDescription" :description="description"></input-description>
   </div>
 </template>
 

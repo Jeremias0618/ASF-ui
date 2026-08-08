@@ -148,7 +148,7 @@
   }
 
   html {
-    font-family: "Source Sans Pro", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-family: 'Segoe UI Variable Text', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, 'Noto Sans', 'Helvetica Neue', Arial, sans-serif;
     font-size: 16px;
     height: 100%;
   }
@@ -374,6 +374,10 @@
 
   .app--home-shell {
     background: #f7f9fb;
+    font-family: 'Segoe UI Variable Text', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, 'Noto Sans', 'Helvetica Neue', Arial, sans-serif;
+    font-variant-numeric: normal;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 
     &.app--dark-mode {
       background: #111827;

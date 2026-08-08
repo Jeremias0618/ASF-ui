@@ -181,16 +181,20 @@
   }
 
   .home2-kpi__value {
-    font-size: 0.95rem;
-    font-weight: 650;
+    font-family: inherit;
+    font-size: 1rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    line-height: 1.35;
     margin: 0.35rem 0 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 
     &--mono {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: 0.82rem;
+      font-family: inherit;
+      font-size: 1rem;
     }
   }
 

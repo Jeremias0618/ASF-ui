@@ -1,12 +1,15 @@
 <template>
   <main v-if="bot" class="main-container main-container--bot-config">
-    <h2 v-tooltip="bot.name" class="title">{{ bot.viewableName }}</h2>
+    <header class="bot-config__header">
+      <p class="bot-config__eyebrow">{{ $t('bot-config', 'Bot config') }}</p>
+      <h2 v-tooltip="bot.name" class="title bot-config__title">{{ bot.viewableName }}</h2>
+    </header>
 
-    <h3 v-if="loading" class="subtitle">
+    <h3 v-if="loading" class="subtitle bot-config__loading">
       <FontAwesomeIcon icon="spinner" size="lg" spin></FontAwesomeIcon>
     </h3>
 
-    <div v-else class="container">
+    <div v-else class="container bot-config__body">
       <ConfigEditor
         :fields="fields"
         :model="model"
@@ -14,7 +17,7 @@
         :deleteDefaultValues="false"
       ></ConfigEditor>
 
-      <div class="form-item">
+      <div class="form-item bot-config__actions">
         <div class="form-item__buttons">
           <button class="button button--confirm" @click="onSave">
             <FontAwesomeIcon v-if="saving" icon="spinner" spin></FontAwesomeIcon>
@@ -24,7 +27,7 @@
             <button class="button button--confirm" @click="navigate">{{ $t('bot-copy') }}</button>
           </router-link>
 
-          <button class="button button--link pull-right" @click="onDownload">
+          <button class="button button--link bot-config__download" @click="onDownload">
             {{ $t('download-raw-config') }}
           </button>
         </div>
@@ -170,6 +173,84 @@
 
 <style lang="scss">
   .main-container--bot-config {
-    max-width: 1000px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-width: none;
+    min-height: 0;
+    padding: 1rem 1.1rem 1.15rem;
+  }
+
+  .bot-config__header {
+    flex-shrink: 0;
+    padding-right: 2.5rem;
+  }
+
+  .bot-config__eyebrow {
+    color: var(--h2-muted, var(--color-text-disabled));
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    margin: 0 0 0.2rem;
+    text-transform: uppercase;
+  }
+
+  .bot-config__title {
+    margin: 0;
+  }
+
+  .bot-config__loading {
+    align-items: center;
+    display: flex;
+    justify-content: center;
+    min-height: 8rem;
+  }
+
+  .bot-config__body {
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    margin: 0;
+    min-height: 0;
+    padding: 0;
+  }
+
+  .bot-config__actions {
+    border-top: 1px solid var(--h2-border, var(--color-border));
+    margin-bottom: 0;
+    margin-top: 0.75rem;
+    padding-top: 0.9rem;
+    position: sticky;
+    bottom: 0;
+    background: linear-gradient(180deg, transparent, var(--color-background-modal) 28%);
+    z-index: 2;
+  }
+
+  .bot-config__download {
+    margin-left: auto;
+  }
+
+  @media screen and (max-width: 559px) {
+    .main-container--bot-config {
+      padding: 0.85rem 0.85rem 1rem;
+    }
+
+    .bot-config__download {
+      margin-left: 0;
+      width: 100%;
+    }
+
+    .bot-config__actions .form-item__buttons {
+      width: 100%;
+
+      > .button,
+      > a {
+        flex: 1 1 auto;
+      }
+    }
   }
 </style>

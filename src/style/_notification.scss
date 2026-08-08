@@ -91,7 +91,7 @@ $snotify-icons: -generate-icons((
     color: #f8fafc;
     display: flex;
     flex-flow: column nowrap;
-    font-family: var(--h2-font, 'Segoe UI Variable', Candara, 'Noto Sans', sans-serif);
+    font-family: var(--h2-font, 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif);
     font-size: 0.875rem;
     justify-content: center;
     min-height: 3.75rem;

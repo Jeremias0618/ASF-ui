@@ -201,7 +201,7 @@
     color: var(--sm-ink);
     display: flex;
     flex-direction: column;
-    font-family: 'Segoe UI Variable', Candara, 'Noto Sans', sans-serif;
+    font-family: var(--h2-font, 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif);
     max-width: min(20rem, 92vw);
     padding: 0;
     position: fixed;

@@ -2,6 +2,7 @@
   import InputDescription from './InputDescription.vue';
   import InputLabel from './InputLabel.vue';
   import validator from '../../../utils/validator';
+  import { translateConfigEnum, translateConfigParam } from '../../../utils/config-i18n';
 
   export default {
     components: { InputLabel, InputDescription },
@@ -27,7 +28,8 @@
         return this.schema.defaultValue;
       },
       label() {
-        return this.schema.label || this.schema.param || this.schema.paramName;
+        const name = this.schema.label || this.schema.param || this.schema.paramName;
+        return translateConfigParam(this, name);
       },
       field() {
         return this.schema.paramName;
@@ -60,6 +62,19 @@
         handler: 'update',
         deep: true,
       },
+      showDescription(isOpen) {
+        if (isOpen) {
+          this.$nextTick(() => {
+            document.addEventListener('click', this.onDocumentClick, true);
+            document.addEventListener('keydown', this.onDocumentKeydown, true);
+          });
+        } else {
+          this.unbindHelpListeners();
+        }
+      },
+    },
+    beforeDestroy() {
+      this.unbindHelpListeners();
     },
     methods: {
       update() {
@@ -68,6 +83,26 @@
       },
       toggleDescription() {
         this.showDescription = !this.showDescription;
+      },
+      closeDescription() {
+        this.showDescription = false;
+      },
+      onDocumentClick(event) {
+        if (!this.$el || this.$el.contains(event.target)) return;
+        this.closeDescription();
+      },
+      onDocumentKeydown(event) {
+        if (event.key !== 'Escape') return;
+        event.stopImmediatePropagation();
+        event.preventDefault();
+        this.closeDescription();
+      },
+      unbindHelpListeners() {
+        document.removeEventListener('click', this.onDocumentClick, true);
+        document.removeEventListener('keydown', this.onDocumentKeydown, true);
+      },
+      translateEnum(name) {
+        return translateConfigEnum(this, name);
       },
     },
   };

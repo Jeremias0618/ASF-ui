@@ -1,31 +1,39 @@
 .form-item {
 	margin-bottom: 1em;
+	position: relative;
 
 	&:last-child {
 		margin-bottom: 0;
+	}
+
+	&.is-help-open {
+		z-index: 6;
 	}
 }
 
 .form-item--config {
 	display: grid;
-	grid-template-areas: 'label' 'value' 'description';
-	grid-template-rows: auto auto auto;
+	grid-template-areas: 'label' 'value';
+	grid-template-columns: minmax(0, 1fr);
+	grid-template-rows: auto auto;
 
-	@media screen and (min-width: 1200px) {
-		display: grid;
+	@media screen and (min-width: 720px) {
+		align-items: start;
 		grid-column-gap: 1em;
-		grid-template-areas: 'label value' 'description description';
-		grid-template-columns: minmax(min-content, var(--label-width, 12em)) 1fr;
-		grid-template-rows: auto auto;
+		grid-template-areas: 'label value';
+		grid-template-columns: minmax(min-content, var(--label-width, 12em)) minmax(0, 1fr);
+		grid-template-rows: auto;
 	}
 }
 
 .form-item__buttons {
 	align-items: center;
 	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5em;
 
 	> .button {
-		margin-right: 0.5em;
+		margin-right: 0;
 
 		&:last-child {
 			margin-right: 0;
@@ -37,12 +45,8 @@
 
 		> button {
 			margin-right: 0 !important;
-			margin-top: 0.5em;
+			margin-top: 0;
 			width: 100%;
-
-			&:first-child {
-				margin-top: 0;
-			}
 		}
 	}
 
@@ -56,18 +60,29 @@
 }
 
 .form-item__label {
-	display: flex;
 	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
 	font-size: 0.9375em;
 	font-weight: 600;
+	gap: 0.35em;
+	grid-area: label;
 	margin-bottom: 4px;
+	min-width: 0;
 
-	@media screen and (min-width: 1200px) {
-		align-items: center;
-		display: flex;
+	@media screen and (min-width: 720px) {
 		height: 2.66667em;
 		margin-bottom: 0;
 	}
+}
+
+.form-item__label-text {
+	min-width: 0;
+}
+
+.form-item__value {
+	grid-area: value;
+	min-width: 0;
 }
 
 .form-item__code {
@@ -92,6 +107,7 @@
 	display: block;
 	font-size: 0.9375em;
 	height: 2.66667em;
+	max-width: 100%;
 	padding: 0 8px;
 	width: 100%;
 
@@ -172,8 +188,6 @@
 .form-item__description {
 	color: var(--color-text-dark);
 	font-size: 0.85em;
-	grid-area: description;
-	margin-right: 0.1em;
 	overflow: hidden;
 }
 
@@ -190,10 +204,37 @@
 }
 
 .form-item__description-icon {
+	align-items: center;
+	appearance: none;
+	background: transparent;
+	border: 0;
+	border-radius: 999px;
 	color: var(--color-text-disabled);
 	cursor: pointer;
+	display: inline-flex;
+	flex-shrink: 0;
 	font-size: 0.75em;
-	margin-left: 0.5em;
+	height: 1.5rem;
+	justify-content: center;
+	line-height: 1;
+	margin: 0;
+	padding: 0;
+	width: 1.5rem;
+
+	&:hover,
+	&[aria-expanded='true'] {
+		background: rgba(14, 165, 233, 0.12);
+		color: var(--color-theme);
+	}
+
+	&:focus-visible {
+		outline: 2px solid var(--color-theme);
+		outline-offset: 2px;
+	}
+
+	&--key {
+		margin-left: auto;
+	}
 }
 
 .form-item__error {
@@ -208,7 +249,7 @@
 	margin-top: 1em;
 	padding: 1em;
 
-	@media screen and (min-width: 1200px) {
+	@media screen and (min-width: 720px) {
 		padding: 1em 1em 0;
 	}
 
@@ -230,16 +271,37 @@
 
 .input-option__field {
 	display: grid;
-	grid-column-gap: 1em;
-	grid-template-columns: 1fr auto;
+	gap: 0.5em;
+	grid-template-columns: minmax(0, 1fr);
+
+	@media screen and (min-width: 560px) {
+		align-items: start;
+		grid-column-gap: 0.75em;
+		grid-template-columns: minmax(0, 1fr) auto;
+	}
 
 	.button {
 		max-height: 3em;
+		width: 100%;
+
+		@media screen and (min-width: 560px) {
+			width: auto;
+		}
 	}
 }
 
 .input-option__field--three {
-	grid-template-columns: 1fr 1fr auto;
+	@media screen and (min-width: 560px) {
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+	}
+
+	@media screen and (max-width: 559px) {
+		grid-template-columns: minmax(0, 1fr);
+
+		.button {
+			width: 100%;
+		}
+	}
 }
 
 .input-option__items {

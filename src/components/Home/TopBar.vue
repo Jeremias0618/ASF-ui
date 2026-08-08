@@ -82,7 +82,7 @@
     border-radius: 0.85rem;
     color: #fff;
     display: inline-flex;
-    font-family: var(--home-font-display);
+    font-family: var(--h2-font, 'Segoe UI', system-ui, sans-serif);
     font-size: 0.85rem;
     font-weight: 700;
     height: 2.35rem;
@@ -93,7 +93,7 @@
 
   .home-topbar__label {
     color: var(--home-muted);
-    font-family: var(--home-font-display);
+    font-family: var(--h2-font, 'Segoe UI', system-ui, sans-serif);
     font-size: 0.95rem;
     font-weight: 600;
   }
