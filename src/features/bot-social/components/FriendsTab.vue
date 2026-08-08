@@ -74,7 +74,7 @@
     addFriends, isPluginMissingError, removeFriends,
   } from '../api/bot-social';
   import { invalidateFriends, loadFriends } from '../cache/bot-social-queries';
-  import { peek } from '../cache/query-cache';
+  import { resolveLocalData } from '../cache/load-policy';
   import PluginMissing from './PluginMissing.vue';
 
   export default {
@@ -108,22 +108,28 @@
     watch: {
       botName: {
         immediate: true,
-        handler(name) {
-          this.hydrateFromCache(name);
-          if (!this.pluginMissing) this.load(false);
+        handler() {
+          this.bootstrap();
         },
       },
       pluginMissing(value) {
-        if (!value) this.load(false);
+        if (!value) this.bootstrap();
       },
     },
     methods: {
-      hydrateFromCache(botName) {
-        const cached = peek('friends', botName);
-        if (cached?.data?.friends) {
-          this.friends = cached.data.friends;
-          this.$emit('loaded', { total: cached.data.total ?? this.friends.length });
+      bootstrap() {
+        if (this.pluginMissing) return;
+        const resolved = resolveLocalData({
+          resource: 'friends',
+          botName: this.botName,
+          isUsable: data => Array.isArray(data?.friends),
+        });
+        if (resolved.hasData) {
+          this.friends = resolved.data.friends;
+          this.$emit('loaded', { total: resolved.data.total ?? this.friends.length });
+          return;
         }
+        this.load(false);
       },
       async load(force) {
         if (this.pluginMissing) return;

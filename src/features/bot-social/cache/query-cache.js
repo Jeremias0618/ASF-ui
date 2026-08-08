@@ -3,10 +3,11 @@ import { CACHE_TTL_MS, MIN_REFRESH_MS, isCacheDebugEnabled } from './cache-confi
 /**
  * Central query/cache manager for Bot Social Hub.
  * - Per-bot / per-resource isolation
- * - TTL reuse when switching tabs
+ * - Cache reuse when switching tabs / remounting (no auto-fetch while data exists)
  * - In-flight deduplication
- * - Forced refresh with client rate-limit
+ * - Forced refresh with client rate-limit (Actualizar)
  * - Keeps last good data on refresh errors
+ * - TTL marks freshness only; refresh requires force:true
  */
 
 const entries = new Map();
@@ -106,12 +107,18 @@ export async function query({
   const now = Date.now();
   const hasData = entry.data !== undefined;
 
-  if (!force && hasData && (now - entry.updatedAt) < ttlFor(resource)) {
-    log('cache hit', { key, ageMs: now - entry.updatedAt });
+  // Reuse any cached payload unless the caller forces refresh.
+  // TTL marks freshness for UI/debug; it must NOT auto-hit IPC/Steam on remount,
+  // filter changes, or tab navigation (those are local-only).
+  if (!force && hasData) {
+    const ageMs = now - entry.updatedAt;
+    const fresh = ageMs < ttlFor(resource);
+    log(fresh ? 'cache hit' : 'cache hit (stale, no auto-refresh)', { key, ageMs });
     return {
       data: entry.data,
       fromCache: true,
       status: 'success',
+      stale: !fresh,
     };
   }
 

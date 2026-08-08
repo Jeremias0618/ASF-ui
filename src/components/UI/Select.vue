@@ -5,25 +5,54 @@
     :class="{
       'is-open': open,
       'is-disabled': disabled,
-      'is-placeholder': !hasValue,
+      'is-placeholder': !hasValue && !open,
+      'is-searchable': searchable,
+      'is-compact': compact,
     }"
   >
-    <button
-      :id="id || undefined"
-      ref="trigger"
-      type="button"
+    <div
       class="asf-select__trigger"
-      :disabled="disabled"
-      :aria-expanded="open ? 'true' : 'false'"
-      :aria-labelledby="ariaLabelledby || undefined"
-      aria-haspopup="listbox"
-      :aria-controls="listId"
-      @click="toggle"
-      @keydown="onTriggerKeydown"
+      :class="{ 'asf-select__trigger--input': searchable }"
+      @click="onTriggerClick"
     >
-      <span class="asf-select__value">{{ displayLabel }}</span>
+      <input
+        v-if="searchable"
+        :id="id || undefined"
+        ref="search"
+        class="asf-select__inline-input"
+        type="text"
+        :value="triggerText"
+        :disabled="disabled"
+        :placeholder="inlinePlaceholder"
+        :aria-expanded="open ? 'true' : 'false'"
+        :aria-labelledby="ariaLabelledby || undefined"
+        aria-haspopup="listbox"
+        :aria-controls="listId"
+        autocomplete="off"
+        role="combobox"
+        @input="onInlineInput"
+        @focus="onInlineFocus"
+        @keydown="onInlineKeydown"
+      >
+      <button
+        v-else
+        :id="id || undefined"
+        ref="trigger"
+        type="button"
+        class="asf-select__button"
+        :disabled="disabled"
+        :aria-expanded="open ? 'true' : 'false'"
+        :aria-labelledby="ariaLabelledby || undefined"
+        aria-haspopup="listbox"
+        :aria-controls="listId"
+        @click.stop="toggle"
+        @keydown="onTriggerKeydown"
+      >
+        <span class="asf-select__value">{{ displayLabel }}</span>
+      </button>
+
       <FontAwesomeIcon class="asf-select__chevron" icon="angle-down" aria-hidden="true"></FontAwesomeIcon>
-    </button>
+    </div>
 
     <transition name="asf-select">
       <ul
@@ -37,7 +66,14 @@
         @keydown="onMenuKeydown"
       >
         <li
-          v-for="(option, index) in normalizedOptions"
+          v-if="!visibleOptions.length"
+          class="asf-select__empty"
+          role="presentation"
+        >
+          {{ $t('input-select-no-options') }}
+        </li>
+        <li
+          v-for="(option, index) in visibleOptions"
           :id="optionId(index)"
           :key="option.key"
           class="asf-select__option"
@@ -47,7 +83,7 @@
           }"
           role="option"
           :aria-selected="isSelected(option) ? 'true' : 'false'"
-          @click="selectOption(option)"
+          @mousedown.prevent="selectOption(option)"
           @mouseenter="activeIndex = index"
         >
           {{ option.label }}
@@ -90,6 +126,18 @@
         type: String,
         default: '',
       },
+      searchable: {
+        type: Boolean,
+        default: false,
+      },
+      searchPlaceholder: {
+        type: String,
+        default: '',
+      },
+      compact: {
+        type: Boolean,
+        default: false,
+      },
     },
     data() {
       selectUid += 1;
@@ -97,11 +145,27 @@
         open: false,
         activeIndex: -1,
         instanceId: selectUid,
+        searchQuery: '',
       };
     },
     computed: {
       listId() {
         return `asf-select-list-${this.instanceId}`;
+      },
+      searchPlaceholderText() {
+        return this.searchPlaceholder || this.$t('input-select-search-options');
+      },
+      inlinePlaceholder() {
+        // While open with empty query, keep showing the current selection so the
+        // control does not look like it lost its value ("Filtrar opciones...").
+        if (this.open && !this.searchQuery && this.hasValue) return this.displayLabel;
+        if (this.open) return this.searchPlaceholderText;
+        return this.displayLabel || this.placeholder || this.searchPlaceholderText;
+      },
+      triggerText() {
+        // While open/searching, show what the user types; otherwise show selected label.
+        if (this.open) return this.searchQuery;
+        return this.displayLabel;
       },
       normalizedOptions() {
         return (this.options || []).map((option, index) => {
@@ -119,6 +183,11 @@
           };
         });
       },
+      visibleOptions() {
+        const q = this.searchQuery.trim().toLowerCase();
+        if (!this.searchable || !q) return this.normalizedOptions;
+        return this.normalizedOptions.filter(option => option.label.toLowerCase().includes(q));
+      },
       hasValue() {
         return this.normalizedOptions.some(option => this.isSelected(option));
       },
@@ -128,22 +197,31 @@
         return this.placeholder || this.$t('input-select-enum-value');
       },
       activeOptionId() {
-        if (this.activeIndex < 0) return undefined;
+        if (this.activeIndex < 0 || !this.visibleOptions[this.activeIndex]) return undefined;
         return this.optionId(this.activeIndex);
       },
     },
     watch: {
       open(isOpen) {
         if (isOpen) {
-          this.activeIndex = Math.max(0, this.normalizedOptions.findIndex(option => this.isSelected(option)));
+          this.activeIndex = Math.max(0, this.visibleOptions.findIndex(option => this.isSelected(option)));
           this.$nextTick(() => {
-            document.addEventListener('click', this.onDocumentClick, true);
+            document.addEventListener('mousedown', this.onDocumentPointer, true);
             document.addEventListener('keydown', this.onDocumentKeydown, true);
+            if (this.searchable && this.$refs.search) {
+              this.$refs.search.focus();
+            }
             this.scrollActiveIntoView();
           });
         } else {
+          this.searchQuery = '';
           this.unbindListeners();
         }
+      },
+      searchQuery() {
+        if (!this.open) return;
+        this.activeIndex = this.visibleOptions.length ? 0 : -1;
+        this.$nextTick(() => this.scrollActiveIntoView());
       },
     },
     beforeDestroy() {
@@ -160,18 +238,57 @@
         if (this.disabled) return;
         this.open = !this.open;
       },
+      openSelect() {
+        if (this.disabled || this.open) return;
+        this.open = true;
+      },
       close() {
         this.open = false;
+      },
+      onTriggerClick() {
+        if (this.disabled) return;
+        if (this.searchable) {
+          this.openSelect();
+          this.$nextTick(() => this.$refs.search?.focus());
+          return;
+        }
+        this.toggle();
+      },
+      onInlineFocus() {
+        this.openSelect();
+      },
+      onInlineInput(event) {
+        this.searchQuery = event.target.value;
+        if (!this.open) this.open = true;
+      },
+      onInlineKeydown(event) {
+        switch (event.key) {
+          case 'ArrowDown':
+          case 'ArrowUp':
+          case 'Enter':
+          case 'Escape':
+          case 'Home':
+          case 'End':
+            this.onMenuKeydown(event);
+            break;
+          case 'Tab':
+            this.close();
+            break;
+          default:
+            break;
+        }
       },
       selectOption(option) {
         this.$emit('input', option.value);
         this.$emit('change', option.value);
+        this.searchQuery = '';
         this.close();
         this.$nextTick(() => {
-          if (this.$refs.trigger) this.$refs.trigger.focus();
+          if (this.searchable && this.$refs.search) this.$refs.search.blur();
+          else if (this.$refs.trigger) this.$refs.trigger.focus();
         });
       },
-      onDocumentClick(event) {
+      onDocumentPointer(event) {
         if (!this.$refs.root || this.$refs.root.contains(event.target)) return;
         this.close();
       },
@@ -180,11 +297,12 @@
           event.stopImmediatePropagation();
           event.preventDefault();
           this.close();
-          if (this.$refs.trigger) this.$refs.trigger.focus();
+          if (this.searchable && this.$refs.search) this.$refs.search.blur();
+          else if (this.$refs.trigger) this.$refs.trigger.focus();
         }
       },
       unbindListeners() {
-        document.removeEventListener('click', this.onDocumentClick, true);
+        document.removeEventListener('mousedown', this.onDocumentPointer, true);
         document.removeEventListener('keydown', this.onDocumentKeydown, true);
       },
       onTriggerKeydown(event) {
@@ -209,39 +327,49 @@
         }
       },
       onMenuKeydown(event) {
-        const total = this.normalizedOptions.length;
-        if (!total) return;
+        const total = this.visibleOptions.length;
 
         switch (event.key) {
           case 'ArrowDown':
+            if (!total) return;
             event.preventDefault();
             this.activeIndex = (this.activeIndex + 1) % total;
             this.scrollActiveIntoView();
             break;
           case 'ArrowUp':
+            if (!total) return;
             event.preventDefault();
             this.activeIndex = (this.activeIndex - 1 + total) % total;
             this.scrollActiveIntoView();
             break;
           case 'Home':
+            if (!total) return;
             event.preventDefault();
             this.activeIndex = 0;
             this.scrollActiveIntoView();
             break;
           case 'End':
+            if (!total) return;
             event.preventDefault();
             this.activeIndex = total - 1;
             this.scrollActiveIntoView();
             break;
           case 'Enter':
-          case ' ':
             event.preventDefault();
-            if (this.activeIndex >= 0) this.selectOption(this.normalizedOptions[this.activeIndex]);
+            if (this.activeIndex >= 0 && this.visibleOptions[this.activeIndex]) {
+              this.selectOption(this.visibleOptions[this.activeIndex]);
+            }
+            break;
+          case ' ':
+            if (this.searchable) return;
+            event.preventDefault();
+            if (this.activeIndex >= 0 && this.visibleOptions[this.activeIndex]) {
+              this.selectOption(this.visibleOptions[this.activeIndex]);
+            }
             break;
           case 'Escape':
             event.preventDefault();
             this.close();
-            if (this.$refs.trigger) this.$refs.trigger.focus();
             break;
           case 'Tab':
             this.close();
@@ -253,7 +381,7 @@
       scrollActiveIntoView() {
         const menu = this.$refs.menu;
         if (!menu || this.activeIndex < 0) return;
-        const option = menu.children[this.activeIndex];
+        const option = menu.querySelector(`#${this.optionId(this.activeIndex)}`);
         if (option && option.scrollIntoView) {
           option.scrollIntoView({ block: 'nearest' });
         }
@@ -270,7 +398,6 @@
 
   .asf-select__trigger {
     align-items: center;
-    appearance: none;
     background: var(--h2-field, var(--h2-soft, var(--color-background-light, #fff)));
     border: 1px solid var(--h2-border, rgba(0, 0, 0, 0.12));
     border-radius: 0.55rem;
@@ -279,10 +406,10 @@
     cursor: pointer;
     display: flex;
     font: inherit;
-    gap: 0.65rem;
+    gap: 0.5rem;
     justify-content: space-between;
     min-height: 2.75rem;
-    padding: 0.45rem 0.8rem;
+    padding: 0.35rem 0.7rem;
     text-align: left;
     transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
     width: 100%;
@@ -293,14 +420,8 @@
       color: #f8fafc;
     }
 
-    &:hover:not(:disabled) {
+    &:hover {
       border-color: color-mix(in srgb, var(--h2-brand, var(--color-theme)) 55%, var(--h2-border, #ccc));
-    }
-
-    &:focus-visible {
-      border-color: var(--h2-brand, var(--color-theme));
-      box-shadow: 0 0 0 3px color-mix(in srgb, var(--h2-brand, var(--color-theme)) 28%, transparent);
-      outline: none;
     }
 
     .asf-select.is-open & {
@@ -320,6 +441,48 @@
         color: #cbd5e1;
       }
     }
+
+    .asf-select.is-compact & {
+      border-radius: 0.4rem;
+      min-height: 2rem;
+      padding: 0.15rem 0.55rem;
+    }
+  }
+
+  .asf-select__button {
+    appearance: none;
+    background: transparent;
+    border: 0;
+    color: inherit;
+    cursor: inherit;
+    display: flex;
+    flex: 1 1 auto;
+    font: inherit;
+    min-width: 0;
+    padding: 0;
+    text-align: left;
+  }
+
+  .asf-select__inline-input {
+    appearance: none;
+    background: transparent;
+    border: 0;
+    color: inherit;
+    flex: 1 1 auto;
+    font: inherit;
+    font-size: 0.88rem;
+    min-width: 0;
+    outline: none;
+    padding: 0;
+    width: 100%;
+
+    .asf-select.is-compact & {
+      font-size: 0.82rem;
+    }
+
+    &::placeholder {
+      color: var(--h2-muted, var(--color-text-disabled));
+    }
   }
 
   .asf-select__value {
@@ -333,7 +496,7 @@
   .asf-select__chevron {
     color: var(--h2-muted, var(--color-text-disabled));
     flex-shrink: 0;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     transition: transform 0.18s ease;
 
     .asf-select.is-open & {
@@ -349,11 +512,11 @@
     box-sizing: border-box;
     left: 0;
     list-style: none;
-    margin: 0.35rem 0 0;
-    max-height: min(16rem, 45vh);
+    margin: 0.3rem 0 0;
+    max-height: min(14rem, 42vh);
     overflow: auto;
     overscroll-behavior: contain;
-    padding: 0.35rem;
+    padding: 0.3rem;
     position: absolute;
     right: 0;
     top: 100%;
@@ -364,15 +527,33 @@
       background: var(--h2-elevated, #151b28);
       box-shadow: 0 18px 40px -14px rgba(0, 0, 0, 0.6);
     }
+
+    .asf-select.is-compact & {
+      border-radius: 0.45rem;
+      margin-top: 0.25rem;
+      max-height: min(12rem, 38vh);
+      padding: 0.25rem;
+    }
+  }
+
+  .asf-select__empty {
+    color: var(--h2-muted, var(--color-text-disabled));
+    font-size: 0.82rem;
+    padding: 0.5rem 0.6rem;
   }
 
   .asf-select__option {
-    border-radius: 0.45rem;
+    border-radius: 0.4rem;
     color: var(--h2-ink, inherit);
     cursor: pointer;
-    font-size: 0.9rem;
-    line-height: 1.35;
-    padding: 0.55rem 0.7rem;
+    font-size: 0.88rem;
+    line-height: 1.3;
+    padding: 0.5rem 0.65rem;
+
+    .asf-select.is-compact & {
+      font-size: 0.82rem;
+      padding: 0.38rem 0.55rem;
+    }
 
     &.is-active {
       background: var(--h2-soft, rgba(0, 0, 0, 0.06));
@@ -405,16 +586,6 @@
     .asf-select-enter-active,
     .asf-select-leave-active {
       transition: none;
-    }
-  }
-
-  @media screen and (max-width: 480px) {
-    .asf-select__menu {
-      max-height: min(14rem, 40vh);
-    }
-
-    .asf-select__option {
-      padding: 0.65rem 0.75rem;
     }
   }
 </style>

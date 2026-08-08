@@ -65,7 +65,7 @@
     addWishlist, isPluginMissingError, removeWishlist,
   } from '../api/bot-social';
   import { invalidateWishlist, loadWishlist } from '../cache/bot-social-queries';
-  import { peek } from '../cache/query-cache';
+  import { resolveLocalData } from '../cache/load-policy';
   import PluginMissing from './PluginMissing.vue';
 
   export default {
@@ -94,22 +94,28 @@
     watch: {
       botName: {
         immediate: true,
-        handler(name) {
-          this.hydrateFromCache(name);
-          if (!this.pluginMissing) this.load(false);
+        handler() {
+          this.bootstrap();
         },
       },
       pluginMissing(value) {
-        if (!value) this.load(false);
+        if (!value) this.bootstrap();
       },
     },
     methods: {
-      hydrateFromCache(botName) {
-        const cached = peek('wishlist', botName);
-        if (cached?.data?.items) {
-          this.items = cached.data.items;
-          this.$emit('loaded', { total: cached.data.total ?? this.items.length });
+      bootstrap() {
+        if (this.pluginMissing) return;
+        const resolved = resolveLocalData({
+          resource: 'wishlist',
+          botName: this.botName,
+          isUsable: data => Array.isArray(data?.items),
+        });
+        if (resolved.hasData) {
+          this.items = resolved.data.items;
+          this.$emit('loaded', { total: resolved.data.total ?? this.items.length });
+          return;
         }
+        this.load(false);
       },
       formatError(err) {
         const msg = err?.message || String(err);
