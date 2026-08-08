@@ -124,6 +124,16 @@ export function sortInventoryItems(items) {
     const rankA = ITEM_KIND_SORT[a.kind] ?? ITEM_KIND_SORT[ITEM_KIND.OTHER];
     const rankB = ITEM_KIND_SORT[b.kind] ?? ITEM_KIND_SORT[ITEM_KIND.OTHER];
     if (rankA !== rankB) return rankA - rankB;
+
+    // Within the same kind (foil, cards, …), group by game then by item name.
+    const gameA = String(a.gameName || '').toLowerCase();
+    const gameB = String(b.gameName || '').toLowerCase();
+    if (gameA !== gameB) {
+      if (!gameA) return 1;
+      if (!gameB) return -1;
+      return gameA.localeCompare(gameB);
+    }
+
     return String(a.name || '').localeCompare(String(b.name || ''));
   });
 }

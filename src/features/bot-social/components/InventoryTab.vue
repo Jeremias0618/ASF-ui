@@ -18,8 +18,17 @@
           <span class="steam-inv__count">{{ $t('bot-social-inventory-showing', { shown: filteredItems.length, total: items.length }) }}</span>
           <button
             type="button"
+            class="steam-inv__select-toggle"
+            :class="{ 'is-on': selectMode }"
+            :disabled="loading || transferring"
+            @click="toggleSelectMode"
+          >
+            {{ selectMode ? $t('bot-social-inventory-select-done') : $t('bot-social-inventory-select-mode') }}
+          </button>
+          <button
+            type="button"
             class="steam-inv__refresh"
-            :disabled="loading || refreshing"
+            :disabled="loading || refreshing || transferring"
             :title="$t('bot-social-refresh')"
             @click="refresh"
           >
@@ -62,6 +71,7 @@
             searchable
             compact
             aria-labelledby="inv-filter-status-label"
+            :disabled="selectMode"
             :options="statusSelectOptions"
             :search-placeholder="$t('bot-social-inventory-filter-search-options')"
           ></AsfSelect>
@@ -103,11 +113,21 @@
               type="button"
               role="option"
               class="steam-inv__cell"
-              :class="{ 'is-selected': selectedId === item.id }"
+              :class="{
+                'is-selected': selectedId === item.id,
+                'is-checked': isChecked(item.id),
+                'is-locked': selectMode && !item.tradable,
+              }"
               :aria-selected="selectedId === item.id ? 'true' : 'false'"
-              :title="item.name"
-              @click="selectItem(item.id)"
+              :title="item.tradable ? item.name : `${item.name} (${$t('bot-social-inventory-not-tradable')})`"
+              @click="onCellClick(item, $event)"
             >
+              <span
+                v-if="selectMode"
+                class="steam-inv__check"
+                :class="{ 'is-on': isChecked(item.id), 'is-disabled': !item.tradable }"
+                aria-hidden="true"
+              ></span>
               <span
                 class="steam-inv__cell-bg"
                 :style="item.backgroundColor ? { backgroundColor: `#${item.backgroundColor}` } : null"
@@ -125,6 +145,26 @@
               </span>
               <span v-if="item.amount > 1" class="steam-inv__qty">×{{ item.amount }}</span>
             </button>
+          </div>
+
+          <div v-if="selectMode" class="steam-inv__selection-bar">
+            <span>{{ $t('bot-social-inventory-selected-count', { n: checkedCount }) }}</span>
+            <div class="steam-inv__selection-actions">
+              <button type="button" class="button button--link" :disabled="!filteredTradableCount" @click="selectAllFilteredTradable">
+                {{ $t('bot-social-inventory-select-all-filtered') }}
+              </button>
+              <button type="button" class="button button--link" :disabled="!checkedCount" @click="clearChecked">
+                {{ $t('bot-social-inventory-clear-selection') }}
+              </button>
+              <button
+                type="button"
+                class="button button--confirm"
+                :disabled="!checkedCount || transferring"
+                @click="openTransferDialog"
+              >
+                {{ $t('bot-social-inventory-transfer-n', { n: checkedCount }) }}
+              </button>
+            </div>
           </div>
 
           <div class="steam-inv__pager">
@@ -176,7 +216,6 @@
             >
           </div>
           <h3 class="steam-inv__name">{{ selectedItem.name }}</h3>
-          <p v-if="selectedItem.type" class="steam-inv__type">{{ selectedItem.type }}</p>
           <p v-if="selectedItem.gameName" class="steam-inv__game">
             <a
               v-if="selectedItem.storeUrl"
@@ -200,8 +239,18 @@
             </li>
             <li v-if="selectedItem.amount > 1">{{ $t('bot-social-inventory-amount', { n: selectedItem.amount }) }}</li>
           </ul>
-          <div v-if="selectedItem.marketable && selectedItem.marketUrl" class="steam-inv__market">
+          <div class="steam-inv__detail-actions">
+            <button
+              v-if="selectedItem.tradable"
+              type="button"
+              class="steam-inv__transfer-one"
+              :disabled="transferring"
+              @click="transferSingle(selectedItem)"
+            >
+              {{ $t('bot-social-inventory-transfer-one') }}
+            </button>
             <a
+              v-if="selectedItem.marketable && selectedItem.marketUrl"
               class="steam-inv__market-btn"
               :href="selectedItem.marketUrl"
               target="_blank"
@@ -216,13 +265,24 @@
         </aside>
       </div>
     </template>
+
+    <TransferDialog
+      :open="transferOpen"
+      :source-bot-name="botName"
+      :asset-ids="transferAssetIds"
+      :submitting="transferring"
+      @cancel="closeTransferDialog"
+      @confirm="onTransferConfirm"
+    ></TransferDialog>
   </div>
 </template>
 
 <script>
+  import { isPluginMissingError, transferInventory } from '../api/bot-social';
   import { resolveLocalData } from '../cache/load-policy';
-  import { loadInventory } from '../cache/bot-social-queries';
-  import { INVENTORY_FILTERS } from '../utils/inventory';
+  import { invalidateInventory, loadInventory } from '../cache/bot-social-queries';
+  import { STEAM_APP_ID, STEAM_COMMUNITY_CONTEXT_ID } from '../constants/steam-inventory';
+  import { INVENTORY_FILTERS, sortInventoryItems } from '../utils/inventory';
   import {
     NO_GAME_ID,
     INVENTORY_PAGE_SIZE,
@@ -233,9 +293,11 @@
     paginateItems,
   } from '../utils/filter-inventory';
   import { prefetchInventoryPageIcons } from '../utils/prefetch-images';
+  import TransferDialog from './transfer/dialog.vue';
 
   export default {
     name: 'BotSocialInventoryTab',
+    components: { TransferDialog },
     props: {
       botName: { type: String, required: true },
     },
@@ -243,31 +305,42 @@
       return {
         loading: false,
         refreshing: false,
+        transferring: false,
         error: '',
-        /** Raw inventory source of truth (from cache/IPC only). Filters never mutate this. */
         items: [],
         query: '',
         kindFilter: 'all',
         gameFilter: '',
         statusFilter: 'all',
         selectedId: '',
+        checkedIds: [],
+        selectMode: false,
+        statusFilterBeforeSelect: 'all',
+        transferOpen: false,
+        transferAssetIds: [],
         page: 1,
         previewHdReady: false,
         loadToken: 0,
       };
     },
     computed: {
-      /** Local view filters — never trigger IPC. */
       viewFilters() {
         return {
           query: this.query,
           kind: this.kindFilter,
           game: this.gameFilter,
-          status: this.statusFilter,
+          // Select mode is for transfer: only tradable items are listed.
+          status: this.selectMode ? 'tradable' : this.statusFilter,
         };
       },
       filteredItems() {
         return filterInventoryItems(this.items, this.viewFilters);
+      },
+      filteredTradableCount() {
+        return this.filteredItems.filter(item => item.tradable).length;
+      },
+      checkedCount() {
+        return this.checkedIds.length;
       },
       pagination() {
         return paginateItems(this.filteredItems, this.page, INVENTORY_PAGE_SIZE);
@@ -362,7 +435,6 @@
       selectedId() {
         this.previewHdReady = false;
       },
-      // View-only watchers: reset page / selection. Never call load()/IPC.
       query() {
         this.onViewFiltersChanged();
       },
@@ -378,6 +450,7 @@
       filteredItems() {
         if (this.page !== this.pagination.page) this.page = this.pagination.page;
         this.ensureSelectionInFilter();
+        this.pruneCheckedToExisting();
         this.warmNearbyIcons();
       },
       page() {
@@ -386,13 +459,17 @@
     },
     methods: {
       warmNearbyIcons() {
-        // Browser HTTP cache only — never ASF/IPC. Softens page-change thumbnail flash.
         this.$nextTick(() => {
           prefetchInventoryPageIcons(this.filteredItems, this.page, INVENTORY_PAGE_SIZE);
         });
       },
       resetViewState() {
         this.selectedId = '';
+        this.checkedIds = [];
+        this.selectMode = false;
+        this.statusFilterBeforeSelect = 'all';
+        this.transferOpen = false;
+        this.transferAssetIds = [];
         this.page = 1;
         this.query = '';
         this.kindFilter = 'all';
@@ -401,28 +478,19 @@
         this.previewHdReady = false;
         this.error = '';
       },
-      /**
-       * Mount / bot change:
-       * - Reuse any cached inventory (fresh or stale) → 0 network
-       * - Fetch only when cache is empty / unusable
-       * - Manual Actualizar is the only forced refresh path
-       */
       bootstrap(botName) {
         const resolved = resolveLocalData({
           resource: 'inventory',
           botName,
           isUsable: data => Array.isArray(data) && !isLegacyInventoryShape(data),
         });
-
         if (resolved.hasData) {
-          this.items = resolved.data;
+          this.items = sortInventoryItems(resolved.data);
           this.ensureSelectionInFilter();
           this.$emit('loaded', { total: this.items.length });
           this.warmNearbyIcons();
           return;
         }
-
-        // Legacy shape without `kind` — force one re-fetch to rebuild normalized cache.
         const legacy = resolveLocalData({
           resource: 'inventory',
           botName,
@@ -433,7 +501,6 @@
           this.fetchInventory(true);
           return;
         }
-
         this.items = [];
         this.fetchInventory(false);
       },
@@ -449,17 +516,118 @@
         if (this.selectedId && this.filteredItems.some(item => item.id === this.selectedId)) return;
         this.selectedId = this.filteredItems[0].id;
       },
+      pruneCheckedToExisting() {
+        if (!this.checkedIds.length) return;
+        const alive = new Set(this.items.map(item => item.id));
+        this.checkedIds = this.checkedIds.filter(id => alive.has(id));
+      },
+      isChecked(id) {
+        return this.checkedIds.includes(id);
+      },
+      toggleSelectMode() {
+        if (!this.selectMode) {
+          this.statusFilterBeforeSelect = this.statusFilter;
+          this.selectMode = true;
+          this.statusFilter = 'tradable';
+          this.page = 1;
+          this.checkedIds = this.checkedIds.filter(id => {
+            const item = this.items.find(i => i.id === id);
+            return item?.tradable;
+          });
+          return;
+        }
+        this.selectMode = false;
+        this.checkedIds = [];
+        this.statusFilter = this.statusFilterBeforeSelect || 'all';
+        this.page = 1;
+      },
+      onCellClick(item, event) {
+        this.selectItem(item.id);
+        const multi = this.selectMode || event.ctrlKey || event.metaKey;
+        if (!multi) return;
+        if (!item.tradable) {
+          this.$error(this.$t('bot-social-inventory-not-tradable-hint'));
+          return;
+        }
+        this.toggleChecked(item.id);
+      },
+      toggleChecked(id) {
+        const idx = this.checkedIds.indexOf(id);
+        if (idx >= 0) this.checkedIds.splice(idx, 1);
+        else this.checkedIds.push(id);
+      },
+      selectAllFilteredTradable() {
+        const ids = this.filteredItems.filter(item => item.tradable).map(item => item.id);
+        this.checkedIds = [...new Set([...this.checkedIds, ...ids])];
+        this.selectMode = true;
+      },
+      clearChecked() {
+        this.checkedIds = [];
+      },
       selectItem(id) {
         if (this.selectedId === id) return;
         this.selectedId = id;
       },
       clearFilters() {
-        // Local only — does not touch cache or IPC.
         this.query = '';
         this.kindFilter = 'all';
         this.gameFilter = '';
         this.statusFilter = 'all';
         this.page = 1;
+      },
+      openTransferDialog() {
+        if (!this.checkedIds.length || this.transferring) return;
+        this.transferAssetIds = [...this.checkedIds];
+        this.transferOpen = true;
+      },
+      transferSingle(item) {
+        if (!item?.tradable || this.transferring) return;
+        this.transferAssetIds = [item.id];
+        this.transferOpen = true;
+      },
+      closeTransferDialog() {
+        if (this.transferring) return;
+        this.transferOpen = false;
+        this.transferAssetIds = [];
+      },
+      async onTransferConfirm({ targetBotName }) {
+        if (this.transferring || !targetBotName || !this.transferAssetIds.length) return;
+        this.transferring = true;
+        try {
+          const result = await transferInventory(this.botName, {
+            assetIds: this.transferAssetIds,
+            targetBotName,
+            appId: STEAM_APP_ID,
+            contextId: STEAM_COMMUNITY_CONTEXT_ID,
+          });
+          const payload = result?.[this.botName] ?? result;
+          if (!payload?.Ok) {
+            this.$error(payload?.Message || this.$t('bot-social-inventory-transfer-failed'));
+            return;
+          }
+          const skipped = payload.Skipped?.length || 0;
+          this.$success(this.$t('bot-social-inventory-transfer-success', {
+            n: payload.Transferred ?? this.transferAssetIds.length,
+            bot: payload.TargetBotName || targetBotName,
+            skipped,
+          }));
+          this.transferOpen = false;
+          this.transferAssetIds = [];
+          this.checkedIds = [];
+          this.selectMode = false;
+          invalidateInventory(this.botName);
+          await this.fetchInventory(true);
+        } catch (err) {
+          if (isPluginMissingError(err)) {
+            this.$error(this.$t('bot-social-plugin-missing'));
+          } else if (err?.result?.status === 429 || err?.code === 'RATE_LIMITED') {
+            this.$error(this.$t('bot-social-rate-limited'));
+          } else {
+            this.$error(err.message || this.$t('bot-social-inventory-transfer-failed'));
+          }
+        } finally {
+          this.transferring = false;
+        }
       },
       onPreviewHdLoad() {
         this.previewHdReady = true;
@@ -473,31 +641,24 @@
         this.loading = !hasData;
         this.refreshing = Boolean(force && hasData);
         if (force) this.error = '';
-
         try {
           const result = await loadInventory(this.botName, { force: Boolean(force) });
           if (token !== this.loadToken) return;
-          this.items = result.data || [];
-          if (result.rateLimited) {
-            this.$error(this.$t('bot-social-rate-limited'));
-          } else if (result.error && result.stale) {
-            this.error = result.error.message || String(result.error);
-          } else {
-            this.error = '';
-          }
+          this.items = sortInventoryItems(result.data || []);
+          if (result.rateLimited) this.$error(this.$t('bot-social-rate-limited'));
+          else if (result.error && result.stale) this.error = result.error.message || String(result.error);
+          else this.error = '';
           this.ensureSelectionInFilter();
+          this.pruneCheckedToExisting();
           this.$emit('loaded', { total: this.items.length });
           this.warmNearbyIcons();
         } catch (err) {
           if (token !== this.loadToken) return;
-          if (err?.code === 'RATE_LIMITED') {
-            this.$error(this.$t('bot-social-rate-limited'));
-          } else if (!hasData) {
+          if (err?.code === 'RATE_LIMITED') this.$error(this.$t('bot-social-rate-limited'));
+          else if (!hasData) {
             this.error = err.message || String(err);
             this.items = [];
-          } else {
-            this.error = err.message || String(err);
-          }
+          } else this.error = err.message || String(err);
         } finally {
           if (token === this.loadToken) {
             this.loading = false;
@@ -506,10 +667,10 @@
         }
       },
       refresh() {
-        // Explicit user action — the only path that may hit Steam/IPC when data exists.
-        if (this.loading || this.refreshing) return;
+        if (this.loading || this.refreshing || this.transferring) return;
         this.fetchInventory(true);
       },
     },
   };
+
 </script>

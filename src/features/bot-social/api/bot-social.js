@@ -51,6 +51,23 @@ export function removeWishlist(botName, appIds) {
   return post(`${socialBase(botName)}/Wishlist/Remove`, { AppIds: appIds });
 }
 
+/**
+ * Transfer selected inventory assets to another ASF bot (trade offer via plugin).
+ * @param {string} botName source bot
+ * @param {{ assetIds: string[], targetBotName: string, appId?: number, contextId?: number, message?: string }} payload
+ */
+export function transferInventory(botName, {
+  assetIds, targetBotName, appId, contextId, message,
+}) {
+  return post(`${socialBase(botName)}/Inventory/Transfer`, {
+    AssetIds: assetIds,
+    TargetBotName: targetBotName,
+    ...(appId != null ? { AppId: appId } : {}),
+    ...(contextId != null ? { ContextId: contextId } : {}),
+    ...(message ? { Message: message } : {}),
+  });
+}
+
 export function isPluginMissingError(err) {
   const status = err?.result?.status ?? err?.response?.status;
   if (status === 404) return true;
