@@ -9,15 +9,15 @@
     ></input-label>
 
     <div class="form-item__value">
-      <select :id="field" v-model="selectedElement" class="form-item__input" :disabled="!availableEnumValues.length" @change="addElement($event.target.value)">
-        <option :value="null" disabled selected hidden>{{ $t('input-select-enum-value') }}</option>
-        <option v-for="(enumValue, name) in enumValues" v-show="!value.includes(enumValue)" :key="name" :value="enumValue">
-          {{ translateEnum(name) }}
-        </option>
-        <option v-if="!availableEnumValues.length" :value="undefined" disabled>
-          {{ $t('input-all-selected') }}
-        </option>
-      </select>
+      <AsfSelect
+        :id="field"
+        :value="null"
+        :options="availableSelectOptions"
+        :placeholder="listPlaceholder"
+        :disabled="!availableEnumValues.length"
+        :aria-labelledby="field ? `${field}-label` : ''"
+        @input="addElement"
+      ></AsfSelect>
 
       <div class="input-option__items">
         <button v-for="(item, index) in value" :key="index" class="button input-option__item" @click.prevent="removeElement(item)">
@@ -36,11 +36,6 @@
   export default {
     name: 'InputSet',
     mixins: [Input],
-    data() {
-      return {
-        selectedElement: null,
-      };
-    },
     computed: {
       availableEnumValues() {
         const availableEnumValues = [];
@@ -55,6 +50,18 @@
       enumValues() {
         return this.schema.values.values;
       },
+      availableSelectOptions() {
+        return Object.entries(this.enumValues || {})
+          .filter(([, enumValue]) => !this.value.includes(enumValue))
+          .map(([name, enumValue]) => ({
+            value: enumValue,
+            label: this.translateEnum(name),
+          }));
+      },
+      listPlaceholder() {
+        if (!this.availableEnumValues.length) return this.$t('input-all-selected');
+        return this.$t('input-select-enum-value');
+      },
     },
     created() {
       this.value.sort();
@@ -67,8 +74,6 @@
 
         this.value.push(parsedInput);
         this.value.sort();
-
-        this.selectedElement = null;
       },
       removeElement(input) {
         const parsedInput = (typeof (input) !== (typeof (0))) ? parseInt(input, 10) : input;

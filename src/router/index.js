@@ -3,7 +3,7 @@ import VueRouter from 'vue-router';
 import VueMeta from 'vue-meta';
 import store from '../store';
 import * as storage from '../utils/storage';
-import { installUnsavedChangesGuards } from '../utils/unsaved-changes';
+import { installUnsavedChangesGuards, isBenignNavigationError } from '../utils/unsaved-changes';
 import routes from './routes';
 
 Vue.use(VueRouter);
@@ -36,6 +36,8 @@ router.afterEach(to => {
 });
 
 router.onError(err => {
+  // Cancelled leave / duplicate push — not real app failures.
+  if (isBenignNavigationError(err)) return;
   if (err.type === 'missing') window.location.reload();
   else throw err;
 });

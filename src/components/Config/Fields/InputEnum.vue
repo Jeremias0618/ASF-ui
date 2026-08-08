@@ -9,11 +9,13 @@
     ></input-label>
 
     <div class="form-item__value">
-      <select :id="field" v-model="value" class="form-item__input" :name="field">
-        <option v-for="(enumValue, name) in values" v-if="!(name === 'Max' && isLastValue(enumValue))" :key="name" :value="enumValue">
-          {{ translateEnum(name) }}
-        </option>
-      </select>
+      <AsfSelect
+        :id="field"
+        v-model="value"
+        :options="selectOptions"
+        :placeholder="$t('input-select-enum-value')"
+        :aria-labelledby="field ? `${field}-label` : ''"
+      ></AsfSelect>
     </div>
 
     <input-description v-if="hasDescription" :shown="showDescription" :description="description"></input-description>
@@ -21,6 +23,7 @@
 </template>
 
 <script>
+  import { BASIC_ONLINE_STATUS_NAMES } from '../../../utils/config-i18n';
   import Input from './Input.vue';
 
   export default {
@@ -29,6 +32,25 @@
     computed: {
       values() {
         return this.schema.values;
+      },
+      selectOptions() {
+        let entries = Object.entries(this.values || {})
+          .filter(([name, enumValue]) => !(name === 'Max' && this.isLastValue(enumValue)));
+
+        if (this.field === 'OnlineStatus') {
+          const allowed = new Set(BASIC_ONLINE_STATUS_NAMES);
+          entries = entries.filter(([name]) => allowed.has(name));
+          entries.sort(([a], [b]) => {
+            const ia = BASIC_ONLINE_STATUS_NAMES.indexOf(a);
+            const ib = BASIC_ONLINE_STATUS_NAMES.indexOf(b);
+            return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+          });
+        }
+
+        return entries.map(([name, enumValue]) => ({
+          value: enumValue,
+          label: this.translateEnum(name),
+        }));
       },
     },
     methods: {

@@ -12,11 +12,13 @@
       <div class="input-option__field input-option__field--three">
         <input v-if="keyIsString" :id="`${field}-key`" v-model="elementKey" class="form-item__input" type="text" @keydown.enter="addElement">
 
-        <select v-if="valueIsEnum" :id="`${field}-value`" v-model="elementValue" class="form-item__input">
-          <option v-for="(enumValue, name) in schema.value.values" :key="name" :value="enumValue">
-            {{ translateEnum(name) }}
-          </option>
-        </select>
+        <AsfSelect
+          v-if="valueIsEnum"
+          :id="`${field}-value`"
+          v-model="elementValue"
+          :options="valueSelectOptions"
+          :placeholder="$t('input-select-enum-value')"
+        ></AsfSelect>
 
         <button class="button" @click.prevent="addElement">
           {{ $t('add') }}
@@ -61,6 +63,12 @@
         });
 
         return availableEnumValues;
+      },
+      valueSelectOptions() {
+        return Object.entries(this.schema.value.values || {}).map(([name, enumValue]) => ({
+          value: enumValue,
+          label: this.translateEnum(name),
+        }));
       },
     },
     created() {

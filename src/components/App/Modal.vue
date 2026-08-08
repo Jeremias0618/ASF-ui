@@ -6,7 +6,14 @@
         <FontAwesomeIcon icon="times" class="modal__close" @click="close"></FontAwesomeIcon>
         <FontAwesomeIcon v-if="showArrows" icon="chevron-left" class="modal__arrow left" @click="next('left')"></FontAwesomeIcon>
         <FontAwesomeIcon v-if="showArrows" icon="chevron-right" class="modal__arrow right" @click="next('right')"></FontAwesomeIcon>
-        <div class="modal__main" :class="{ 'modal__main--wide': isWide }">
+        <div
+          class="modal__main"
+          :class="{
+            'modal__main--wide': isWide,
+            'modal__main--dialog': isDialog,
+            'modal__main--medium': isMedium,
+          }"
+        >
           <router-view ref="modal" name="modal"></router-view>
         </div>
       </div>
@@ -16,11 +23,20 @@
 
 <script>
   import { mapGetters } from 'vuex';
+  import { isBenignNavigationError } from '../../utils/unsaved-changes';
 
   const WIDE_MODAL_ROUTES = new Set([
     'bot-config',
     'bot-create',
     'bot-copy',
+  ]);
+
+  const DIALOG_MODAL_ROUTES = new Set([
+    'password-encrypt',
+    'password-hash',
+  ]);
+
+  const MEDIUM_MODAL_ROUTES = new Set([
     'bot-bgr',
   ]);
 
@@ -36,6 +52,12 @@
       isWide() {
         return WIDE_MODAL_ROUTES.has(this.$route.name);
       },
+      isDialog() {
+        return DIALOG_MODAL_ROUTES.has(this.$route.name);
+      },
+      isMedium() {
+        return MEDIUM_MODAL_ROUTES.has(this.$route.name);
+      },
       showArrows() {
         return !!this.$route.meta.arrows && this.bots.length > 1;
       },
@@ -47,11 +69,17 @@
       document.removeEventListener('keyup', this.onKeyPress);
     },
     methods: {
+      navigate(location) {
+        return this.$router.push(location).catch(err => {
+          if (isBenignNavigationError(err)) return;
+          throw err;
+        });
+      },
       close() {
-        this.$router.push({ name: this.$route.meta.closeRoute });
+        this.navigate({ name: this.$route.meta.closeRoute });
       },
       back() {
-        this.$router.push(this.$route.path.slice(0, this.$route.path.lastIndexOf('/')));
+        this.navigate(this.$route.path.slice(0, this.$route.path.lastIndexOf('/')));
       },
       onKeyPress(event) {
         // Ignore key presses when the modal is not visible
@@ -80,7 +108,7 @@
         if (targetIndex > this.bots.length - 1) targetIndex = 0;
         else if (targetIndex < 0) targetIndex = this.bots.length - 1;
 
-        this.$router.push({ name: this.$route.name, params: { bot: this.bots[targetIndex].name } });
+        this.navigate({ name: this.$route.name, params: { bot: this.bots[targetIndex].name } });
       },
     },
   };
@@ -164,6 +192,16 @@
         min-height: 0;
         overflow: auto;
       }
+    }
+
+    &--dialog {
+      max-width: min(28rem, calc(100vw - 1.5rem));
+      width: min(28rem, calc(100vw - 1.5rem));
+    }
+
+    &--medium {
+      max-width: min(36rem, calc(100vw - 1.5rem));
+      width: min(36rem, calc(100vw - 1.5rem));
     }
   }
 

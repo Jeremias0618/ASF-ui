@@ -36,7 +36,7 @@
         type="button"
         class="home2-sidebar__search"
         :class="{ 'is-collapsed': collapsed }"
-        :title="$t('home2-search-open')"
+        v-tooltip="collapsed ? { content: $t('home2-search-open'), placement: 'right', delay: { show: 180, hide: 0 } } : false"
         :aria-label="$t('home2-search-open')"
         @click="$emit('open-search')"
       >
@@ -71,7 +71,7 @@
                   'is-rail': collapsed,
                 }"
                 :to="{ name: item.route }"
-                :title="collapsed ? $t(item.labelKey) : null"
+                v-tooltip="collapsed ? { content: $t(item.labelKey), placement: 'right', delay: { show: 180, hide: 0 } } : false"
                 :aria-label="$t(item.labelKey)"
                 @click.native="$emit('close-mobile')"
               >
@@ -95,6 +95,7 @@
           class="home2-theme__btn"
           :class="{ 'is-active': !darkMode }"
           :aria-pressed="!darkMode ? 'true' : 'false'"
+          v-tooltip="collapsed ? { content: $t('home2-theme-light'), placement: 'right', delay: { show: 180, hide: 0 } } : false"
           @click="setDark(false)"
         >
           <FontAwesomeIcon icon="sun" fixedWidth></FontAwesomeIcon>
@@ -105,6 +106,7 @@
           class="home2-theme__btn"
           :class="{ 'is-active': darkMode }"
           :aria-pressed="darkMode ? 'true' : 'false'"
+          v-tooltip="collapsed ? { content: $t('home2-theme-dark'), placement: 'right', delay: { show: 180, hide: 0 } } : false"
           @click="setDark(true)"
         >
           <FontAwesomeIcon icon="moon" fixedWidth></FontAwesomeIcon>
@@ -114,7 +116,11 @@
 
       <div class="home2-user" :class="{ 'is-collapsed': collapsed }">
         <template v-if="collapsed">
-          <span class="home2-user__avatar" :title="userLabel" :aria-label="userLabel">
+          <span
+            class="home2-user__avatar"
+            v-tooltip="{ content: userLabel, placement: 'right', delay: { show: 180, hide: 0 } }"
+            :aria-label="userLabel"
+          >
             <FontAwesomeIcon icon="user" fixedWidth></FontAwesomeIcon>
           </span>
         </template>
@@ -312,12 +318,12 @@
 
       /*
         After width settles: center the icon column with equal side space.
-        Applied late via .is-rail-ready to avoid the expand/collapse jump.
+        Keep a small pad so active pills are never clipped by the edge.
       */
       &.is-collapsed.is-rail-ready {
         align-items: center;
-        padding-left: 0;
-        padding-right: 0;
+        padding-left: 0.45rem;
+        padding-right: 0.45rem;
       }
     }
 
@@ -326,8 +332,8 @@
 
       &.is-collapsed {
         align-items: center;
-        padding-left: 0;
-        padding-right: 0;
+        padding-left: 0.45rem;
+        padding-right: 0.45rem;
       }
     }
   }
@@ -350,11 +356,13 @@
     @media screen and (min-width: 1024px) {
       display: flex;
       justify-content: flex-start;
-      padding: 1.15rem 0 0.85rem;
+      padding: 1.15rem 0.15rem 1rem;
       width: 100%;
 
       .home2-sidebar.is-rail-ready & {
         justify-content: center;
+        padding-left: 0;
+        padding-right: 0;
         width: var(--h2-icon-slot);
       }
     }
@@ -429,11 +437,13 @@
   .home2-sidebar__search-wrap {
     display: flex;
     justify-content: flex-start;
-    margin-bottom: 0.85rem;
+    margin-bottom: 1.1rem;
+    padding: 0 0.15rem;
     width: 100%;
 
     .home2-sidebar.is-rail-ready & {
       justify-content: center;
+      padding: 0;
       width: var(--h2-icon-slot);
     }
 
@@ -446,16 +456,16 @@
     align-items: center;
     background: var(--h2-surface);
     border: 1px solid var(--h2-border);
-    border-radius: 0.65rem;
+    border-radius: 0.7rem;
     box-sizing: border-box;
     color: var(--h2-muted);
     cursor: pointer;
     display: flex;
-    gap: 0.45rem;
+    gap: 0.55rem;
     justify-content: flex-start;
     min-height: var(--h2-icon-slot);
     min-width: 0;
-    padding: 0 0.55rem;
+    padding: 0 0.75rem;
     text-align: left;
     transition: border-color 0.15s ease, background 0.15s ease;
     width: 100%;
@@ -471,10 +481,14 @@
     &.is-collapsed {
       background: transparent;
       border-color: transparent;
+      border-radius: 0.6rem;
       gap: 0;
+      height: 2.25rem;
       justify-content: center;
+      max-width: 2.25rem;
+      min-height: 2.25rem;
       padding: 0;
-      width: var(--h2-icon-slot);
+      width: 2.25rem;
 
       &:hover,
       &:focus-visible {
@@ -520,16 +534,20 @@
   }
 
   .home2-sidebar__scroll {
+    box-sizing: border-box;
     flex: 1;
     min-height: 0;
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
+    padding: 0 0.25rem;
     scrollbar-width: none;
     width: 100%;
 
     .home2-sidebar.is-rail-ready & {
-      width: var(--h2-icon-slot);
+      overflow-x: visible;
+      padding: 0.15rem 0;
+      width: auto;
     }
 
     &::-webkit-scrollbar {
@@ -538,10 +556,17 @@
   }
 
   .home2-sidebar__nav {
+    box-sizing: border-box;
     display: grid;
-    gap: 0.85rem;
+    gap: 1.15rem;
     margin-bottom: 1rem;
+    padding: 0;
     width: 100%;
+
+    .home2-sidebar.is-rail-ready & {
+      justify-items: center;
+      width: auto;
+    }
   }
 
   .home2-sidebar__section-title {
@@ -552,8 +577,9 @@
     font-weight: 600;
     height: 1.1rem;
     justify-content: flex-start;
-    letter-spacing: 0.04em;
-    margin: 0 0 0.45rem;
+    letter-spacing: 0.06em;
+    margin: 0 0 0.55rem;
+    padding: 0 0.55rem;
     text-transform: uppercase;
 
     .app--dark-mode & {
@@ -562,6 +588,7 @@
 
     .home2-sidebar.is-rail-ready & {
       justify-content: center;
+      padding: 0;
     }
 
     .is-hidden {
@@ -589,28 +616,35 @@
   }
 
   .home2-sidebar__list {
+    box-sizing: border-box;
     display: grid;
-    gap: 0.2rem;
+    gap: 0.35rem;
     justify-items: stretch;
     list-style: none;
     margin: 0;
     padding: 0;
     width: 100%;
+
+    .home2-sidebar.is-rail-ready & {
+      justify-items: center;
+      width: auto;
+    }
   }
 
   .home2-menu-item {
     align-items: center;
-    border-radius: 0.55rem;
+    border-radius: 0.65rem;
     box-sizing: border-box;
     color: var(--h2-muted-2);
     display: flex;
-    font-size: 0.84rem;
+    font-size: 0.875rem;
     font-weight: 500;
-    gap: 0.55rem;
+    gap: 0.7rem;
     justify-content: flex-start;
-    min-height: 2.35rem;
+    max-width: 100%;
+    min-height: 2.55rem;
     min-width: 0;
-    padding: 0 0.35rem;
+    padding: 0.35rem 0.7rem;
     position: relative;
     text-decoration: none;
     width: 100%;
@@ -624,28 +658,16 @@
       background: var(--h2-brand-50);
       color: var(--h2-brand-600);
 
+      /* No left accent bar — pill highlight only. */
       &::before {
-        background: var(--h2-brand-600);
-        border-radius: 0 3px 3px 0;
-        bottom: 0.4rem;
-        content: '';
-        left: 0;
-        position: absolute;
-        top: 0.4rem;
-        width: 3px;
+        content: none;
+        display: none;
       }
 
       .app--dark-mode & {
         background: color-mix(in srgb, var(--h2-brand) 28%, transparent);
         box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--h2-brand) 42%, transparent);
         color: var(--h2-brand);
-
-        &::before {
-          background: var(--h2-brand);
-          bottom: 0.35rem;
-          top: 0.35rem;
-          width: 3px;
-        }
       }
 
       @supports not (background: color-mix(in srgb, red 50%, blue)) {
@@ -657,16 +679,20 @@
     }
 
     &.is-rail {
+      border-radius: 0.6rem;
+      flex-shrink: 0;
       gap: 0;
-      height: var(--h2-icon-slot);
+      height: 2.25rem;
       justify-content: center;
-      min-height: var(--h2-icon-slot);
-      overflow: hidden;
+      margin: 0.15rem auto;
+      max-width: 2.25rem;
+      min-height: 2.25rem;
+      overflow: visible;
       padding: 0;
-      width: var(--h2-icon-slot);
+      width: 2.25rem;
 
-      &.is-active::before {
-        display: none;
+      &.is-active {
+        box-shadow: none;
       }
     }
   }

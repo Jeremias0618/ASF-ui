@@ -1,88 +1,126 @@
 @import '~vue-multiselect/dist/vue-multiselect.min.css';
 
 .multiselect {
-  border: 1px solid rgba(var(--color-text-dark), 0.1);
-  border-radius: 0.1875em;
+  border: 1px solid var(--h2-border, rgba(0, 0, 0, 0.18));
+  border-radius: 0.45rem;
+  box-sizing: border-box;
+  min-height: 2.66667em;
 
   @media screen and (max-height: 835px), screen and (max-width: 1366px) {
-    min-height: 20px;
+    min-height: 2.66667em;
   }
 
-	@media screen and (max-height: 720px), screen and (max-width: 1000px) {
-    min-height: 20px;
+  @media screen and (max-height: 720px), screen and (max-width: 1000px) {
+    min-height: 2.66667em;
+  }
+
+  .app--dark-mode & {
+    border-color: rgba(255, 255, 255, 0.18);
   }
 }
 
 .multiselect__select {
+  height: 100%;
+
   @media screen and (max-height: 835px), screen and (max-width: 1366px) {
-    height: 33px;
+    height: 100%;
   }
 
   @media screen and (max-height: 720px), screen and (max-width: 1000px) {
-    height: 28px;
+    height: 100%;
   }
 }
 
 .multiselect,
 .multiselect__input,
 .multiselect__single {
+  background: var(--h2-field, var(--color-background));
+  color: var(--h2-ink, var(--color-text-dark));
   font-size: inherit;
-  background: var(--color-background);
+
+  .app--dark-mode & {
+    background: var(--h2-field, #334155);
+    color: #f8fafc;
+  }
 }
 
 .multiselect__single {
-  top: 2px;
-  font-size: 14px;
+  margin-bottom: 0;
+  overflow: hidden;
+  padding: 0;
+  text-overflow: ellipsis;
+  top: 0;
+  white-space: nowrap;
 
   @media screen and (max-height: 835px), screen and (max-width: 1366px) {
-    vertical-align: sub;
-    font-size: 0.9375em;
+    vertical-align: middle;
   }
 
   @media screen and (max-height: 720px), screen and (max-width: 1000px) {
-    vertical-align: top;
+    vertical-align: middle;
   }
 }
 
-.multiselect,
 .multiselect__input::placeholder,
-.multiselect__placeholder,
+.multiselect__placeholder {
+  color: var(--h2-muted, var(--color-text-disabled));
+  opacity: 1;
+
+  .app--dark-mode & {
+    color: #cbd5e1;
+  }
+}
+
 .multiselect__option--selected.multiselect__option--highlight {
-  color: var(--color-text-dark);
+  color: var(--h2-ink, var(--color-text-dark));
 }
 
 .multiselect__tags,
 .multiselect__spinner {
-  background: var(--color-background);
-  border-color: var(--color-border);
+  background: var(--h2-field, var(--color-background));
+  border-color: transparent;
+  min-height: 2.66667em;
+
+  .app--dark-mode & {
+    background: var(--h2-field, #334155);
+  }
 }
 
 .multiselect__content-wrapper {
-  top: 35px;
-  background: var(--color-background);
-  border-color: var(--color-border);
-  color: var(--color-text-dark);
+  top: calc(100% + 0.25rem);
+  background: var(--h2-shell, var(--color-background));
+  border-color: var(--h2-border, var(--color-border));
+  border-radius: 0.45rem;
+  color: var(--h2-ink, var(--color-text-dark));
+  z-index: 40;
+
+  .app--dark-mode & {
+    background: var(--h2-elevated, #151b28);
+    border-color: rgba(255, 255, 255, 0.12);
+    color: #f8fafc;
+  }
 }
 
 .multiselect__tags {
   border: none;
+  padding: 0.35rem 2.25rem 0.35rem 0.65rem;
 
   @media screen and (max-height: 720px), screen and (max-width: 1000px) {
-    min-height: 20px;
-    height: 33px;
-    padding: 5px 40px 0 8px;
+    min-height: 2.66667em;
+    height: auto;
+    padding: 0.35rem 2.25rem 0.35rem 0.65rem;
   }
 
   @media screen and (max-height: 835px), screen and (max-width: 1366px) {
-    min-height: 20px;
-    height: 30px;
-    padding: 5px 40px 0 8px;
+    min-height: 2.66667em;
+    height: auto;
+    padding: 0.35rem 2.25rem 0.35rem 0.65rem;
   }
 
   > input {
-    color: var(--color-text-dark);
-    margin-left: -5px;
-    margin-top: 0.7px;
+    color: inherit;
+    margin-left: 0;
+    margin-top: 0;
   }
 }
 
@@ -104,28 +142,28 @@
 
 .multiselect__option--highlight:after {
   color: var(--color-theme);
-  background: var(--color-background-light);
+  background: var(--h2-soft, var(--color-background-light));
 }
 
 .multiselect__option--highlight {
-  background: var(--color-background-light);
+  background: var(--h2-soft, var(--color-background-light));
   color: var(--color-theme);
 }
 
 .multiselect__option--selected {
   color: var(--color-theme);
-  background: var(--color-background);
+  background: var(--h2-field, var(--color-background));
 }
 
 .multiselect__option--selected.multiselect__option--highlight:hover {
-  color: var(--color-button-cancel);;
+  color: var(--color-button-cancel);
   font-weight: 700;
 }
 
 .multiselect__option--selected.multiselect__option--highlight,
 .multiselect__option--selected.multiselect__option--highlight:after {
   color: var(--color-theme);
-  background: var(--color-background-light);
+  background: var(--h2-soft, var(--color-background-light));
   font-weight: normal;
 }
 

@@ -373,6 +373,19 @@
   }
 
   .app--home-shell {
+    /* Field controls must live on .app — modals are outside .home2-shell. */
+    --h2-surface: #f7f9fb;
+    --h2-shell: #ffffff;
+    --h2-soft: #eef2f6;
+    --h2-field: #ffffff;
+    --h2-border: #e4e7ec;
+    --h2-ink: #101828;
+    --h2-muted: #667085;
+    --h2-muted-2: #475467;
+    --h2-brand: var(--color-theme, #367fa9);
+    --h2-brand-600: var(--color-theme-dark, #2f6d91);
+    --h2-brand-50: color-mix(in srgb, var(--color-theme, #367fa9) 12%, transparent);
+
     background: #f7f9fb;
     font-family: 'Segoe UI Variable Text', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, 'Noto Sans', 'Helvetica Neue', Arial, sans-serif;
     font-variant-numeric: normal;
@@ -380,6 +393,18 @@
     -moz-osx-font-smoothing: grayscale;
 
     &.app--dark-mode {
+      --h2-surface: #111827;
+      --h2-shell: #1b2233;
+      --h2-soft: #2a3347;
+      /* Field surface: dark enough for near-white text to read clearly. */
+      --h2-field: #334155;
+      --h2-border: rgba(255, 255, 255, 0.1);
+      --h2-ink: #f8fafc;
+      --h2-muted: #94a3b8;
+      --h2-muted-2: #cbd5e1;
+      --h2-brand: var(--color-theme-light, var(--color-theme, #5b9fff));
+      --h2-brand-600: var(--color-theme-light, var(--color-theme, #5b9fff));
+      --h2-brand-50: color-mix(in srgb, var(--color-theme, #5b9fff) 26%, transparent);
       background: #111827;
     }
 

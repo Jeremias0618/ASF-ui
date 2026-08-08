@@ -1,6 +1,6 @@
 <template>
-  <label class="form-item__label" :for="field || undefined">
-    <span class="form-item__label-text">{{ label }}</span>
+  <div class="form-item__label">
+    <span :id="labelId" class="form-item__label-text">{{ label }}</span>
     <button
       v-if="hasDescription"
       type="button"
@@ -20,7 +20,7 @@
     >
       <FontAwesomeIcon icon="key"></FontAwesomeIcon>
     </button>
-  </label>
+  </div>
 </template>
 
 <script>
@@ -33,6 +33,9 @@
       helpOpen: Boolean,
     },
     computed: {
+      labelId() {
+        return this.field ? `${this.field}-label` : undefined;
+      },
       showKey() {
         return (this.field === 'IPCPassword' && this.$route.name === 'asf-config')
           || (this.field === 'SteamPassword' && this.$route.name === 'bot-config');

@@ -9,10 +9,12 @@ import Notifications from './plugins/notifications';
 import Icons from './plugins/icons';
 import http, { NotificationError } from './plugins/http';
 import Tooltips from './plugins/tooltips';
+import UI from './plugins/ui';
 
 Vue.use(Notifications);
 Vue.use(Tooltips);
 Vue.use(Icons);
+Vue.use(UI);
 Vue.use(i18n, store);
 Vue.use(http);
 

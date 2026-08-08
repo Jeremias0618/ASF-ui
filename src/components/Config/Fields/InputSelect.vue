@@ -9,39 +9,47 @@
     ></input-label>
 
     <div class="form-item__value">
-      <div class="input-option__field input-option__field--three">
+      <div class="input-option__field input-option__field--permissions">
         <Multiselect
           v-model="elementKey"
-          v-bind="{
-            label: 'label',
-            trackBy: 'key',
-            multiple: false,
-            options: botOptions,
-            closeOnSelect: true,
-            taggable: true,
-            placeholder: '',
-            deselectLabel: '',
-            selectLabel: '',
-            selectedLabel: '',
-            tagPlaceholder: $t('tag-placeholder')
-          }"
+          class="input-permissions__select"
+          :options="botOptions"
+          label="label"
+          track-by="key"
+          :multiple="false"
+          :close-on-select="true"
+          :taggable="true"
+          :placeholder="$t('bot-permissions-select')"
+          deselect-label=""
+          select-label=""
+          selected-label=""
+          :tag-placeholder="$t('tag-placeholder')"
           @tag="addSteamId"
         >
+          <template slot="singleLabel" slot-scope="{ option }">
+            <span class="input-permissions__value" :title="option.label">{{ option.label }}</span>
+          </template>
+          <template slot="option" slot-scope="{ option }">
+            <span class="input-permissions__option" :title="option.label">{{ option.label }}</span>
+          </template>
         </Multiselect>
 
-        <select v-if="valueIsEnum" :id="`${field}-value`" v-model="elementValue" class="form-item__input">
-          <option v-for="(enumValue, name) in schema.value.values" :key="name" :value="enumValue">
-            {{ translateEnum(name) }}
-          </option>
-        </select>
+        <AsfSelect
+          v-if="valueIsEnum"
+          :id="`${field}-value`"
+          v-model="elementValue"
+          class="input-permissions__role"
+          :options="roleOptions"
+          :placeholder="$t('input-select-enum-value')"
+        ></AsfSelect>
 
-        <button class="button" @click.prevent="addElement">
+        <button type="button" class="button input-permissions__add" @click.prevent="addElement">
           {{ $t('add') }}
         </button>
       </div>
 
       <div class="input-option__items">
-        <button v-for="(keyValue, key) in value" :key="key" class="button input-option__item" @click.prevent="removeElement(key)">
+        <button v-for="(keyValue, key) in value" :key="key" type="button" class="button input-option__item" @click.prevent="removeElement(key)">
           {{ resolveKey(key) }} => {{ translateEnum(resolveValue(keyValue)) }}
         </button>
       </div>
@@ -84,9 +92,15 @@
 
         return availableEnumValues;
       },
+      roleOptions() {
+        return Object.entries(this.schema.value.values || {}).map(([name, enumValue]) => ({
+          value: enumValue,
+          label: this.translateEnum(name),
+        }));
+      },
       botOptions() {
         return this.bots.map(bot => {
-          const botName = (bot.nickname) ? `${bot.name} (${bot.nickname})` : bot.name;
+          const botName = (bot.nickname) ? `${bot.name} · ${bot.nickname}` : bot.name;
           return { label: botName, key: bot.steamid };
         });
       },
@@ -131,4 +145,120 @@
 
 <style lang="scss">
   @import "../../../style/partials/multiselect";
+
+  .input-option__field--permissions {
+    align-items: stretch;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: flex-start;
+    max-width: 36rem;
+    width: 100%;
+  }
+
+  .input-permissions__select {
+    flex: 1 1 12rem;
+    max-width: 18rem;
+    min-width: 0;
+
+    &.multiselect {
+      min-height: 2.75rem;
+    }
+
+    .multiselect__tags {
+      align-items: center;
+      box-sizing: border-box;
+      display: flex;
+      height: 2.75rem;
+      min-height: 2.75rem;
+      overflow: hidden;
+      padding: 0 2.35rem 0 0.7rem;
+    }
+
+    .multiselect__single,
+    .multiselect__input {
+      background: transparent;
+      margin: 0;
+      overflow: hidden;
+      padding: 0;
+      text-overflow: ellipsis;
+      top: 0;
+      white-space: nowrap;
+      width: 100%;
+    }
+
+    .multiselect__placeholder {
+      margin: 0;
+      overflow: hidden;
+      padding: 0;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .multiselect__select {
+      height: 2.75rem;
+      width: 2.35rem;
+    }
+
+    .multiselect__content-wrapper {
+      box-sizing: border-box;
+      left: 0;
+      max-height: 14rem;
+      max-width: 100%;
+      min-width: 100%;
+      overflow-x: hidden;
+      overflow-y: auto;
+      right: auto;
+      width: 100%;
+      z-index: 50;
+    }
+
+    .multiselect__content {
+      width: 100%;
+    }
+
+    .multiselect__option {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  .input-permissions__value,
+  .input-permissions__option {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .input-permissions__role {
+    flex: 0 1 10.5rem;
+    min-width: 9.5rem;
+    width: 10.5rem;
+  }
+
+  .input-permissions__add {
+    flex: 0 0 auto;
+    max-height: 2.75rem;
+    min-height: 2.75rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    white-space: nowrap;
+    width: auto;
+  }
+
+  @media screen and (max-width: 559px) {
+    .input-option__field--permissions {
+      max-width: none;
+    }
+
+    .input-permissions__select,
+    .input-permissions__role,
+    .input-permissions__add {
+      flex: 1 1 100%;
+      max-width: none;
+      width: 100%;
+    }
+  }
 </style>

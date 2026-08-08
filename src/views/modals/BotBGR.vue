@@ -1,33 +1,45 @@
 <template>
-  <main v-if="bot" class="main-container">
-    <h2 v-tooltip="bot.name" class="title">{{ bot.viewableName }}</h2>
+  <main v-if="bot" class="main-container bgr-modal">
+    <header class="bgr-modal__header">
+      <p class="bgr-modal__eyebrow">{{ $t('bot-fav-buttons-bgr') }}</p>
+      <h2 v-tooltip="bot.name" class="bgr-modal__title">{{ bot.viewableName }}</h2>
+    </header>
 
-    <h3 v-if="loading" class="subtitle">
+    <div v-if="loading" class="bgr-modal__loading" aria-busy="true">
       <FontAwesomeIcon icon="spinner" size="lg" spin></FontAwesomeIcon>
-    </h3>
-
-    <BgrStatus v-if="!loading && state === 'input'" :usedKeys="usedKeys" :unusedKeys="unusedKeys" @reset="showReset" @show-unused="state = 'unusedKeys'" @show-used="state = 'usedKeys'"></BgrStatus>
-
-    <div v-if="!loading && state === 'input' && bot.bgrCount !== 0" class="bgr__info">
-      <div v-if="bot.isConnected" class="bgr__info-icon">
-        <FontAwesomeLayers class="hourglass-spin">
-          <FontAwesomeIcon icon="hourglass-start"></FontAwesomeIcon>
-          <FontAwesomeIcon icon="hourglass-half"></FontAwesomeIcon>
-          <FontAwesomeIcon icon="hourglass-end"></FontAwesomeIcon>
-          <FontAwesomeIcon icon="hourglass-end" spin></FontAwesomeIcon>
-        </FontAwesomeLayers>
-      </div>
-      <p class="subtitle">{{ backgroundQueueText }}</p>
     </div>
 
-    <keep-alive>
-      <BgrInput v-if="state === 'input'" @check="onCheck"></BgrInput>
-      <BgrCheck v-if="state === 'check'" :keys="keys" :title="$t('bgr-check', { n: foundKeysCount })" :bot="bot" :confirming="confirming" @confirm="onConfirm" @cancel="onCancel"></BgrCheck>
-      <BgrReset v-if="state === 'reset'" :title="$t('bgr-reset')" :resetting="resetting" @reset="onReset" @cancel="onCancel"></BgrReset>
-      <BgrSummary v-if="state === 'summary'" :keys="summaryKeys" :title="$t('bgr-summary-success', { n: addedKeysCount })" @back="$parent.back()"></BgrSummary>
-      <BgrSummary v-if="state === 'usedKeys'" :keys="usedKeys" :title="$t('bgr-used-keys')" @back="state = 'input'"></BgrSummary>
-      <BgrSummary v-if="state === 'unusedKeys'" :keys="unusedKeys" :title="$t('bgr-unused-keys')" @back="state = 'input'"></BgrSummary>
-    </keep-alive>
+    <template v-else>
+      <BgrStatus
+        v-if="state === 'input'"
+        :usedKeys="usedKeys"
+        :unusedKeys="unusedKeys"
+        @reset="showReset"
+        @show-unused="state = 'unusedKeys'"
+        @show-used="state = 'usedKeys'"
+      ></BgrStatus>
+
+      <div v-if="state === 'input' && bot.bgrCount !== 0" class="bgr__info">
+        <div v-if="bot.isConnected" class="bgr__info-icon">
+          <FontAwesomeLayers class="hourglass-spin">
+            <FontAwesomeIcon icon="hourglass-start"></FontAwesomeIcon>
+            <FontAwesomeIcon icon="hourglass-half"></FontAwesomeIcon>
+            <FontAwesomeIcon icon="hourglass-end"></FontAwesomeIcon>
+            <FontAwesomeIcon icon="hourglass-end" spin></FontAwesomeIcon>
+          </FontAwesomeLayers>
+        </div>
+        <p class="bgr-modal__queue">{{ backgroundQueueText }}</p>
+      </div>
+
+      <keep-alive>
+        <BgrInput v-if="state === 'input'" @check="onCheck"></BgrInput>
+        <BgrCheck v-if="state === 'check'" :keys="keys" :title="$t('bgr-check', { n: foundKeysCount })" :bot="bot" :confirming="confirming" @confirm="onConfirm" @cancel="onCancel"></BgrCheck>
+        <BgrReset v-if="state === 'reset'" :title="$t('bgr-reset')" :resetting="resetting" @reset="onReset" @cancel="onCancel"></BgrReset>
+        <BgrSummary v-if="state === 'summary'" :keys="summaryKeys" :title="$t('bgr-summary-success', { n: addedKeysCount })" @back="$parent.back()"></BgrSummary>
+        <BgrSummary v-if="state === 'usedKeys'" :keys="usedKeys" :title="$t('bgr-used-keys')" @back="state = 'input'"></BgrSummary>
+        <BgrSummary v-if="state === 'unusedKeys'" :keys="unusedKeys" :title="$t('bgr-unused-keys')" @back="state = 'input'"></BgrSummary>
+      </keep-alive>
+    </template>
   </main>
 </template>
 
@@ -88,7 +100,7 @@
     },
     methods: {
       async loadBGR() {
-        return (await this.$http.get(`bot/${this.bot.name}/gamesToRedeemInBackground`))[this.bot.name];
+        return (await this.$http.get(`bot/${this.bot.name}/GamesToRedeemInBackground`))[this.bot.name];
       },
       onCheck(keys) {
         this.keys = keys;
@@ -98,7 +110,7 @@
         this.confirming = true;
 
         try {
-          const activatedKeys = await this.$http.post(`bot/${this.bot.name}/gamesToRedeemInBackground`, { gamesToRedeemInBackground: this.keys });
+          const activatedKeys = await this.$http.post(`bot/${this.bot.name}/GamesToRedeemInBackground`, { gamesToRedeemInBackground: this.keys });
           this.state = 'summary';
           this.summaryKeys = activatedKeys[this.bot.name];
         } finally {
@@ -115,7 +127,7 @@
         this.resetting = true;
 
         try {
-          await this.$http.del(`bot/${this.bot.name}/gamesToRedeemInBackground`);
+          await this.$http.del(`bot/${this.bot.name}/GamesToRedeemInBackground`);
           this.unusedKeys = {};
           this.usedKeys = {};
         } finally {
@@ -128,14 +140,68 @@
 </script>
 
 <style lang="scss">
-  .bgr__info {
+  .bgr-modal {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    max-width: 100%;
+    min-width: 0;
+    padding: 1.1rem 1.2rem 1.25rem;
+    width: 100%;
+  }
+
+  .bgr-modal__header {
+    padding-right: 2rem;
+  }
+
+  .bgr-modal__eyebrow {
+    color: var(--h2-muted, var(--color-text-disabled));
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    margin: 0 0 0.2rem;
+    text-transform: uppercase;
+  }
+
+  .bgr-modal__title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .bgr-modal__loading {
     align-items: center;
+    color: var(--h2-muted, var(--color-text-disabled));
     display: flex;
     justify-content: center;
+    min-height: 8rem;
+  }
+
+  .bgr-modal__queue {
+    color: var(--h2-muted, var(--color-text-disabled));
+    font-size: 0.9rem;
+    margin: 0;
+  }
+
+  .bgr__info {
+    align-items: center;
+    background: var(--h2-soft, rgba(0, 0, 0, 0.08));
+    border: 1px solid var(--h2-border, var(--color-border));
+    border-radius: 0.65rem;
+    display: flex;
+    gap: 0.55rem;
+    justify-content: flex-start;
+    padding: 0.7rem 0.85rem;
   }
 
   .bgr__info-icon {
-    padding-right: 0.5em;
+    color: var(--h2-brand, var(--color-theme));
+    flex-shrink: 0;
   }
 
   .hourglass-spin {
@@ -169,5 +235,11 @@
     74.99% { opacity: 0 }
     75% { opacity: 1; transform: rotate(0deg); }
     100% { opacity: 1; transform: rotate(180deg); }
+  }
+
+  @media screen and (max-width: 480px) {
+    .bgr-modal {
+      padding: 0.95rem 0.85rem 1.05rem;
+    }
   }
 </style>

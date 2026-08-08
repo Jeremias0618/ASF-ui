@@ -3,6 +3,8 @@
  * Pages mark dirty/clean; the router + beforeunload guard prompts the user.
  */
 
+import VueRouter from 'vue-router';
+
 let dirty = false;
 let message = '';
 
@@ -22,6 +24,27 @@ export function hasUnsavedChanges() {
 
 export function getUnsavedChangesMessage() {
   return message;
+}
+
+/**
+ * Vue Router rejects aborted/cancelled/duplicated navigations.
+ * Treat those as expected (e.g. user cancels "unsaved changes" confirm).
+ */
+export function isBenignNavigationError(err) {
+  if (!err) return false;
+
+  if (typeof VueRouter.isNavigationFailure === 'function') {
+    return VueRouter.isNavigationFailure(err);
+  }
+
+  const name = err.name || '';
+  const text = err.message || '';
+  return name === 'NavigationDuplicated'
+    || name === 'NavigationAborted'
+    || name === 'NavigationCancelled'
+    || text.includes('Navigation aborted')
+    || text.includes('Navigation cancelled')
+    || text.includes('Avoided redundant navigation');
 }
 
 /**
@@ -51,6 +74,12 @@ export function installUnsavedChangesGuards(router, getDefaultMessage) {
     if (!dirty) return;
     event.preventDefault();
     event.returnValue = '';
+  });
+
+  // Prevent webpack/runtime overlays when the user cancels leave.
+  window.addEventListener('unhandledrejection', event => {
+    if (!isBenignNavigationError(event.reason)) return;
+    event.preventDefault();
   });
 
   router.beforeEach((to, from, next) => {

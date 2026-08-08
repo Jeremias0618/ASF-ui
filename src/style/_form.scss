@@ -7,7 +7,7 @@
 	}
 
 	&.is-help-open {
-		z-index: 6;
+		z-index: 8;
 	}
 }
 
@@ -23,6 +23,15 @@
 		grid-template-areas: 'label value';
 		grid-template-columns: minmax(min-content, var(--label-width, 12em)) minmax(0, 1fr);
 		grid-template-rows: auto;
+	}
+
+	/* Label sits beside the control; don't steal clicks into the input. */
+	.form-item__label {
+		pointer-events: none;
+
+		.form-item__description-icon {
+			pointer-events: auto;
+		}
 	}
 }
 
@@ -98,22 +107,49 @@
 }
 
 .form-item__input {
-	background-color: var(--color-background);
-	border: 1px solid rgba($color-text-dark, 0.1);
-	border-radius: 0.1875em;
+	appearance: none;
+	background-color: var(--h2-field, var(--h2-soft, var(--color-background)));
+	border: 1px solid var(--h2-border, rgba($color-text-dark, 0.18));
+	border-radius: 0.45rem;
 	box-shadow: none;
 	box-sizing: border-box;
-	color: inherit;
+	color: var(--h2-ink, inherit);
 	display: block;
 	font-size: 0.9375em;
 	height: 2.66667em;
 	max-width: 100%;
-	padding: 0 8px;
+	padding: 0 0.65rem;
 	width: 100%;
 
-	&:focus, &.form-item__input--focus {
-		outline: var(--color-theme) auto 5px;
+	&::placeholder {
+		color: var(--h2-muted, var(--color-text-disabled));
+		opacity: 1;
 	}
+
+	.app--dark-mode & {
+		background-color: var(--h2-field, #334155);
+		border-color: rgba(255, 255, 255, 0.18);
+		color: #f8fafc;
+
+		&::placeholder {
+			color: #cbd5e1;
+			opacity: 1;
+		}
+	}
+
+	&:focus, &.form-item__input--focus {
+		border-color: var(--h2-brand, var(--color-theme));
+		outline: none;
+		box-shadow: 0 0 0 3px color-mix(in srgb, var(--h2-brand, var(--color-theme)) 28%, transparent);
+	}
+}
+
+select.form-item__input {
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%2394a3b8' d='M1.4.6 6 5.2 10.6.6 12 2 6 8 0 2z'/%3E%3C/svg%3E");
+	background-position: right 0.75rem center;
+	background-repeat: no-repeat;
+	background-size: 0.75rem;
+	padding-right: 2rem;
 }
 
 .form-item__input--small {
@@ -150,7 +186,7 @@
 	box-sizing: border-box;
 	max-width: 100%;
 	padding: 0.5em;
-	width: 35em;
+	width: 100%;
 
 	.app--dark-mode & {
 		background: var(--color-background-dark);
@@ -183,12 +219,6 @@
 	&:hover {
 		color: var(--color-theme);
 	}
-}
-
-.form-item__description {
-	color: var(--color-text-dark);
-	font-size: 0.85em;
-	overflow: hidden;
 }
 
 .form-item__description-content {
@@ -239,6 +269,14 @@
 
 .form-item__error {
 	color: var(--color-button-cancel);
+	display: block;
+	font-size: 0.8125rem;
+	line-height: 1.35;
+	margin: 0.4rem 0 0;
+}
+
+.form-item__input.is-invalid {
+	border-color: var(--color-button-cancel);
 }
 
 .form-group {
