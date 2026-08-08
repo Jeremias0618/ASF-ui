@@ -9,6 +9,7 @@ export const HOME2_SHELL_ROUTES = new Set([
   'bot-config',
   'bot-copy',
   'bot-delete',
+  'bot-social',
   'bot-bgr',
   'bot-2fa',
   'bot-2fa-delete',

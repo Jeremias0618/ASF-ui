@@ -13,6 +13,7 @@ const routes = {
   botCreate: 'bot-create',
   botDelete: 'bot-delete',
   botInput: 'bot-input',
+  botSocial: 'bot-social',
   bots: 'bots',
   commands: 'commands',
   configuration: 'configuration',
@@ -221,6 +222,19 @@ export default [
     },
     meta: {
       modal: true,
+      closeRoute: routes.bots,
+    },
+  },
+  {
+    path: '/bot/:bot/social',
+    name: routes.botSocial,
+    components: {
+      default: () => import('../views/Bots.vue'),
+      modal: () => import('../views/modals/BotSocial.vue'),
+    },
+    meta: {
+      modal: true,
+      arrows: true,
       closeRoute: routes.bots,
     },
   },

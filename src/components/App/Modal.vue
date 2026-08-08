@@ -29,6 +29,7 @@
     'bot-config',
     'bot-create',
     'bot-copy',
+    'bot-social',
   ]);
 
       const DIALOG_MODAL_ROUTES = new Set([
