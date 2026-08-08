@@ -4,7 +4,10 @@
       v-if="shown"
       ref="panel"
       class="form-item__description"
-      :class="{ 'is-wide': hasTable }"
+      :class="{
+        'is-wide': hasWikiTable,
+        'is-simple-table': hasSimpleTable,
+      }"
       :style="panelStyle"
       role="dialog"
       :aria-label="$t('config-help', 'Help')"
@@ -31,12 +34,24 @@
       hasTable() {
         return /<table[\s>]/i.test(this.description || '');
       },
+      hasSimpleTable() {
+        return /help-simple/i.test(this.description || '');
+      },
+      hasWikiTable() {
+        return this.hasTable && !this.hasSimpleTable;
+      },
       safeHtml() {
         const html = this.description || '';
         if (!this.hasTable) return html;
-        // Wrap tables so they can scroll horizontally without crushing columns.
+
         return html
-          .replace(/<table(\s|>)/gi, '<div class="form-item__description-table-wrap"><table$1')
+          .replace(/<table([^>]*)>/gi, (match, attrs) => {
+            const isSimple = /help-simple/i.test(attrs || '');
+            const wrapClass = isSimple
+              ? 'help-table-wrap help-table-wrap--simple'
+              : 'form-item__description-table-wrap help-table-wrap';
+            return `<div class="${wrapClass}"><table${attrs}>`;
+          })
           .replace(/<\/table>/gi, '</table></div>');
       },
     },
@@ -46,7 +61,6 @@
         if (!isOpen) return;
         this.$nextTick(() => {
           this.positionPanel();
-          // Re-measure after table layout settles.
           requestAnimationFrame(() => this.positionPanel());
           window.addEventListener('resize', this.positionPanel, { passive: true });
           window.addEventListener('scroll', this.positionPanel, true);
@@ -68,31 +82,58 @@
       },
       positionPanel() {
         const anchor = this.findAnchor();
-        if (!anchor) return;
+        const panel = this.$refs.panel;
+        if (!anchor || !panel) return;
 
         const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-        const maxWidth = this.hasTable
-          ? Math.min(42 * rem, window.innerWidth - 24)
-          : Math.min(26 * rem, window.innerWidth - 24);
-        const maxHeight = this.hasTable
-          ? Math.min(window.innerHeight * 0.58, 30 * rem)
-          : Math.min(window.innerHeight * 0.42, 20 * rem);
+        let maxWidth;
+        let maxHeight;
+
+        if (this.hasSimpleTable) {
+          maxWidth = Math.min(34 * rem, window.innerWidth - 24);
+          maxHeight = Math.min(window.innerHeight * 0.55, 22 * rem);
+        } else if (this.hasWikiTable) {
+          maxWidth = Math.min(42 * rem, window.innerWidth - 24);
+          maxHeight = Math.min(window.innerHeight * 0.58, 30 * rem);
+        } else {
+          maxWidth = Math.min(24 * rem, window.innerWidth - 24);
+          maxHeight = Math.min(window.innerHeight * 0.42, 16 * rem);
+        }
+
         const rect = anchor.getBoundingClientRect();
-        const gap = 10;
+        const gap = 8;
+        const edge = 12;
+        const widthValue = this.hasSimpleTable ? 'fit-content' : `${Math.round(maxWidth)}px`;
 
-        let left = Math.min(rect.left, window.innerWidth - maxWidth - 12);
-        left = Math.max(12, left);
+        // Apply width constraints on the live node so offsetHeight matches real content.
+        panel.style.position = 'fixed';
+        panel.style.width = widthValue;
+        panel.style.maxWidth = `${Math.round(maxWidth)}px`;
+        panel.style.maxHeight = `${Math.round(maxHeight)}px`;
 
+        const panelHeight = Math.max(panel.offsetHeight, 1);
+        const panelWidth = Math.max(panel.offsetWidth, 1);
+
+        let left = Math.min(rect.left, window.innerWidth - panelWidth - edge);
+        left = Math.max(edge, left);
+
+        // Prefer below the icon; flip above only when the real height does not fit.
         let top = rect.bottom + gap;
-        if (top + maxHeight > window.innerHeight - 12) {
-          top = Math.max(12, rect.top - maxHeight - gap);
+        if (top + panelHeight > window.innerHeight - edge) {
+          const above = rect.top - panelHeight - gap;
+          if (above >= edge) {
+            top = above;
+          } else {
+            top = Math.max(edge, Math.min(top, window.innerHeight - panelHeight - edge));
+          }
         }
 
         this.panelStyle = {
           position: 'fixed',
           top: `${Math.round(top)}px`,
           left: `${Math.round(left)}px`,
-          width: `${Math.round(maxWidth)}px`,
+          width: widthValue,
+          maxWidth: `${Math.round(maxWidth)}px`,
           maxHeight: `${Math.round(maxHeight)}px`,
           zIndex: 4500,
         };
@@ -110,11 +151,17 @@
     box-sizing: border-box;
     color: var(--h2-muted-2, var(--color-text-dark));
     font-size: 0.8125rem;
-    line-height: 1.5;
+    line-height: 1.45;
     overflow: auto;
     overscroll-behavior: contain;
-    padding: 0.85rem 1rem;
+    padding: 0.75rem 0.85rem;
     -webkit-overflow-scrolling: touch;
+
+    &.is-simple-table {
+      font-size: 0.78rem;
+      min-width: min(18rem, calc(100vw - 24px));
+      padding: 0.7rem 0.75rem;
+    }
 
     .app--dark-mode & {
       background: #151b28;
@@ -139,7 +186,17 @@
     }
 
     p {
-      margin: 0 0 0.65rem;
+      margin: 0 0 0.45rem;
+    }
+
+    .is-simple-table & p {
+      color: var(--h2-muted, var(--color-text-disabled));
+      font-size: 0.75rem;
+      margin-bottom: 0.4rem;
+
+      .app--dark-mode & {
+        color: #94a3b8;
+      }
     }
 
     code,
@@ -174,14 +231,14 @@
       }
     }
 
-    table {
+    table:not(.help-simple) {
       border-collapse: collapse;
       display: table;
       min-width: 32rem;
       width: 100%;
     }
 
-    thead th {
+    table:not(.help-simple) thead th {
       background: rgba(148, 163, 184, 0.12);
       font-weight: 600;
       position: sticky;
@@ -189,8 +246,8 @@
       z-index: 1;
     }
 
-    th,
-    td {
+    table:not(.help-simple) th,
+    table:not(.help-simple) td {
       border-bottom: 1px solid var(--h2-border, rgba(255, 255, 255, 0.08));
       padding: 0.45rem 0.65rem;
       text-align: left;
@@ -200,28 +257,25 @@
       overflow-wrap: break-word;
     }
 
-    /* Value column — compact, no mid-word shredding. */
-    th:first-child,
-    td:first-child {
+    table:not(.help-simple) th:first-child,
+    table:not(.help-simple) td:first-child {
       white-space: nowrap;
       width: 1%;
     }
 
-    /* Name / flag column — keep identifiers readable. */
-    th:nth-child(2),
-    td:nth-child(2) {
+    table:not(.help-simple) th:nth-child(2),
+    table:not(.help-simple) td:nth-child(2) {
       font-family: ui-monospace, 'Cascadia Code', 'SF Mono', Menlo, Consolas, monospace;
       font-size: 0.78rem;
       white-space: nowrap;
     }
 
-    /* Description column can wrap softly. */
-    th:nth-child(3),
-    td:nth-child(3) {
+    table:not(.help-simple) th:nth-child(3),
+    table:not(.help-simple) td:nth-child(3) {
       min-width: 12rem;
     }
 
-    tr:last-child td {
+    table:not(.help-simple) tr:last-child td {
       border-bottom: 0;
     }
 

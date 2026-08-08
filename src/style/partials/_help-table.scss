@@ -1,0 +1,128 @@
+// Reusable help tables for config tooltips (light + dark).
+// Use: <table class="help-simple">…</table>
+
+.help-table-wrap {
+  border: 1px solid var(--h2-border, rgba(15, 23, 42, 0.1));
+  border-radius: 0.5rem;
+  margin: 0.5rem 0 0;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+
+  .app--dark-mode & {
+    background: rgba(0, 0, 0, 0.18);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+}
+
+.help-table-wrap--simple {
+  background: var(--h2-soft, rgba(148, 163, 184, 0.06));
+  border-color: var(--h2-border, rgba(15, 23, 42, 0.12));
+  max-width: 100%;
+
+  .app--dark-mode & {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+}
+
+table.help-simple {
+  border-collapse: collapse;
+  display: table;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  min-width: 100%;
+  table-layout: auto;
+  width: max-content;
+  max-width: 100%;
+
+  thead th {
+    background: color-mix(in srgb, var(--h2-brand, var(--color-theme)) 12%, transparent);
+    border-bottom: 1px solid var(--h2-border, rgba(15, 23, 42, 0.1));
+    color: var(--h2-ink, var(--color-text-dark));
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    padding: 0.35rem 0.65rem;
+    position: sticky;
+    text-transform: uppercase;
+    top: 0;
+    white-space: nowrap;
+    z-index: 1;
+
+    .app--dark-mode & {
+      background: color-mix(in srgb, var(--h2-brand, var(--color-theme)) 18%, transparent);
+      border-bottom-color: rgba(255, 255, 255, 0.1);
+      color: #f1f5f9;
+    }
+  }
+
+  tbody tr:nth-child(even) {
+    background: rgba(148, 163, 184, 0.07);
+
+    .app--dark-mode & {
+      background: rgba(255, 255, 255, 0.03);
+    }
+  }
+
+  th,
+  td {
+    border-bottom: 1px solid var(--h2-border, rgba(15, 23, 42, 0.08));
+    font-family: inherit !important;
+    font-size: inherit !important;
+    overflow-wrap: break-word;
+    padding: 0.35rem 0.65rem;
+    text-align: left;
+    vertical-align: top;
+    word-break: normal;
+
+    .app--dark-mode & {
+      border-bottom-color: rgba(255, 255, 255, 0.07);
+    }
+  }
+
+  tbody tr:last-child th,
+  tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  /* Option / status label — keep on one line when possible. */
+  th:first-child,
+  td:first-child {
+    color: var(--h2-ink, var(--color-text-dark));
+    font-weight: 650;
+    white-space: nowrap;
+    width: 1%;
+
+    .app--dark-mode & {
+      color: #f8fafc;
+    }
+  }
+
+  /* Description — can wrap softly without crushing the label column. */
+  th:nth-child(2),
+  td:nth-child(2) {
+    color: var(--h2-muted-2, var(--color-text));
+    font-weight: 400;
+    min-width: 12rem;
+    white-space: normal;
+
+    .app--dark-mode & {
+      color: #cbd5e1;
+    }
+  }
+}
+
+@media screen and (max-width: 480px) {
+  table.help-simple {
+    th:first-child,
+    td:first-child {
+      white-space: normal;
+      max-width: 9.5rem;
+    }
+
+    th:nth-child(2),
+    td:nth-child(2) {
+      min-width: 8rem;
+    }
+  }
+}
