@@ -7,19 +7,12 @@
     rel="noreferrer noopener"
     :aria-label="ariaLabel"
   >
-    <div class="bot-social-games__cover" :class="{ 'is-fallback': !currentSrc }">
-      <img
-        v-if="currentSrc"
-        class="bot-social-games__img"
-        :src="currentSrc"
-        :alt="''"
-        loading="lazy"
-        decoding="async"
-        @error="onCoverError"
-      >
-      <span v-else class="bot-social-games__placeholder" aria-hidden="true">
-        {{ placeholderLabel }}
-      </span>
+    <div class="bot-social-games__cover">
+      <CoverImage
+        :appId="game.appId"
+        :name="game.name"
+        :variant="variant"
+      ></CoverImage>
       <span
         v-if="game.isShared && !game.isOwned"
         class="bot-social-games__badge bot-social-games__badge--shared"
@@ -32,12 +25,12 @@
 </template>
 
 <script>
-  import {
-    gameBannerCandidates, gameCoverCandidates, steamStoreUrl,
-  } from '../../utils/game-cover';
+  import { steamStoreUrl } from '../../utils/game-cover';
+  import CoverImage from './cover-image.vue';
 
   export default {
     name: 'BotSocialGameCoverTile',
+    components: { CoverImage },
     props: {
       game: {
         type: Object,
@@ -49,54 +42,12 @@
         validator: value => value === 'library' || value === 'banner',
       },
     },
-    data() {
-      return {
-        coverIndex: 0,
-        exhausted: false,
-      };
-    },
     computed: {
-      candidates() {
-        return this.variant === 'banner'
-          ? gameBannerCandidates(this.game.appId)
-          : gameCoverCandidates(this.game.appId);
-      },
-      currentSrc() {
-        if (this.exhausted) return '';
-        return this.candidates[this.coverIndex] || '';
-      },
       storeUrl() {
         return steamStoreUrl(this.game.appId);
       },
       ariaLabel() {
         return this.$t('bot-social-games-open-store', { name: this.game.name || this.game.appId });
-      },
-      placeholderLabel() {
-        const name = String(this.game.name || '').trim();
-        if (name.length >= 2) return name.slice(0, 2).toUpperCase();
-        return String(this.game.appId || '?').slice(-2);
-      },
-    },
-    watch: {
-      'game.appId'() {
-        this.resetCover();
-      },
-      variant() {
-        this.resetCover();
-      },
-    },
-    methods: {
-      resetCover() {
-        this.coverIndex = 0;
-        this.exhausted = false;
-      },
-      onCoverError() {
-        const next = this.coverIndex + 1;
-        if (next < this.candidates.length) {
-          this.coverIndex = next;
-          return;
-        }
-        this.exhausted = true;
       },
     },
   };

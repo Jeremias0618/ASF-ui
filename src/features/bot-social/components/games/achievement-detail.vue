@@ -121,6 +121,7 @@
     unlockGameAchievements,
   } from '../../api/bot-social';
   import { invalidateGameStats } from '../../cache/bot-social-queries';
+  import { gameBannerCandidates, gameHeaderUrl } from '../../utils/game-cover';
 
   function unwrapBot(payload, botName) {
     if (!payload || typeof payload !== 'object') return null;
@@ -186,9 +187,15 @@
     methods: {
       onHeroError(event) {
         const img = event?.target;
-        if (!img || img.dataset.fallback === '1') return;
-        img.dataset.fallback = '1';
-        img.src = `https://cdn.cloudflare.steamstatic.com/steam/apps/${this.appId}/capsule_231x87.jpg`;
+        if (!img) return;
+        const candidates = gameBannerCandidates(this.appId);
+        const idx = Number(img.dataset.coverIndex || 0) + 1;
+        if (idx < candidates.length) {
+          img.dataset.coverIndex = String(idx);
+          img.src = candidates[idx];
+          return;
+        }
+        img.style.visibility = 'hidden';
       },
       onIconError(event) {
         const img = event?.target;
@@ -221,7 +228,7 @@
           name: (raw?.Name ?? raw?.name ?? this.seedName) || `App ${this.appId}`,
           headerImage: (raw?.HeaderImage ?? raw?.headerImage)
             || this.seedHeader
-            || `https://cdn.cloudflare.steamstatic.com/steam/apps/${this.appId}/header.jpg`,
+            || gameHeaderUrl(this.appId),
           unlocked: Number(raw?.Unlocked ?? raw?.unlocked ?? 0),
           total: Number(raw?.Total ?? raw?.total ?? achievements.length),
           achievements,

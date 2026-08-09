@@ -7,6 +7,7 @@ import {
   fetchTradeOffers,
   fetchWishlist,
 } from '../api/bot-social';
+import { gameHeaderUrl } from '../utils/game-cover';
 import { normalizeInventoryItems, steamEconomyImageUrl } from '../utils/inventory';
 import { clearGamesSession } from './games-session';
 import { invalidate, query } from './query-cache';
@@ -138,7 +139,7 @@ export function loadGameStats(botName, { force = false } = {}) {
           playtimeMinutes: Number(raw.PlaytimeMinutes ?? raw.playtimeMinutes ?? 0),
           lastPlayedUnix: Number(raw.LastPlayedUnix ?? raw.lastPlayedUnix ?? 0),
           headerImage: (raw.HeaderImage ?? raw.headerImage)
-            || `https://cdn.cloudflare.steamstatic.com/steam/apps/${appId}/header.jpg`,
+            || gameHeaderUrl(appId),
           achievementsUnlocked: raw.AchievementsUnlocked ?? raw.achievementsUnlocked ?? null,
           achievementsTotal: raw.AchievementsTotal ?? raw.achievementsTotal ?? null,
           isOwned: raw.IsOwned ?? raw.isOwned ?? true,

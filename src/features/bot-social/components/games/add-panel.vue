@@ -41,7 +41,7 @@
       <li v-for="item in results" :key="item.appId" class="games-add__row">
         <img
           class="games-add__thumb"
-          :src="item.tinyImage || coverFallback(item.appId)"
+          :src="item.tinyImage || gameHeaderUrl(item.appId)"
           :alt="''"
           loading="lazy"
           decoding="async"
@@ -84,6 +84,7 @@
 
 <script>
   import { addGames, isPluginMissingError, searchGames } from '../../api/bot-social';
+  import { gameBannerCandidates, gameHeaderUrl } from '../../utils/game-cover';
   import { normalizeGameSearchQuery } from '../../utils/game-target';
 
   const DEBOUNCE_MS = 400;
@@ -95,6 +96,7 @@
     },
     data() {
       return {
+        gameHeaderUrl,
         query: '',
         results: [],
         searching: false,
@@ -114,17 +116,17 @@
       if (this.debounceTimer) clearTimeout(this.debounceTimer);
     },
     methods: {
-      coverFallback(appId) {
-        return `https://cdn.cloudflare.steamstatic.com/steam/apps/${appId}/capsule_231x87.jpg`;
-      },
       onThumbError(event, appId) {
         const img = event?.target;
-        if (!img || img.dataset.fallback === '1') {
-          if (img) img.style.visibility = 'hidden';
+        if (!img) return;
+        const candidates = gameBannerCandidates(appId);
+        const idx = Number(img.dataset.coverIndex || 0) + 1;
+        if (idx < candidates.length) {
+          img.dataset.coverIndex = String(idx);
+          img.src = candidates[idx];
           return;
         }
-        img.dataset.fallback = '1';
-        img.src = this.coverFallback(appId);
+        img.style.visibility = 'hidden';
       },
       hasPrice(item) {
         return item.finalPrice != null || item.initialPrice != null;

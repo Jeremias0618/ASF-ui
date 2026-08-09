@@ -1,17 +1,29 @@
 <template>
   <section class="games-idle" :aria-label="$t('bot-social-games-view-idle')">
-    <div class="games-idle__header">
-      <div class="games-idle__intro">
-        <p class="games-idle__lead">{{ $t('bot-social-games-idle-lead') }}</p>
-        <p class="games-idle__count" :class="{ 'is-full': isFull }">
-          {{ $t('bot-social-games-idle-count', { n: idleAppIds.length, max: MAX_IDLE_GAMES }) }}
-          <span v-if="isDirty" class="games-idle__dirty">{{ $t('bot-social-games-idle-unsaved') }}</span>
-        </p>
+    <header class="games-idle__toolbar">
+      <div class="games-idle__toolbar-main">
+        <div class="games-idle__title-block">
+          <h2 class="games-idle__title">{{ $t('bot-social-games-view-idle') }}</h2>
+          <p class="games-idle__lead">{{ $t('bot-social-games-idle-lead') }}</p>
+        </div>
+
+        <div class="games-idle__meter" :class="{ 'is-full': isFull, 'is-dirty': isDirty }">
+          <div class="games-idle__meter-top">
+            <span class="games-idle__meter-value">
+              {{ $t('bot-social-games-idle-count', { n: idleAppIds.length, max: MAX_IDLE_GAMES }) }}
+            </span>
+            <span v-if="isDirty" class="games-idle__dirty">{{ $t('bot-social-games-idle-unsaved') }}</span>
+          </div>
+          <div class="games-idle__meter-track" aria-hidden="true">
+            <span class="games-idle__meter-fill" :style="{ width: `${meterPercent}%` }"></span>
+          </div>
+        </div>
       </div>
-      <div class="games-idle__header-actions">
+
+      <div class="games-idle__toolbar-actions">
         <button
           type="button"
-          class="games-idle__refresh"
+          class="games-idle__btn games-idle__btn--ghost"
           :disabled="loading || saving"
           @click="reload"
         >
@@ -20,7 +32,7 @@
         </button>
         <button
           type="button"
-          class="games-idle__save"
+          class="games-idle__btn games-idle__btn--primary"
           :disabled="loading || saving || !isDirty"
           @click="save"
         >
@@ -31,7 +43,7 @@
           </template>
         </button>
       </div>
-    </div>
+    </header>
 
     <div v-if="loading && !loaded" class="bot-social__state">
       <FontAwesomeIcon icon="spinner" spin></FontAwesomeIcon>
@@ -41,29 +53,34 @@
 
     <template v-else>
       <p v-if="error" class="bot-social__inline-error">{{ error }}</p>
-      <p v-if="isFull" class="games-idle__limit-hint">{{ $t('bot-social-games-idle-limit') }}</p>
-      <p class="games-idle__reorder-hint">{{ $t('bot-social-games-idle-reorder-hint') }}</p>
+      <p v-if="isFull" class="games-idle__banner games-idle__banner--warn">
+        {{ $t('bot-social-games-idle-limit') }}
+      </p>
+      <p class="games-idle__banner">{{ $t('bot-social-games-idle-reorder-hint') }}</p>
 
-      <div class="games-idle__columns">
-        <div class="games-idle__column">
-          <div class="games-idle__column-head">
-            <h3 class="games-idle__column-title">{{ $t('bot-social-games-idle-current') }}</h3>
+      <div class="games-idle__workspace">
+        <section class="games-idle__panel" :aria-label="$t('bot-social-games-idle-current')">
+          <div class="games-idle__panel-head">
+            <div>
+              <h3 class="games-idle__panel-title">{{ $t('bot-social-games-idle-current') }}</h3>
+              <p class="games-idle__panel-sub">{{ $t('bot-social-games-idle-current-sub') }}</p>
+            </div>
             <button
               v-if="idleAppIds.length"
               type="button"
-              class="games-idle__clear"
+              class="games-idle__btn games-idle__btn--danger-text"
               :disabled="saving"
               @click="clearAll"
             >
               {{ $t('bot-social-games-idle-clear') }}
             </button>
           </div>
-          <div v-if="!idleEntries.length" class="bot-social__state">{{ $t('bot-social-games-idle-empty') }}</div>
-          <ul
-            v-else
-            class="games-idle__list"
-            :class="{ 'is-busy': saving }"
-          >
+
+          <div v-if="!idleEntries.length" class="games-idle__empty">
+            <p class="games-idle__empty-title">{{ $t('bot-social-games-idle-empty') }}</p>
+            <p class="games-idle__empty-lead">{{ $t('bot-social-games-idle-empty-hint') }}</p>
+          </div>
+          <ul v-else class="games-idle__list" :class="{ 'is-busy': saving }">
             <li
               v-for="(entry, index) in idleEntries"
               :key="entry.appId"
@@ -79,22 +96,19 @@
               @drop.prevent="onDrop(index)"
               @dragend="onDragEnd"
             >
-              <span class="games-idle__handle" aria-hidden="true" title="">
+              <span class="games-idle__handle" aria-hidden="true">
                 <FontAwesomeIcon icon="grip-vertical"></FontAwesomeIcon>
               </span>
               <span class="games-idle__order">{{ index + 1 }}</span>
-              <img
+              <CoverImage
                 class="games-idle__cover"
-                :src="entry.cover"
-                :alt="''"
-                loading="lazy"
-                decoding="async"
-                draggable="false"
-                @error="onCoverError($event, entry.appId)"
-              >
+                :appId="entry.appId"
+                :name="entry.name"
+                variant="banner"
+              ></CoverImage>
               <div class="games-idle__body">
                 <p class="games-idle__name" :title="entry.name">
-                  {{ entry.name }}
+                  <span class="games-idle__name-text">{{ entry.name }}</span>
                   <span
                     v-if="entry.isShared && !entry.isOwned"
                     class="games-idle__shared-badge"
@@ -104,19 +118,26 @@
               </div>
               <button
                 type="button"
-                class="games-idle__action games-idle__action--remove"
+                class="games-idle__icon-btn games-idle__icon-btn--remove"
                 :disabled="saving"
                 :aria-label="$t('bot-social-games-idle-remove-aria', { name: entry.name })"
+                :title="$t('bot-social-games-idle-remove')"
                 @click="removeGame(entry.appId)"
               >
-                {{ $t('bot-social-games-idle-remove') }}
+                <FontAwesomeIcon icon="times" aria-hidden="true"></FontAwesomeIcon>
               </button>
             </li>
           </ul>
-        </div>
+        </section>
 
-        <div class="games-idle__column">
-          <h3 class="games-idle__column-title">{{ $t('bot-social-games-idle-add-from') }}</h3>
+        <section class="games-idle__panel" :aria-label="$t('bot-social-games-idle-add-from')">
+          <div class="games-idle__panel-head">
+            <div>
+              <h3 class="games-idle__panel-title">{{ $t('bot-social-games-idle-add-from') }}</h3>
+              <p class="games-idle__panel-sub">{{ $t('bot-social-games-idle-add-sub') }}</p>
+            </div>
+          </div>
+
           <label class="games-idle__searchbox">
             <FontAwesomeIcon class="games-idle__search-icon" icon="search" aria-hidden="true"></FontAwesomeIcon>
             <input
@@ -127,22 +148,23 @@
               :aria-label="$t('bot-social-games-idle-search')"
             >
           </label>
-          <div v-if="!candidateGames.length" class="bot-social__state">
-            {{ query ? $t('bot-social-games-empty') : $t('bot-social-games-idle-no-candidates') }}
+
+          <div v-if="!candidateGames.length" class="games-idle__empty">
+            <p class="games-idle__empty-title">
+              {{ query ? $t('bot-social-games-empty') : $t('bot-social-games-idle-no-candidates') }}
+            </p>
           </div>
           <ul v-else class="games-idle__list" :class="{ 'is-busy': saving }">
             <li v-for="game in visibleCandidates" :key="game.appId" class="games-idle__row">
-              <img
+              <CoverImage
                 class="games-idle__cover"
-                :src="coverFor(game.appId)"
-                :alt="''"
-                loading="lazy"
-                decoding="async"
-                @error="onCoverError($event, game.appId)"
-              >
+                :appId="game.appId"
+                :name="game.name"
+                variant="banner"
+              ></CoverImage>
               <div class="games-idle__body">
                 <p class="games-idle__name" :title="game.name">
-                  {{ game.name }}
+                  <span class="games-idle__name-text">{{ game.name }}</span>
                   <span
                     v-if="game.isShared && !game.isOwned"
                     class="games-idle__shared-badge"
@@ -152,20 +174,37 @@
               </div>
               <button
                 type="button"
-                class="games-idle__action"
+                class="games-idle__icon-btn games-idle__icon-btn--add"
                 :disabled="saving || isFull"
                 :aria-label="$t('bot-social-games-idle-add-aria', { name: game.name })"
+                :title="$t('bot-social-games-idle-add')"
                 @click="addGame(game.appId)"
               >
-                {{ $t('bot-social-games-idle-add') }}
+                <FontAwesomeIcon icon="plus" aria-hidden="true"></FontAwesomeIcon>
               </button>
             </li>
           </ul>
           <p v-if="candidateGames.length > CANDIDATE_LIMIT" class="games-idle__more-hint">
             {{ $t('bot-social-games-idle-candidates-truncated', { shown: visibleCandidates.length, total: candidateGames.length }) }}
           </p>
-        </div>
+        </section>
       </div>
+
+      <footer v-if="isDirty" class="games-idle__sticky-save">
+        <p class="games-idle__sticky-text">{{ $t('bot-social-games-idle-unsaved') }}</p>
+        <button
+          type="button"
+          class="games-idle__btn games-idle__btn--primary"
+          :disabled="saving"
+          @click="save"
+        >
+          <FontAwesomeIcon v-if="saving" icon="spinner" spin></FontAwesomeIcon>
+          <template v-else>
+            <FontAwesomeIcon icon="save" aria-hidden="true"></FontAwesomeIcon>
+            <span>{{ $t('bot-social-games-idle-save') }}</span>
+          </template>
+        </button>
+      </footer>
     </template>
   </section>
 </template>
@@ -175,7 +214,7 @@
   import {
     fetchIdleGamesConfig, MAX_IDLE_GAMES, saveIdleGames,
   } from '../../api/idle-games';
-  import { gameBannerCandidates } from '../../utils/game-cover';
+  import CoverImage from './cover-image.vue';
 
   const CANDIDATE_LIMIT = 80;
 
@@ -187,6 +226,7 @@
 
   export default {
     name: 'BotSocialGamesIdlePanel',
+    components: { CoverImage },
     props: {
       botName: { type: String, required: true },
       games: { type: Array, default: () => [] },
@@ -213,6 +253,9 @@
       isDirty() {
         return !sameIdList(this.idleAppIds, this.savedIdleAppIds);
       },
+      meterPercent() {
+        return Math.min(100, Math.round((this.idleAppIds.length / MAX_IDLE_GAMES) * 100));
+      },
       gamesById() {
         return (this.games || []).reduce((map, game) => {
           const id = Number(game?.appId);
@@ -230,7 +273,6 @@
           return {
             appId,
             name,
-            cover: this.coverFor(appId),
             isOwned: !!game?.isOwned,
             isShared: !!game?.isShared,
           };
@@ -261,16 +303,6 @@
       },
     },
     methods: {
-      coverFor(appId) {
-        return gameBannerCandidates(appId)[0] || '';
-      },
-      onCoverError(event, appId) {
-        const img = event?.target;
-        if (!img || img.dataset.fallback === '1') return;
-        img.dataset.fallback = '1';
-        const fallback = gameBannerCandidates(appId)[1];
-        if (fallback) img.src = fallback;
-      },
       async reload() {
         if (!this.botName || this.loading || this.saving) return;
         if (this.isDirty && !window.confirm(this.$t('bot-social-games-idle-discard-confirm'))) {

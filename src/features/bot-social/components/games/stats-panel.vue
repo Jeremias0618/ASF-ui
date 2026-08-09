@@ -136,14 +136,12 @@
           @keydown.enter.prevent="openGame(game)"
           @keydown.space.prevent="openGame(game)"
         >
-          <img
+          <CoverImage
             class="games-stats__cover"
-            :src="game.headerImage"
-            :alt="''"
-            loading="lazy"
-            decoding="async"
-            @error="onCoverError($event, game.appId)"
-          >
+            :appId="game.appId"
+            :name="game.name"
+            variant="banner"
+          ></CoverImage>
           <div class="games-stats__body">
             <p class="games-stats__name" :title="game.name">
               {{ game.name }}
@@ -186,6 +184,7 @@
   import { invalidateGameStats, loadGameStats } from '../../cache/bot-social-queries';
   import { resolveLocalData } from '../../cache/load-policy';
   import AchievementDetail from './achievement-detail.vue';
+  import CoverImage from './cover-image.vue';
 
   const emptySummary = () => ({
     totalPlaytimeHours: 0,
@@ -196,7 +195,7 @@
 
   export default {
     name: 'BotSocialGamesStatsPanel',
-    components: { AchievementDetail },
+    components: { AchievementDetail, CoverImage },
     props: {
       botName: { type: String, required: true },
     },
@@ -324,12 +323,6 @@
         const total = Number(game.achievementsTotal);
         if (!total) return null;
         return Math.min(1, Math.max(0, Number(game.achievementsUnlocked || 0) / total));
-      },
-      onCoverError(event, appId) {
-        const img = event?.target;
-        if (!img || img.dataset.fallback === '1') return;
-        img.dataset.fallback = '1';
-        img.src = `https://cdn.cloudflare.steamstatic.com/steam/apps/${appId}/capsule_231x87.jpg`;
       },
       async load(force) {
         const hasData = this.games.length > 0;
