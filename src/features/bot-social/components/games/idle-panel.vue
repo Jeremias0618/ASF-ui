@@ -129,16 +129,29 @@
                 </p>
                 <p class="games-idle__appid">AppID {{ entry.appId }}</p>
               </div>
-              <button
-                type="button"
-                class="games-idle__icon-btn games-idle__icon-btn--remove"
-                :disabled="saving"
-                :aria-label="$t('bot-social-games-idle-remove-aria', { name: entry.name })"
-                :title="$t('bot-social-games-idle-remove')"
-                @click="removeGame(entry.appId)"
-              >
-                <FontAwesomeIcon icon="times" aria-hidden="true"></FontAwesomeIcon>
-              </button>
+              <div class="games-idle__row-actions">
+                <button
+                  v-if="canSwapBooster"
+                  type="button"
+                  class="games-idle__icon-btn games-idle__icon-btn--dice"
+                  :disabled="saving || suggesting || !hasBoosterSwapCandidate"
+                  :aria-label="$t('bot-social-games-idle-swap-aria', { name: entry.name })"
+                  :title="$t('bot-social-games-idle-swap')"
+                  @click="swapWithRandomBooster(index)"
+                >
+                  <FontAwesomeIcon icon="dice" aria-hidden="true"></FontAwesomeIcon>
+                </button>
+                <button
+                  type="button"
+                  class="games-idle__icon-btn games-idle__icon-btn--remove"
+                  :disabled="saving || suggesting"
+                  :aria-label="$t('bot-social-games-idle-remove-aria', { name: entry.name })"
+                  :title="$t('bot-social-games-idle-remove')"
+                  @click="removeGame(entry.appId)"
+                >
+                  <FontAwesomeIcon icon="times" aria-hidden="true"></FontAwesomeIcon>
+                </button>
+              </div>
             </li>
           </ul>
         </section>
@@ -266,6 +279,7 @@
         query: '',
         idleAppIds: [],
         savedIdleAppIds: [],
+        boosterPool: [],
         dragIndex: -1,
         dropIndex: -1,
       };
@@ -279,6 +293,16 @@
       },
       meterPercent() {
         return Math.min(100, Math.round((this.idleAppIds.length / MAX_IDLE_GAMES) * 100));
+      },
+      canSwapBooster() {
+        return this.boosterPool.length > MAX_IDLE_GAMES;
+      },
+      hasBoosterSwapCandidate() {
+        return this.boosterSwapCandidates.length > 0;
+      },
+      boosterSwapCandidates() {
+        const used = this.idleSet;
+        return this.boosterPool.filter(appId => !used.has(appId));
       },
       gamesById() {
         return (this.games || []).reduce((map, game) => {
@@ -366,6 +390,11 @@
         if (!window.confirm(this.$t('bot-social-games-idle-clear-confirm'))) return;
         this.idleAppIds = [];
       },
+      mapBoosterIds(list) {
+        return (list || [])
+          .map(game => Number(game.AppId ?? game.appId))
+          .filter(id => Number.isInteger(id) && id > 0);
+      },
       async fillFromBoosters() {
         if (this.saving || this.suggesting || this.loading) return;
         if (this.idleAppIds.length
@@ -378,21 +407,19 @@
         try {
           const raw = await fetchBoosterIdleSuggestions(this.botName);
           const payload = unwrapBotPayload(raw, this.botName);
-          const games = payload?.Games ?? payload?.games ?? [];
-          const ids = games
-            .map(game => Number(game.AppId ?? game.appId))
-            .filter(id => Number.isInteger(id) && id > 0)
-            .slice(0, MAX_IDLE_GAMES);
+          const selected = this.mapBoosterIds(payload?.Games ?? payload?.games).slice(0, MAX_IDLE_GAMES);
+          const pool = this.mapBoosterIds(payload?.Pool ?? payload?.pool);
+          this.boosterPool = pool.length ? pool : selected;
 
-          if (!ids.length) {
+          if (!selected.length) {
             this.$info(this.$t('bot-social-games-idle-booster-empty'));
             return;
           }
 
-          this.idleAppIds = ids;
-          const eligible = Number(payload?.EligibleTotal ?? payload?.eligibleTotal ?? ids.length);
+          this.idleAppIds = selected;
+          const eligible = Number(payload?.EligibleTotal ?? payload?.eligibleTotal ?? this.boosterPool.length);
           this.$success(this.$t('bot-social-games-idle-booster-filled', {
-            n: ids.length,
+            n: selected.length,
             eligible,
           }));
         } catch (err) {
@@ -404,6 +431,19 @@
         } finally {
           this.suggesting = false;
         }
+      },
+      swapWithRandomBooster(index) {
+        if (!this.canSwapBooster || this.saving || this.suggesting) return;
+        const candidates = this.boosterSwapCandidates;
+        if (!candidates.length) {
+          this.$info(this.$t('bot-social-games-idle-swap-empty'));
+          return;
+        }
+        const pick = candidates[Math.floor(Math.random() * candidates.length)];
+        const next = [...this.idleAppIds];
+        if (index < 0 || index >= next.length) return;
+        next[index] = pick;
+        this.idleAppIds = next;
       },
       onDragStart(index, event) {
         if (this.saving) {

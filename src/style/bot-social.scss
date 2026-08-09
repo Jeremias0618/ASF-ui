@@ -3388,6 +3388,13 @@
   margin: 0;
 }
 
+.games-idle__row-actions {
+  align-items: center;
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 0.3rem;
+}
+
 .games-idle__icon-btn {
   align-items: center;
   appearance: none;
@@ -3409,6 +3416,12 @@
     background: rgba(102, 192, 244, 0.12);
     border: 1px solid rgba(102, 192, 244, 0.45);
     color: var(--idle-accent);
+  }
+
+  &--dice {
+    background: rgba(190, 238, 17, 0.1);
+    border: 1px solid rgba(190, 238, 17, 0.45);
+    color: #beee11;
   }
 
   &--remove {
