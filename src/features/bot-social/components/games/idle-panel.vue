@@ -43,7 +43,13 @@
                 @error="onCoverError($event, entry.appId)"
               >
               <div class="games-idle__body">
-                <p class="games-idle__name" :title="entry.name">{{ entry.name }}</p>
+                <p class="games-idle__name" :title="entry.name">
+                  {{ entry.name }}
+                  <span
+                    v-if="entry.isShared && !entry.isOwned"
+                    class="games-idle__shared-badge"
+                  >{{ $t('bot-social-games-badge-shared') }}</span>
+                </p>
                 <p class="games-idle__appid">AppID {{ entry.appId }}</p>
               </div>
               <button
@@ -85,7 +91,13 @@
                 @error="onCoverError($event, game.appId)"
               >
               <div class="games-idle__body">
-                <p class="games-idle__name" :title="game.name">{{ game.name }}</p>
+                <p class="games-idle__name" :title="game.name">
+                  {{ game.name }}
+                  <span
+                    v-if="game.isShared && !game.isOwned"
+                    class="games-idle__shared-badge"
+                  >{{ $t('bot-social-games-badge-shared') }}</span>
+                </p>
                 <p class="games-idle__appid">AppID {{ game.appId }}</p>
               </div>
               <button
@@ -156,13 +168,16 @@
             appId,
             name,
             cover: this.coverFor(appId),
+            isOwned: !!game?.isOwned,
+            isShared: !!game?.isShared,
           };
         });
       },
       candidateGames() {
         const q = this.query.trim().toLowerCase();
         return (this.games || []).filter(game => {
-          if (!game?.isOwned) return false;
+          // Owned library + shared Family Library apps the bot can use.
+          if (!game?.isOwned && !game?.isShared) return false;
           const appId = Number(game.appId);
           if (!Number.isInteger(appId) || appId <= 0) return false;
           if (this.idleSet.has(appId)) return false;

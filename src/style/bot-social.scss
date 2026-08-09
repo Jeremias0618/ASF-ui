@@ -3113,13 +3113,31 @@
 }
 
 .games-idle__name {
+  align-items: center;
   color: #fff;
+  display: flex;
   font-size: 0.9rem;
   font-weight: 700;
+  gap: 0.4rem;
   margin: 0;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.games-idle__shared-badge {
+  background: rgba(16, 24, 34, 0.82);
+  border: 1px solid rgba(102, 192, 244, 0.55);
+  border-radius: 0.2rem;
+  color: #b6ddf5;
+  flex-shrink: 0;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  padding: 0.2rem 0.32rem;
+  text-transform: uppercase;
 }
 
 .games-idle__appid {
