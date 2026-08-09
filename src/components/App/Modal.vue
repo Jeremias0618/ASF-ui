@@ -38,6 +38,7 @@
 
   const FRIENDS_WIDE_MODAL_ROUTES = new Set([
     'bot-friends',
+    'bot-games',
   ]);
 
       const DIALOG_MODAL_ROUTES = new Set([

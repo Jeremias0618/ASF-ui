@@ -1,12 +1,25 @@
 <template>
-  <main v-if="bot" class="main-container bot-social" :class="{ 'bot-social--inventory': feature === 'inventory' }">
+  <main
+    v-if="bot"
+    class="main-container bot-social"
+    :class="{
+      'bot-social--inventory': feature === 'inventory',
+      'bot-social--games': feature === 'games',
+    }"
+  >
     <header class="bot-social__header">
       <p class="bot-social__eyebrow">{{ bot.viewableName }}</p>
       <h2 class="bot-social__title">{{ title }}</h2>
       <p v-if="feature !== 'inventory'" class="bot-social__lead">{{ lead }}</p>
     </header>
 
-    <div class="bot-social__body" :class="{ 'bot-social__body--inventory': feature === 'inventory' }">
+    <div
+      class="bot-social__body"
+      :class="{
+        'bot-social__body--inventory': feature === 'inventory',
+        'bot-social__body--games': feature === 'games',
+      }"
+    >
       <InventoryTab
         v-if="feature === 'inventory'"
         :bot-name="bot.name"

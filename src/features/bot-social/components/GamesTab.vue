@@ -1,25 +1,69 @@
 <template>
-  <div class="bot-social-tab">
+  <div class="bot-social-tab bot-social-tab--games">
     <PluginMissing v-if="pluginMissing"></PluginMissing>
 
     <template v-else>
-      <div class="bot-social__toolbar">
-        <p class="bot-social__stat">{{ $t('bot-social-games-total', { n: games.length }) }}</p>
-        <input
-          v-model.trim="query"
-          class="form-item__input bot-social__search"
-          type="search"
-          :placeholder="$t('bot-social-search')"
-        >
-        <button
-          type="button"
-          class="button button--link"
-          :disabled="loading || refreshing"
-          @click="refresh"
-        >
-          <FontAwesomeIcon v-if="refreshing" icon="spinner" spin></FontAwesomeIcon>
-          <span v-else>{{ $t('bot-social-refresh') }}</span>
-        </button>
+      <div class="bot-social-games__chrome">
+        <div class="bot-social-games__views" role="tablist" :aria-label="$t('bot-social-games-views')">
+          <button
+            type="button"
+            role="tab"
+            class="bot-social-games__view"
+            :class="{ 'is-active': viewMode === 'library' }"
+            :aria-selected="viewMode === 'library' ? 'true' : 'false'"
+            @click="setViewMode('library')"
+          >
+            <FontAwesomeIcon icon="book-open" aria-hidden="true"></FontAwesomeIcon>
+            {{ $t('bot-social-games-view-library') }}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            class="bot-social-games__view"
+            :class="{ 'is-active': viewMode === 'banner' }"
+            :aria-selected="viewMode === 'banner' ? 'true' : 'false'"
+            @click="setViewMode('banner')"
+          >
+            <FontAwesomeIcon icon="gamepad" aria-hidden="true"></FontAwesomeIcon>
+            {{ $t('bot-social-games-view-banner') }}
+          </button>
+        </div>
+
+        <div class="bot-social-games__chrome-bar">
+          <label class="bot-social-games__searchbox">
+            <FontAwesomeIcon class="bot-social-games__search-icon" icon="search" aria-hidden="true"></FontAwesomeIcon>
+            <input
+              v-model.trim="query"
+              class="bot-social-games__search-input"
+              type="search"
+              :placeholder="$t('bot-social-search')"
+              :aria-label="$t('bot-social-search')"
+            >
+          </label>
+
+          <div class="bot-social-games__chrome-actions">
+            <p class="bot-social-games__count">
+              {{ $t('bot-social-games-showing', { shown: filteredGames.length, total: games.length }) }}
+            </p>
+            <button
+              v-if="query"
+              type="button"
+              class="bot-social-games__clear"
+              @click="query = ''"
+            >
+              {{ $t('bot-social-games-clear-search') }}
+            </button>
+            <button
+              type="button"
+              class="bot-social-games__refresh"
+              :disabled="loading || refreshing"
+              @click="refresh"
+            >
+              <FontAwesomeIcon v-if="refreshing" icon="spinner" spin></FontAwesomeIcon>
+              <span v-else>{{ $t('bot-social-refresh') }}</span>
+            </button>
+          </div>
+        </div>
       </div>
 
       <div v-if="loading && !games.length" class="bot-social__state">
@@ -30,22 +74,21 @@
       <template v-else>
         <p v-if="error" class="bot-social__inline-error">{{ error }}</p>
         <div v-if="!filteredGames.length" class="bot-social__state">{{ $t('bot-social-games-empty') }}</div>
-        <ul v-else class="bot-social-list" :class="{ 'is-refreshing': refreshing }">
-          <li v-for="game in filteredGames" :key="game.appId" class="bot-social-list__row">
-            <div>
-              <strong>{{ game.name }}</strong>
-              <span class="bot-social-list__muted">AppID {{ game.appId }}</span>
-            </div>
-            <a
-              class="button button--link"
-              :href="`https://store.steampowered.com/app/${game.appId}`"
-              target="_blank"
-              rel="noreferrer noopener"
-            >
-              Steam
-            </a>
-          </li>
-        </ul>
+        <div
+          v-else
+          class="bot-social-games"
+          :class="[
+            `bot-social-games--${viewMode}`,
+            { 'is-refreshing': refreshing },
+          ]"
+        >
+          <CoverTile
+            v-for="game in filteredGames"
+            :key="`${viewMode}-${game.appId}`"
+            :game="game"
+            :variant="viewMode"
+          ></CoverTile>
+        </div>
       </template>
     </template>
   </div>
@@ -55,11 +98,24 @@
   import { isPluginMissingError } from '../api/bot-social';
   import { loadGames } from '../cache/bot-social-queries';
   import { resolveLocalData } from '../cache/load-policy';
+  import CoverTile from './games/cover-tile.vue';
   import PluginMissing from './PluginMissing.vue';
+
+  const VIEW_STORAGE_KEY = 'asf-bot-social-games-view';
+  const VIEW_MODES = new Set(['library', 'banner']);
+
+  function readStoredView() {
+    try {
+      const value = localStorage.getItem(VIEW_STORAGE_KEY);
+      return VIEW_MODES.has(value) ? value : 'library';
+    } catch {
+      return 'library';
+    }
+  }
 
   export default {
     name: 'BotSocialGamesTab',
-    components: { PluginMissing },
+    components: { CoverTile, PluginMissing },
     props: {
       botName: { type: String, required: true },
       pluginMissing: { type: Boolean, default: false },
@@ -71,6 +127,7 @@
         error: '',
         games: [],
         query: '',
+        viewMode: readStoredView(),
       };
     },
     computed: {
@@ -95,6 +152,15 @@
       },
     },
     methods: {
+      setViewMode(mode) {
+        if (!VIEW_MODES.has(mode) || mode === this.viewMode) return;
+        this.viewMode = mode;
+        try {
+          localStorage.setItem(VIEW_STORAGE_KEY, mode);
+        } catch {
+          // ignore quota / private mode
+        }
+      },
       bootstrap() {
         if (this.pluginMissing) return;
         const resolved = resolveLocalData({
