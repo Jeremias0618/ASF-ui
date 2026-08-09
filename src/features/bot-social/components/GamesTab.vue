@@ -51,7 +51,7 @@
           </button>
         </div>
 
-        <div v-if="isBrowseMode" class="bot-social-games__chrome-bar">
+        <div v-show="isBrowseMode" class="bot-social-games__chrome-bar">
           <label class="bot-social-games__searchbox">
             <FontAwesomeIcon class="bot-social-games__search-icon" icon="search" aria-hidden="true"></FontAwesomeIcon>
             <input
@@ -65,7 +65,10 @@
 
           <div class="bot-social-games__chrome-actions">
             <p class="bot-social-games__count">
-              {{ $t('bot-social-games-showing', { shown: filteredGames.length, total: games.length }) }}
+              {{ $t('bot-social-games-showing', { shown: visibleGames.length, total: games.length }) }}
+              <span v-if="isPaintingMore" class="bot-social-games__count-more">
+                · {{ $t('bot-social-games-painting') }}
+              </span>
             </p>
             <button
               v-if="query"
@@ -81,14 +84,14 @@
               :disabled="loading || refreshing"
               @click="refresh"
             >
-              <FontAwesomeIcon v-if="refreshing" icon="spinner" spin></FontAwesomeIcon>
+              <FontAwesomeIcon v-if="refreshing || loading" icon="spinner" spin></FontAwesomeIcon>
               <span v-else>{{ $t('bot-social-refresh') }}</span>
             </button>
           </div>
         </div>
 
         <div
-          v-if="isBrowseMode"
+          v-show="isBrowseMode"
           class="bot-social-games__filterbar"
           role="group"
           :aria-label="$t('bot-social-games-filters')"
@@ -171,7 +174,8 @@
         @plugin-missing="$emit('plugin-missing')"
       ></StatsPanel>
 
-      <template v-if="isBrowseMode">
+      <!-- Keep library/cover mounted so tab switches reuse cache + painted tiles. -->
+      <div v-show="isBrowseMode" class="bot-social-games__browse">
         <div v-if="loading && !games.length" class="bot-social__state">
           <FontAwesomeIcon icon="spinner" spin></FontAwesomeIcon>
           <span>{{ $t('bot-social-loading') }}</span>
@@ -185,18 +189,22 @@
             class="bot-social-games"
             :class="[
               `bot-social-games--${panelMode}`,
-              { 'is-refreshing': refreshing },
+              { 'is-refreshing': refreshing || loading },
             ]"
           >
             <CoverTile
-              v-for="game in filteredGames"
-              :key="`${panelMode}-${game.appId}`"
+              v-for="game in visibleGames"
+              :key="game.appId"
               :game="game"
               :variant="panelMode"
             ></CoverTile>
           </div>
+          <p v-if="isPaintingMore" class="bot-social-games__paint-hint" aria-live="polite">
+            <FontAwesomeIcon icon="spinner" spin></FontAwesomeIcon>
+            {{ $t('bot-social-games-painting-progress', { shown: visibleGames.length, total: filteredGames.length }) }}
+          </p>
         </template>
-      </template>
+      </div>
     </template>
   </div>
 </template>
@@ -204,7 +212,9 @@
 <script>
   import { isPluginMissingError } from '../api/bot-social';
   import { invalidateGameStats, invalidateGames, loadGames } from '../cache/bot-social-queries';
+  import { readGamesSession, writeGamesSession } from '../cache/games-session';
   import { resolveLocalData } from '../cache/load-policy';
+  import { prime } from '../cache/query-cache';
   import AddPanel from './games/add-panel.vue';
   import CoverTile from './games/cover-tile.vue';
   import StatsPanel from './games/stats-panel.vue';
@@ -224,6 +234,8 @@
     music: 'bot-social-games-filter-type-music',
     other: 'bot-social-games-filter-type-other',
   };
+  const INITIAL_RENDER = 72;
+  const RENDER_CHUNK = 48;
 
   function readStoredPanel() {
     try {
@@ -234,6 +246,10 @@
     } catch {
       return 'library';
     }
+  }
+
+  function isBrowse(mode) {
+    return mode === 'library' || mode === 'banner';
   }
 
   export default {
@@ -259,11 +275,13 @@
         typeFilter: 'all',
         panelMode,
         statsMounted: panelMode === 'stats',
+        renderCount: INITIAL_RENDER,
+        paintRaf: 0,
       };
     },
     computed: {
       isBrowseMode() {
-        return this.panelMode === 'library' || this.panelMode === 'banner';
+        return isBrowse(this.panelMode);
       },
       hasActiveFilters() {
         return this.ownershipFilter !== 'all'
@@ -321,6 +339,12 @@
           return true;
         });
       },
+      visibleGames() {
+        return this.filteredGames.slice(0, this.renderCount);
+      },
+      isPaintingMore() {
+        return this.visibleGames.length < this.filteredGames.length;
+      },
     },
     watch: {
       botName: {
@@ -332,6 +356,14 @@
       pluginMissing(value) {
         if (!value) this.bootstrap();
       },
+      filteredGames: {
+        handler() {
+          this.startProgressivePaint();
+        },
+      },
+    },
+    beforeDestroy() {
+      this.cancelProgressivePaint();
     },
     methods: {
       clearFilters() {
@@ -349,6 +381,39 @@
         } catch {
           // ignore
         }
+        // Returning to browse: ensure we still have hydrated data without refetch.
+        if (isBrowse(mode) && !this.games.length && !this.loading) {
+          this.bootstrap();
+        }
+      },
+      cancelProgressivePaint() {
+        if (this.paintRaf) {
+          cancelAnimationFrame(this.paintRaf);
+          this.paintRaf = 0;
+        }
+      },
+      startProgressivePaint() {
+        this.cancelProgressivePaint();
+        const total = this.filteredGames.length;
+        this.renderCount = Math.min(INITIAL_RENDER, total);
+        if (this.renderCount >= total) return;
+
+        const step = () => {
+          if (this.renderCount >= this.filteredGames.length) {
+            this.paintRaf = 0;
+            return;
+          }
+          this.renderCount = Math.min(this.renderCount + RENDER_CHUNK, this.filteredGames.length);
+          this.paintRaf = requestAnimationFrame(step);
+        };
+        this.paintRaf = requestAnimationFrame(step);
+      },
+      applyGamesPayload(payload, { emitLoaded = true } = {}) {
+        this.games = payload?.games || [];
+        if (emitLoaded) {
+          this.$emit('loaded', { total: payload?.total ?? this.games.length });
+        }
+        this.startProgressivePaint();
       },
       async onGameAdded() {
         invalidateGames(this.botName);
@@ -357,32 +422,48 @@
       },
       bootstrap() {
         if (this.pluginMissing) return;
+
         const resolved = resolveLocalData({
           resource: 'games',
           botName: this.botName,
-          isUsable: data => Array.isArray(data?.games),
+          isUsable: data => Array.isArray(data?.games) && data.games.length > 0,
         });
+
         if (resolved.hasData) {
-          this.games = resolved.data.games;
-          this.$emit('loaded', { total: resolved.data.total ?? this.games.length });
+          this.applyGamesPayload(resolved.data);
           return;
         }
+
+        const session = readGamesSession(this.botName);
+        if (session) {
+          prime('games', this.botName, {
+            games: session.games,
+            total: session.total,
+            ownedTotal: session.ownedTotal,
+            sharedTotal: session.sharedTotal,
+          }, { updatedAt: session.updatedAt });
+          this.applyGamesPayload(session);
+          // Keep cached view; only network on Actualizar / empty cache.
+          return;
+        }
+
         this.load(false);
       },
       async load(force) {
         if (this.pluginMissing) return;
         const hasData = this.games.length > 0;
         this.loading = !hasData;
-        this.refreshing = force && hasData;
+        this.refreshing = Boolean(force && hasData);
         if (force) this.error = '';
 
         try {
           const result = await loadGames(this.botName, { force });
-          this.games = result.data?.games || [];
+          const payload = result.data || { games: [] };
+          this.applyGamesPayload(payload);
+          writeGamesSession(this.botName, payload);
           if (result.rateLimited) this.$error(this.$t('bot-social-rate-limited'));
           else if (result.error && result.stale) this.error = result.error.message || String(result.error);
           else this.error = '';
-          this.$emit('loaded', { total: result.data?.total ?? this.games.length });
         } catch (err) {
           if (isPluginMissingError(err)) {
             this.$emit('plugin-missing');

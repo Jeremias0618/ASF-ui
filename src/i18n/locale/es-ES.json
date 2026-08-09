@@ -227,6 +227,8 @@
   "bot-social-friends-remove-success": "Amigo eliminado.",
   "bot-social-games-total": "{n} juegos",
   "bot-social-games-showing": "{shown} de {total} juegos",
+  "bot-social-games-painting": "mostrando…",
+  "bot-social-games-painting-progress": "Mostrando {shown} de {total}…",
   "bot-social-games-empty": "No se encontraron juegos.",
   "bot-social-games-open-store": "Abrir {name} en Steam",
   "bot-social-games-views": "Vista de juegos",

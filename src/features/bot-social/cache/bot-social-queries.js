@@ -8,6 +8,7 @@ import {
   fetchWishlist,
 } from '../api/bot-social';
 import { normalizeInventoryItems, steamEconomyImageUrl } from '../utils/inventory';
+import { clearGamesSession } from './games-session';
 import { invalidate, query } from './query-cache';
 
 function unwrap(result, botName) {
@@ -228,6 +229,7 @@ export function invalidateFriends(botName) {
 
 export function invalidateGames(botName) {
   invalidate('games', botName);
+  clearGamesSession(botName);
 }
 
 export function invalidateGameStats(botName) {

@@ -58,6 +58,19 @@ export function peek(resource, botName) {
   };
 }
 
+/** Seed memory cache without fetching (e.g. sessionStorage hydrate). */
+export function prime(resource, botName, data, { updatedAt = Date.now() } = {}) {
+  if (!resource || !botName || data === undefined) return;
+  const key = cacheKey(resource, botName);
+  const entry = getEntry(key);
+  entry.data = data;
+  entry.error = null;
+  entry.updatedAt = updatedAt;
+  entry.status = 'success';
+  entries.set(key, entry);
+  log('prime', { key });
+}
+
 export function isFresh(resource, botName) {
   const snapshot = peek(resource, botName);
   return Boolean(snapshot?.fresh);
