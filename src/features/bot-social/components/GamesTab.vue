@@ -31,6 +31,17 @@
             type="button"
             role="tab"
             class="bot-social-games__view"
+            :class="{ 'is-active': panelMode === 'stats' }"
+            :aria-selected="panelMode === 'stats' ? 'true' : 'false'"
+            @click="setPanelMode('stats')"
+          >
+            <FontAwesomeIcon icon="chart-bar" aria-hidden="true"></FontAwesomeIcon>
+            {{ $t('bot-social-games-view-stats') }}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            class="bot-social-games__view"
             :class="{ 'is-active': panelMode === 'add' }"
             :aria-selected="panelMode === 'add' ? 'true' : 'false'"
             @click="setPanelMode('add')"
@@ -40,7 +51,7 @@
           </button>
         </div>
 
-        <div v-if="panelMode !== 'add'" class="bot-social-games__chrome-bar">
+        <div v-if="isBrowseMode" class="bot-social-games__chrome-bar">
           <label class="bot-social-games__searchbox">
             <FontAwesomeIcon class="bot-social-games__search-icon" icon="search" aria-hidden="true"></FontAwesomeIcon>
             <input
@@ -84,6 +95,12 @@
         @added="onGameAdded"
       ></AddPanel>
 
+      <StatsPanel
+        v-else-if="panelMode === 'stats'"
+        :bot-name="botName"
+        @plugin-missing="$emit('plugin-missing')"
+      ></StatsPanel>
+
       <template v-else>
         <div v-if="loading && !games.length" class="bot-social__state">
           <FontAwesomeIcon icon="spinner" spin></FontAwesomeIcon>
@@ -120,16 +137,16 @@
   import { resolveLocalData } from '../cache/load-policy';
   import AddPanel from './games/add-panel.vue';
   import CoverTile from './games/cover-tile.vue';
+  import StatsPanel from './games/stats-panel.vue';
   import PluginMissing from './PluginMissing.vue';
 
   const PANEL_STORAGE_KEY = 'asf-bot-social-games-panel';
-  const PANEL_MODES = new Set(['library', 'banner', 'add']);
+  const PANEL_MODES = new Set(['library', 'banner', 'stats', 'add']);
 
   function readStoredPanel() {
     try {
       const value = localStorage.getItem(PANEL_STORAGE_KEY);
       if (PANEL_MODES.has(value)) return value;
-      // Migrate previous view-only key
       const legacy = localStorage.getItem('asf-bot-social-games-view');
       return PANEL_MODES.has(legacy) ? legacy : 'library';
     } catch {
@@ -139,7 +156,9 @@
 
   export default {
     name: 'BotSocialGamesTab',
-    components: { AddPanel, CoverTile, PluginMissing },
+    components: {
+      AddPanel, CoverTile, StatsPanel, PluginMissing,
+    },
     props: {
       botName: { type: String, required: true },
       pluginMissing: { type: Boolean, default: false },
@@ -155,6 +174,9 @@
       };
     },
     computed: {
+      isBrowseMode() {
+        return this.panelMode === 'library' || this.panelMode === 'banner';
+      },
       filteredGames() {
         const q = this.query.trim().toLowerCase();
         if (!q) return this.games;

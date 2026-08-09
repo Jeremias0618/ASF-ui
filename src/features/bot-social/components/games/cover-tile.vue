@@ -23,7 +23,6 @@
     </div>
     <div class="bot-social-games__meta">
       <span class="bot-social-games__name" :title="game.name">{{ game.name }}</span>
-      <span v-if="variant === 'library'" class="bot-social-games__appid">{{ game.appId }}</span>
     </div>
   </a>
 </template>
