@@ -2630,14 +2630,30 @@
 }
 
 .games-add__name {
+  align-items: center;
   color: #fff;
+  display: flex;
+  flex-wrap: wrap;
   font-size: 0.9rem;
   font-weight: 700;
+  gap: 0.35rem;
   line-height: 1.25;
   margin: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  min-width: 0;
+}
+
+.games-add__demo-badge {
+  background: rgba(90, 166, 74, 0.2);
+  border: 1px solid rgba(90, 166, 74, 0.45);
+  border-radius: 0.2rem;
+  color: #a4d007;
+  flex: 0 0 auto;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  padding: 0.18rem 0.35rem;
+  text-transform: uppercase;
 }
 
 .games-add__price-row {

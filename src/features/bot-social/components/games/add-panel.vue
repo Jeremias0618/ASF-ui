@@ -48,9 +48,14 @@
           @error="onThumbError($event, item.appId)"
         >
         <div class="games-add__meta">
-          <p class="games-add__name">{{ item.name }}</p>
+          <p class="games-add__name">
+            {{ item.name }}
+            <span v-if="item.isDemo" class="games-add__demo-badge">{{ $t('bot-social-games-add-demo-badge') }}</span>
+            <span v-else-if="item.demoAppId" class="games-add__demo-badge">{{ $t('bot-social-games-add-demo-available') }}</span>
+          </p>
           <div class="games-add__price-row">
             <span v-if="item.owned" class="games-add__owned">{{ $t('bot-social-games-add-owned') }}</span>
+            <span v-else-if="item.demoOwned" class="games-add__owned">{{ $t('bot-social-games-add-demo-owned') }}</span>
             <template v-else-if="hasPrice(item)">
               <span
                 v-if="item.discountPercent > 0"
@@ -70,11 +75,13 @@
         <button
           type="button"
           class="games-add__add-btn"
-          :disabled="item.owned || addingId === item.appId"
+          :disabled="!canAdd(item) || addingId === item.appId"
           @click="onAdd(item)"
         >
           <FontAwesomeIcon v-if="addingId === item.appId" icon="spinner" spin></FontAwesomeIcon>
           <span v-else-if="item.owned">{{ $t('bot-social-games-add-owned') }}</span>
+          <span v-else-if="item.demoOwned">{{ $t('bot-social-games-add-demo-owned') }}</span>
+          <span v-else-if="addUsesDemo(item)">{{ $t('bot-social-games-add-demo-action') }}</span>
           <span v-else>{{ $t('bot-social-games-add-action') }}</span>
         </button>
       </li>
@@ -132,7 +139,15 @@
         return item.finalPrice != null || item.initialPrice != null;
       },
       isFree(item) {
-        return item.finalPrice === 0 || item.discountPercent === 100;
+        return item.finalPrice === 0 || item.discountPercent === 100 || item.isDemo;
+      },
+      addUsesDemo(item) {
+        return !!(item && !item.owned && !item.isDemo && item.demoAppId && !item.demoOwned && !this.isFree(item));
+      },
+      canAdd(item) {
+        if (!item || item.owned) return false;
+        if (item.demoOwned && !this.isFree(item) && !item.isDemo) return false;
+        return true;
       },
       formatPrice(cents, currency) {
         if (cents == null) return '';
@@ -173,16 +188,23 @@
             || payload?.[Object.keys(payload || {}).find(k => k.toLowerCase() === String(this.botName || '').toLowerCase())]
             || payload?.[Object.keys(payload || {})[0]];
           const list = botResult?.Items || botResult?.items || [];
-          this.results = list.map(raw => ({
-            appId: Number(raw.AppId ?? raw.appId),
-            name: raw.Name ?? raw.name ?? `App ${raw.AppId ?? raw.appId}`,
-            tinyImage: raw.TinyImage ?? raw.tinyImage ?? '',
-            currency: raw.Currency ?? raw.currency ?? null,
-            initialPrice: raw.InitialPrice ?? raw.initialPrice ?? null,
-            finalPrice: raw.FinalPrice ?? raw.finalPrice ?? null,
-            discountPercent: raw.DiscountPercent ?? raw.discountPercent ?? 0,
-            owned: !!(raw.Owned ?? raw.owned),
-          })).filter(item => item.appId > 0);
+          this.results = list.map(raw => {
+            const demoRaw = raw.DemoAppId ?? raw.demoAppId;
+            const demoAppId = demoRaw != null && Number(demoRaw) > 0 ? Number(demoRaw) : null;
+            return {
+              appId: Number(raw.AppId ?? raw.appId),
+              name: raw.Name ?? raw.name ?? `App ${raw.AppId ?? raw.appId}`,
+              tinyImage: raw.TinyImage ?? raw.tinyImage ?? '',
+              currency: raw.Currency ?? raw.currency ?? null,
+              initialPrice: raw.InitialPrice ?? raw.initialPrice ?? null,
+              finalPrice: raw.FinalPrice ?? raw.finalPrice ?? null,
+              discountPercent: raw.DiscountPercent ?? raw.discountPercent ?? 0,
+              owned: !!(raw.Owned ?? raw.owned),
+              isDemo: !!(raw.IsDemo ?? raw.isDemo),
+              demoAppId,
+              demoOwned: !!(raw.DemoOwned ?? raw.demoOwned),
+            };
+          }).filter(item => item.appId > 0);
           this.searched = true;
         } catch (err) {
           if (seq !== this.searchSeq) return;
@@ -198,7 +220,7 @@
         }
       },
       async onAdd(item) {
-        if (!item || item.owned || this.addingId) return;
+        if (!item || !this.canAdd(item) || this.addingId) return;
         this.addingId = item.appId;
         this.error = '';
         try {
@@ -208,18 +230,37 @@
             || payload?.[Object.keys(payload || {})[0]];
           const first = (botResult?.Results || botResult?.results || [])[0];
           const ok = (first?.Success ?? first?.success) === true;
-          const message = first?.Message || first?.message || '';
+          const message = String(first?.Message || first?.message || '');
+          const claimedId = Number(first?.Target ?? first?.target) || item.appId;
           if (!ok) {
             this.$error(message || this.$t('bot-social-games-add-failed'));
             return;
           }
-          item.owned = true;
-          this.$success(
-            message === 'Already owned'
-              ? this.$t('bot-social-games-add-already')
-              : this.$t('bot-social-games-add-success', { name: item.name }),
-          );
-          this.$emit('added', { appId: item.appId, name: item.name });
+
+          const viaDemo = /demo/i.test(message) || (item.demoAppId && claimedId === item.demoAppId);
+          if (viaDemo) {
+            item.demoOwned = true;
+            if (!item.demoAppId) item.demoAppId = claimedId;
+          } else {
+            item.owned = true;
+          }
+
+          const already = /^Already owned/i.test(message);
+          if (already && viaDemo) {
+            this.$success(this.$t('bot-social-games-add-demo-already'));
+          } else if (already) {
+            this.$success(this.$t('bot-social-games-add-already'));
+          } else if (viaDemo) {
+            this.$success(this.$t('bot-social-games-add-demo-success', { name: item.name, appId: claimedId }));
+          } else {
+            this.$success(this.$t('bot-social-games-add-success', { name: item.name }));
+          }
+
+          this.$emit('added', {
+            appId: claimedId,
+            name: item.name,
+            isDemo: viaDemo || item.isDemo,
+          });
         } catch (err) {
           if (isPluginMissingError(err)) {
             this.$emit('plugin-missing');
