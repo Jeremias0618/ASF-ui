@@ -188,7 +188,7 @@
             v-else
             class="bot-social-games"
             :class="[
-              `bot-social-games--${panelMode}`,
+              `bot-social-games--${browseVariant}`,
               { 'is-refreshing': refreshing || loading },
             ]"
           >
@@ -196,7 +196,7 @@
               v-for="game in visibleGames"
               :key="game.appId"
               :game="game"
-              :variant="panelMode"
+              :variant="browseVariant"
             ></CoverTile>
           </div>
           <p v-if="isPaintingMore" class="bot-social-games__paint-hint" aria-live="polite">
@@ -274,6 +274,8 @@
         cardsFilter: 'all',
         typeFilter: 'all',
         panelMode,
+        // Keep last library/banner mode for CoverTile while Stats/Add stay mounted via v-show.
+        browseVariant: isBrowse(panelMode) ? panelMode : 'library',
         statsMounted: panelMode === 'stats',
         renderCount: INITIAL_RENDER,
         paintRaf: 0,
@@ -375,6 +377,7 @@
       setPanelMode(mode) {
         if (!PANEL_MODES.has(mode) || mode === this.panelMode) return;
         if (mode === 'stats') this.statsMounted = true;
+        if (isBrowse(mode)) this.browseVariant = mode;
         this.panelMode = mode;
         try {
           localStorage.setItem(PANEL_STORAGE_KEY, mode);
