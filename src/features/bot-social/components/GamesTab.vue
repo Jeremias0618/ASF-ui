@@ -42,6 +42,17 @@
             type="button"
             role="tab"
             class="bot-social-games__view"
+            :class="{ 'is-active': panelMode === 'idle' }"
+            :aria-selected="panelMode === 'idle' ? 'true' : 'false'"
+            @click="setPanelMode('idle')"
+          >
+            <FontAwesomeIcon icon="clock" aria-hidden="true"></FontAwesomeIcon>
+            {{ $t('bot-social-games-view-idle') }}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            class="bot-social-games__view"
             :class="{ 'is-active': panelMode === 'add' }"
             :aria-selected="panelMode === 'add' ? 'true' : 'false'"
             @click="setPanelMode('add')"
@@ -174,6 +185,13 @@
         @plugin-missing="$emit('plugin-missing')"
       ></StatsPanel>
 
+      <IdlePanel
+        v-show="panelMode === 'idle'"
+        v-if="idleMounted"
+        :bot-name="botName"
+        :games="games"
+      ></IdlePanel>
+
       <!-- Keep library/cover mounted so tab switches reuse cache + painted tiles. -->
       <div v-show="isBrowseMode" class="bot-social-games__browse">
         <div v-if="loading && !games.length" class="bot-social__state">
@@ -217,11 +235,12 @@
   import { prime } from '../cache/query-cache';
   import AddPanel from './games/add-panel.vue';
   import CoverTile from './games/cover-tile.vue';
+  import IdlePanel from './games/idle-panel.vue';
   import StatsPanel from './games/stats-panel.vue';
   import PluginMissing from './PluginMissing.vue';
 
   const PANEL_STORAGE_KEY = 'asf-bot-social-games-panel';
-  const PANEL_MODES = new Set(['library', 'banner', 'stats', 'add']);
+  const PANEL_MODES = new Set(['library', 'banner', 'stats', 'idle', 'add']);
   const TYPE_ORDER = ['game', 'dlc', 'demo', 'application', 'tool', 'beta', 'video', 'music', 'other'];
   const TYPE_LABEL_KEYS = {
     game: 'bot-social-games-filter-type-game',
@@ -255,7 +274,7 @@
   export default {
     name: 'BotSocialGamesTab',
     components: {
-      AddPanel, CoverTile, StatsPanel, PluginMissing,
+      AddPanel, CoverTile, IdlePanel, StatsPanel, PluginMissing,
     },
     props: {
       botName: { type: String, required: true },
@@ -277,6 +296,7 @@
         // Keep last library/banner mode for CoverTile while Stats/Add stay mounted via v-show.
         browseVariant: isBrowse(panelMode) ? panelMode : 'library',
         statsMounted: panelMode === 'stats',
+        idleMounted: panelMode === 'idle',
         renderCount: INITIAL_RENDER,
         paintRaf: 0,
       };
@@ -377,6 +397,7 @@
       setPanelMode(mode) {
         if (!PANEL_MODES.has(mode) || mode === this.panelMode) return;
         if (mode === 'stats') this.statsMounted = true;
+        if (mode === 'idle') this.idleMounted = true;
         if (isBrowse(mode)) this.browseVariant = mode;
         this.panelMode = mode;
         try {
@@ -384,8 +405,8 @@
         } catch {
           // ignore
         }
-        // Returning to browse: ensure we still have hydrated data without refetch.
-        if (isBrowse(mode) && !this.games.length && !this.loading) {
+        // Idle picker and browse reuse the same library cache.
+        if ((isBrowse(mode) || mode === 'idle') && !this.games.length && !this.loading) {
           this.bootstrap();
         }
       },
