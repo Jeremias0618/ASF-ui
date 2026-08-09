@@ -9,9 +9,9 @@
             type="button"
             role="tab"
             class="bot-social-games__view"
-            :class="{ 'is-active': viewMode === 'library' }"
-            :aria-selected="viewMode === 'library' ? 'true' : 'false'"
-            @click="setViewMode('library')"
+            :class="{ 'is-active': panelMode === 'library' }"
+            :aria-selected="panelMode === 'library' ? 'true' : 'false'"
+            @click="setPanelMode('library')"
           >
             <FontAwesomeIcon icon="book-open" aria-hidden="true"></FontAwesomeIcon>
             {{ $t('bot-social-games-view-library') }}
@@ -20,16 +20,27 @@
             type="button"
             role="tab"
             class="bot-social-games__view"
-            :class="{ 'is-active': viewMode === 'banner' }"
-            :aria-selected="viewMode === 'banner' ? 'true' : 'false'"
-            @click="setViewMode('banner')"
+            :class="{ 'is-active': panelMode === 'banner' }"
+            :aria-selected="panelMode === 'banner' ? 'true' : 'false'"
+            @click="setPanelMode('banner')"
           >
             <FontAwesomeIcon icon="gamepad" aria-hidden="true"></FontAwesomeIcon>
             {{ $t('bot-social-games-view-banner') }}
           </button>
+          <button
+            type="button"
+            role="tab"
+            class="bot-social-games__view"
+            :class="{ 'is-active': panelMode === 'add' }"
+            :aria-selected="panelMode === 'add' ? 'true' : 'false'"
+            @click="setPanelMode('add')"
+          >
+            <FontAwesomeIcon icon="plus" aria-hidden="true"></FontAwesomeIcon>
+            {{ $t('bot-social-games-view-add') }}
+          </button>
         </div>
 
-        <div class="bot-social-games__chrome-bar">
+        <div v-if="panelMode !== 'add'" class="bot-social-games__chrome-bar">
           <label class="bot-social-games__searchbox">
             <FontAwesomeIcon class="bot-social-games__search-icon" icon="search" aria-hidden="true"></FontAwesomeIcon>
             <input
@@ -66,29 +77,38 @@
         </div>
       </div>
 
-      <div v-if="loading && !games.length" class="bot-social__state">
-        <FontAwesomeIcon icon="spinner" spin></FontAwesomeIcon>
-        <span>{{ $t('bot-social-loading') }}</span>
-      </div>
-      <div v-else-if="error && !games.length" class="bot-social__state bot-social__state--error">{{ error }}</div>
+      <AddPanel
+        v-if="panelMode === 'add'"
+        :bot-name="botName"
+        @plugin-missing="$emit('plugin-missing')"
+        @added="onGameAdded"
+      ></AddPanel>
+
       <template v-else>
-        <p v-if="error" class="bot-social__inline-error">{{ error }}</p>
-        <div v-if="!filteredGames.length" class="bot-social__state">{{ $t('bot-social-games-empty') }}</div>
-        <div
-          v-else
-          class="bot-social-games"
-          :class="[
-            `bot-social-games--${viewMode}`,
-            { 'is-refreshing': refreshing },
-          ]"
-        >
-          <CoverTile
-            v-for="game in filteredGames"
-            :key="`${viewMode}-${game.appId}`"
-            :game="game"
-            :variant="viewMode"
-          ></CoverTile>
+        <div v-if="loading && !games.length" class="bot-social__state">
+          <FontAwesomeIcon icon="spinner" spin></FontAwesomeIcon>
+          <span>{{ $t('bot-social-loading') }}</span>
         </div>
+        <div v-else-if="error && !games.length" class="bot-social__state bot-social__state--error">{{ error }}</div>
+        <template v-else>
+          <p v-if="error" class="bot-social__inline-error">{{ error }}</p>
+          <div v-if="!filteredGames.length" class="bot-social__state">{{ $t('bot-social-games-empty') }}</div>
+          <div
+            v-else
+            class="bot-social-games"
+            :class="[
+              `bot-social-games--${panelMode}`,
+              { 'is-refreshing': refreshing },
+            ]"
+          >
+            <CoverTile
+              v-for="game in filteredGames"
+              :key="`${panelMode}-${game.appId}`"
+              :game="game"
+              :variant="panelMode"
+            ></CoverTile>
+          </div>
+        </template>
       </template>
     </template>
   </div>
@@ -96,18 +116,22 @@
 
 <script>
   import { isPluginMissingError } from '../api/bot-social';
-  import { loadGames } from '../cache/bot-social-queries';
+  import { invalidateGames, loadGames } from '../cache/bot-social-queries';
   import { resolveLocalData } from '../cache/load-policy';
+  import AddPanel from './games/add-panel.vue';
   import CoverTile from './games/cover-tile.vue';
   import PluginMissing from './PluginMissing.vue';
 
-  const VIEW_STORAGE_KEY = 'asf-bot-social-games-view';
-  const VIEW_MODES = new Set(['library', 'banner']);
+  const PANEL_STORAGE_KEY = 'asf-bot-social-games-panel';
+  const PANEL_MODES = new Set(['library', 'banner', 'add']);
 
-  function readStoredView() {
+  function readStoredPanel() {
     try {
-      const value = localStorage.getItem(VIEW_STORAGE_KEY);
-      return VIEW_MODES.has(value) ? value : 'library';
+      const value = localStorage.getItem(PANEL_STORAGE_KEY);
+      if (PANEL_MODES.has(value)) return value;
+      // Migrate previous view-only key
+      const legacy = localStorage.getItem('asf-bot-social-games-view');
+      return PANEL_MODES.has(legacy) ? legacy : 'library';
     } catch {
       return 'library';
     }
@@ -115,7 +139,7 @@
 
   export default {
     name: 'BotSocialGamesTab',
-    components: { CoverTile, PluginMissing },
+    components: { AddPanel, CoverTile, PluginMissing },
     props: {
       botName: { type: String, required: true },
       pluginMissing: { type: Boolean, default: false },
@@ -127,7 +151,7 @@
         error: '',
         games: [],
         query: '',
-        viewMode: readStoredView(),
+        panelMode: readStoredPanel(),
       };
     },
     computed: {
@@ -152,14 +176,18 @@
       },
     },
     methods: {
-      setViewMode(mode) {
-        if (!VIEW_MODES.has(mode) || mode === this.viewMode) return;
-        this.viewMode = mode;
+      setPanelMode(mode) {
+        if (!PANEL_MODES.has(mode) || mode === this.panelMode) return;
+        this.panelMode = mode;
         try {
-          localStorage.setItem(VIEW_STORAGE_KEY, mode);
+          localStorage.setItem(PANEL_STORAGE_KEY, mode);
         } catch {
-          // ignore quota / private mode
+          // ignore
         }
+      },
+      async onGameAdded() {
+        invalidateGames(this.botName);
+        await this.load(true);
       },
       bootstrap() {
         if (this.pluginMissing) return;

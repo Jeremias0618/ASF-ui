@@ -172,6 +172,10 @@ export function invalidateFriends(botName) {
   invalidate('friends', botName);
 }
 
+export function invalidateGames(botName) {
+  invalidate('games', botName);
+}
+
 export function invalidateWishlist(botName) {
   invalidate('wishlist', botName);
 }

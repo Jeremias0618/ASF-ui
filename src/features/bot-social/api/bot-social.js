@@ -39,6 +39,14 @@ export function fetchGames(botName) {
   return get(`${socialBase(botName)}/Games`);
 }
 
+export function searchGames(botName, query) {
+  return get(`${socialBase(botName)}/Games/Search`, { q: query });
+}
+
+export function addGames(botName, appIds) {
+  return post(`${socialBase(botName)}/Games/Add`, { AppIds: appIds });
+}
+
 export function fetchWishlist(botName) {
   return get(`${socialBase(botName)}/Wishlist`);
 }
