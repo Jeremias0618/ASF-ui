@@ -35,6 +35,11 @@ export function removeFriends(botName, steamIds) {
   return post(`${socialBase(botName)}/Friends/Remove`, { SteamIds: steamIds });
 }
 
+/** Join Steam community groups (vanity URL, /gid/…, or clan SteamID64). */
+export function joinGroups(botName, targets) {
+  return post(`${socialBase(botName)}/Groups/Join`, { Targets: targets });
+}
+
 export function fetchGames(botName) {
   return get(`${socialBase(botName)}/Games`);
 }
