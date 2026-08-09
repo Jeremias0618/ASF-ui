@@ -87,6 +87,41 @@
         </button>
       </div>
 
+      <div class="games-stats__filters" role="group" :aria-label="$t('bot-social-games-filters')">
+        <button
+          type="button"
+          class="games-stats__filter"
+          :class="{ 'is-active': ownershipFilter === 'all' }"
+          @click="ownershipFilter = 'all'"
+        >
+          {{ $t('bot-social-games-filter-ownership-all') }}
+        </button>
+        <button
+          type="button"
+          class="games-stats__filter"
+          :class="{ 'is-active': ownershipFilter === 'owned' }"
+          @click="ownershipFilter = 'owned'"
+        >
+          {{ $t('bot-social-games-filter-ownership-owned') }}
+        </button>
+        <button
+          type="button"
+          class="games-stats__filter"
+          :class="{ 'is-active': ownershipFilter === 'shared' }"
+          @click="ownershipFilter = 'shared'"
+        >
+          {{ $t('bot-social-games-filter-ownership-shared') }}
+        </button>
+        <button
+          type="button"
+          class="games-stats__filter"
+          :class="{ 'is-active': achievementsFilter === 'yes' }"
+          @click="achievementsFilter = achievementsFilter === 'yes' ? 'all' : 'yes'"
+        >
+          {{ $t('bot-social-games-filter-achievements-yes') }}
+        </button>
+      </div>
+
       <div v-if="!filteredGames.length" class="bot-social__state">{{ $t('bot-social-games-empty') }}</div>
       <ul v-else class="games-stats__list" :class="{ 'is-refreshing': refreshing }">
         <li
@@ -110,7 +145,13 @@
             @error="onCoverError($event, game.appId)"
           >
           <div class="games-stats__body">
-            <p class="games-stats__name" :title="game.name">{{ game.name }}</p>
+            <p class="games-stats__name" :title="game.name">
+              {{ game.name }}
+              <span
+                v-if="game.isShared && !game.isOwned"
+                class="games-stats__shared-badge"
+              >{{ $t('bot-social-games-badge-shared') }}</span>
+            </p>
             <div class="games-stats__metrics">
               <div class="games-stats__metric">
                 <span class="games-stats__metric-label">{{ $t('bot-social-games-stats-playtime') }}</span>
@@ -166,6 +207,8 @@
         error: '',
         query: '',
         sortBy: 'playtime',
+        ownershipFilter: 'all',
+        achievementsFilter: 'all',
         summary: emptySummary(),
         games: [],
         selectedGame: null,
@@ -178,6 +221,14 @@
         if (q) {
           list = list.filter(g => String(g.name || '').toLowerCase().includes(q)
             || String(g.appId).includes(q));
+        }
+        if (this.ownershipFilter === 'owned') {
+          list = list.filter(g => g.isOwned);
+        } else if (this.ownershipFilter === 'shared') {
+          list = list.filter(g => g.isShared);
+        }
+        if (this.achievementsFilter === 'yes') {
+          list = list.filter(g => this.hasAchievements(g));
         }
         const sorted = [...list];
         if (this.sortBy === 'name') {

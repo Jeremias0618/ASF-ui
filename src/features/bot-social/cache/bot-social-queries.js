@@ -140,6 +140,8 @@ export function loadGameStats(botName, { force = false } = {}) {
             || `https://cdn.cloudflare.steamstatic.com/steam/apps/${appId}/header.jpg`,
           achievementsUnlocked: raw.AchievementsUnlocked ?? raw.achievementsUnlocked ?? null,
           achievementsTotal: raw.AchievementsTotal ?? raw.achievementsTotal ?? null,
+          isOwned: raw.IsOwned ?? raw.isOwned ?? true,
+          isShared: Boolean(raw.IsShared ?? raw.isShared),
         };
       }).filter(game => game.appId > 0);
 

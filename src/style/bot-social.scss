@@ -2682,6 +2682,37 @@
   gap: 0.55rem 0.75rem;
 }
 
+.games-stats__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.15rem;
+}
+
+.games-stats__filter {
+  appearance: none;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.3rem;
+  color: #8f98a0;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 0.3rem 0.55rem;
+
+  &.is-active {
+    background: linear-gradient(180deg, #3d6c8d 0%, #2a475e 100%);
+    border-color: rgba(102, 192, 244, 0.35);
+    color: #fff;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #66c0f4;
+    outline-offset: 1px;
+  }
+}
+
 .games-stats__searchbox {
   align-items: center;
   background: #0e1621;
@@ -2819,13 +2850,31 @@
 }
 
 .games-stats__name {
+  align-items: center;
   color: #fff;
+  display: flex;
   font-size: 1rem;
   font-weight: 700;
+  gap: 0.45rem;
   margin: 0;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.games-stats__shared-badge {
+  background: rgba(16, 24, 34, 0.82);
+  border: 1px solid rgba(102, 192, 244, 0.55);
+  border-radius: 0.2rem;
+  color: #b6ddf5;
+  flex-shrink: 0;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  padding: 0.22rem 0.35rem;
+  text-transform: uppercase;
 }
 
 .games-stats__metrics {
