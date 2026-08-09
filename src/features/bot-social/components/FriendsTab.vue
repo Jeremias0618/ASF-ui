@@ -37,84 +37,129 @@
           {{ $t('bot-social-friends-mode-received') }}
           <span class="friends-hub__mode-count">{{ receivedRequests.length }}</span>
         </button>
+        <button
+          type="button"
+          role="tab"
+          class="friends-hub__mode"
+          :class="{ 'is-active': panelMode === 'send' }"
+          :aria-selected="panelMode === 'send' ? 'true' : 'false'"
+          @click="setPanelMode('send')"
+        >
+          <FontAwesomeIcon icon="plus" aria-hidden="true"></FontAwesomeIcon>
+          {{ $t('bot-social-friends-mode-send') }}
+        </button>
       </div>
 
-      <section class="friends-hub__chrome" :aria-label="$t('bot-social-tab-friends')">
-        <div class="friends-hub__chrome-bar">
-          <div class="friends-hub__searchbox">
-            <FontAwesomeIcon icon="search" class="friends-hub__search-icon" aria-hidden="true"></FontAwesomeIcon>
-            <input
-              v-model.trim="query"
-              class="friends-hub__search-input"
-              type="search"
-              :placeholder="$t('bot-social-friends-search-placeholder')"
-              :aria-label="$t('bot-social-friends-search-label')"
-              autocomplete="off"
-            >
-          </div>
+      <section
+        v-if="panelMode === 'send'"
+        class="friends-hub__compose"
+        :aria-label="$t('bot-social-friends-send-title')"
+      >
+        <div class="friends-hub__compose-panel">
+          <header class="friends-hub__compose-header">
+            <p class="friends-hub__compose-eyebrow">{{ $t('bot-social-friends-mode-send') }}</p>
+            <h3 class="friends-hub__compose-title">{{ $t('bot-social-friends-send-title') }}</h3>
+            <p class="friends-hub__compose-lead">{{ $t('bot-social-friends-send-lead') }}</p>
+          </header>
 
-          <div class="friends-hub__chrome-actions">
-            <span class="friends-hub__count">{{ countLabel }}</span>
-            <button
-              v-if="hasActiveFilters"
-              type="button"
-              class="friends-hub__clear"
-              @click="clearFilters"
-            >
-              {{ $t('bot-social-friends-clear-filters') }}
-            </button>
-            <button
-              type="button"
-              class="friends-hub__refresh"
-              :disabled="loading || refreshing || mutating"
-              :title="$t('bot-social-refresh')"
-              @click="refresh"
-            >
-              <FontAwesomeIcon :icon="refreshing ? 'spinner' : 'redo-alt'" :spin="refreshing"></FontAwesomeIcon>
-              <span>{{ $t('bot-social-refresh') }}</span>
-            </button>
+          <form class="friends-hub__compose-form" @submit.prevent="onAdd">
+            <label class="friends-hub__field-label" for="friends-send-target">
+              {{ $t('bot-social-friends-send-target-label') }}
+            </label>
+            <div class="friends-hub__compose-combo">
+              <input
+                id="friends-send-target"
+                v-model.trim="addTarget"
+                class="friends-hub__compose-input"
+                type="text"
+                :placeholder="$t('bot-social-friends-send-placeholder')"
+                :disabled="mutating"
+                autocomplete="off"
+                spellcheck="false"
+              >
+              <button
+                type="submit"
+                class="friends-hub__compose-submit"
+                :disabled="!addTarget || mutating"
+              >
+                <FontAwesomeIcon v-if="mutating" icon="spinner" spin aria-hidden="true"></FontAwesomeIcon>
+                <span v-else>{{ $t('bot-social-friends-send-submit') }}</span>
+              </button>
+            </div>
+          </form>
+
+          <div class="friends-hub__compose-help" :aria-label="$t('bot-social-friends-send-formats')">
+            <p class="friends-hub__compose-help-title">{{ $t('bot-social-friends-send-formats') }}</p>
+            <ul class="friends-hub__compose-examples">
+              <li><code>{{ $t('bot-social-friends-send-example-steamid') }}</code></li>
+              <li><code>{{ $t('bot-social-friends-send-example-code') }}</code></li>
+              <li><code>{{ $t('bot-social-friends-send-example-vanity') }}</code></li>
+              <li><code>{{ $t('bot-social-friends-send-example-profiles') }}</code></li>
+            </ul>
           </div>
         </div>
-
-        <form v-if="panelMode === 'friends'" class="friends-hub__addbar" @submit.prevent="onAdd">
-          <div class="friends-hub__field friends-hub__field--grow">
-            <span class="friends-hub__field-label">{{ $t('bot-social-friends-add-label') }}</span>
-            <input
-              v-model.trim="addTarget"
-              class="friends-hub__add-input"
-              type="text"
-              :placeholder="$t('bot-social-friends-add-placeholder')"
-              :disabled="mutating"
-            >
-          </div>
-          <button type="submit" class="friends-hub__add-btn" :disabled="!addTarget || mutating">
-            <FontAwesomeIcon v-if="mutating" icon="spinner" spin></FontAwesomeIcon>
-            <span v-else>{{ $t('bot-social-friends-add') }}</span>
-          </button>
-        </form>
       </section>
 
-      <div v-if="loading && !hasAnyData" class="friends-hub__skeleton" aria-busy="true" :aria-label="$t('bot-social-loading')">
-        <div v-for="n in 20" :key="n" class="friends-hub__skel-card"></div>
-      </div>
-      <div v-else-if="error && !hasAnyData" class="bot-social__state bot-social__state--error">{{ error }}</div>
       <template v-else>
-        <p v-if="error" class="bot-social__inline-error">{{ error }}</p>
-        <div v-if="!activeList.length" class="friends-hub__empty">
-          <p>{{ emptyLabel }}</p>
+        <section class="friends-hub__chrome" :aria-label="$t('bot-social-tab-friends')">
+          <div class="friends-hub__chrome-bar">
+            <div class="friends-hub__searchbox">
+              <FontAwesomeIcon icon="search" class="friends-hub__search-icon" aria-hidden="true"></FontAwesomeIcon>
+              <input
+                v-model.trim="query"
+                class="friends-hub__search-input"
+                type="search"
+                :placeholder="$t('bot-social-friends-search-placeholder')"
+                :aria-label="$t('bot-social-friends-search-label')"
+                autocomplete="off"
+              >
+            </div>
+
+            <div class="friends-hub__chrome-actions">
+              <span class="friends-hub__count">{{ countLabel }}</span>
+              <button
+                v-if="hasActiveFilters"
+                type="button"
+                class="friends-hub__clear"
+                @click="clearFilters"
+              >
+                {{ $t('bot-social-friends-clear-filters') }}
+              </button>
+              <button
+                type="button"
+                class="friends-hub__refresh"
+                :disabled="loading || refreshing || mutating"
+                :title="$t('bot-social-refresh')"
+                @click="refresh"
+              >
+                <FontAwesomeIcon :icon="refreshing ? 'spinner' : 'redo-alt'" :spin="refreshing"></FontAwesomeIcon>
+                <span>{{ $t('bot-social-refresh') }}</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <div v-if="loading && !hasAnyData" class="friends-hub__skeleton" aria-busy="true" :aria-label="$t('bot-social-loading')">
+          <div v-for="n in 20" :key="n" class="friends-hub__skel-card"></div>
         </div>
-        <div v-else-if="!filteredList.length" class="friends-hub__empty">
-          <p>{{ $t('bot-social-friends-search-empty') }}</p>
-          <button type="button" class="button button--link" @click="clearFilters">
-            {{ $t('bot-social-friends-clear-filters') }}
-          </button>
-        </div>
-        <ul v-else class="friends-hub__grid" :class="{ 'is-refreshing': refreshing }">
-          <li v-for="friend in pageList" :key="`${panelMode}-${friend.steamId}`" class="friends-hub__card-wrap">
-            <article
-              class="friends-hub__card"
-              :class="{ 'is-blocked': isBlocked(friend) }"
-            >
+        <div v-else-if="error && !hasAnyData" class="bot-social__state bot-social__state--error">{{ error }}</div>
+        <template v-else>
+          <p v-if="error" class="bot-social__inline-error">{{ error }}</p>
+          <div v-if="!activeList.length" class="friends-hub__empty">
+            <p>{{ emptyLabel }}</p>
+          </div>
+          <div v-else-if="!filteredList.length" class="friends-hub__empty">
+            <p>{{ $t('bot-social-friends-search-empty') }}</p>
+            <button type="button" class="button button--link" @click="clearFilters">
+              {{ $t('bot-social-friends-clear-filters') }}
+            </button>
+          </div>
+          <ul v-else class="friends-hub__grid" :class="{ 'is-refreshing': refreshing }">
+            <li v-for="friend in pageList" :key="`${panelMode}-${friend.steamId}`" class="friends-hub__card-wrap">
+              <article
+                class="friends-hub__card"
+                :class="{ 'is-blocked': isBlocked(friend) }"
+              >
               <a
                 class="friends-hub__avatar-link"
                 :href="profileUrl(friend.steamId)"
@@ -177,15 +222,16 @@
           </li>
         </ul>
 
-        <div v-if="totalPages > 1" class="friends-hub__pager">
-          <button type="button" class="friends-hub__page-btn" :disabled="page <= 1" @click="page -= 1">
-            <FontAwesomeIcon icon="chevron-left"></FontAwesomeIcon>
-          </button>
-          <span>{{ $t('bot-social-inventory-page', { current: page, total: totalPages }) }}</span>
-          <button type="button" class="friends-hub__page-btn" :disabled="page >= totalPages" @click="page += 1">
-            <FontAwesomeIcon icon="chevron-right"></FontAwesomeIcon>
-          </button>
-        </div>
+          <div v-if="totalPages > 1" class="friends-hub__pager">
+            <button type="button" class="friends-hub__page-btn" :disabled="page <= 1" @click="page -= 1">
+              <FontAwesomeIcon icon="chevron-left"></FontAwesomeIcon>
+            </button>
+            <span>{{ $t('bot-social-inventory-page', { current: page, total: totalPages }) }}</span>
+            <button type="button" class="friends-hub__page-btn" :disabled="page >= totalPages" @click="page += 1">
+              <FontAwesomeIcon icon="chevron-right"></FontAwesomeIcon>
+            </button>
+          </div>
+        </template>
       </template>
     </template>
 
@@ -209,6 +255,7 @@
   } from '../api/bot-social';
   import { invalidateFriends, loadFriends } from '../cache/bot-social-queries';
   import { resolveLocalData } from '../cache/load-policy';
+  import { normalizeFriendTarget } from '../utils/friend-target';
   import PluginMissing from './PluginMissing.vue';
   import RemoveDialog from './friends/remove-dialog.vue';
 
@@ -444,14 +491,20 @@
         return this.$t('bot-social-friends-remove-aria', { name });
       },
       async onAdd() {
-        if (!this.addTarget || this.mutating) return;
+        if (this.mutating) return;
+        const target = normalizeFriendTarget(this.addTarget);
+        if (!target) {
+          this.$error(this.$t('bot-social-friends-send-invalid'));
+          return;
+        }
         this.mutating = true;
         try {
-          await addFriends(this.botName, [this.addTarget]);
+          await addFriends(this.botName, [target]);
           this.$success(this.$t('bot-social-friends-add-success'));
           this.addTarget = '';
           invalidateFriends(this.botName);
           await this.load(true);
+          this.panelMode = 'sent';
         } catch (err) {
           if (isPluginMissingError(err)) this.$emit('plugin-missing');
           else this.$error(err.message || String(err));

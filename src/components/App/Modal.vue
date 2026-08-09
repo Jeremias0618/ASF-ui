@@ -199,17 +199,23 @@
       width: min(52rem, calc(100vw - 1.5rem));
 
       > * {
+        box-sizing: border-box;
         display: flex;
         flex: 1 1 auto;
         flex-direction: column;
         max-height: 100%;
+        max-width: 100%;
         min-height: 0;
-        overflow: auto;
+        min-width: 0;
+        overflow-x: hidden;
+        overflow-y: auto;
+        width: 100%;
       }
     }
 
     &--friends {
       max-width: min(60rem, calc(100vw - 1.5rem));
+      overflow: hidden;
       width: min(60rem, calc(100vw - 1.5rem));
     }
 
