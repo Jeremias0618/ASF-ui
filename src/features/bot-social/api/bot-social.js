@@ -51,6 +51,24 @@ export function fetchGameStats(botName) {
   return get(`${socialBase(botName)}/Games/Stats`);
 }
 
+export function fetchGameAchievements(botName, appId) {
+  return get(`${socialBase(botName)}/Games/${encodeURIComponent(appId)}/Achievements`);
+}
+
+export function unlockGameAchievements(botName, appId, { indices, all } = {}) {
+  return post(`${socialBase(botName)}/Games/${encodeURIComponent(appId)}/Achievements/Unlock`, {
+    Indices: indices || [],
+    All: !!all,
+  });
+}
+
+export function lockGameAchievements(botName, appId, { indices, all } = {}) {
+  return post(`${socialBase(botName)}/Games/${encodeURIComponent(appId)}/Achievements/Lock`, {
+    Indices: indices || [],
+    All: !!all,
+  });
+}
+
 export function fetchWishlist(botName) {
   return get(`${socialBase(botName)}/Wishlist`);
 }

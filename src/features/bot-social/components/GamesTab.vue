@@ -96,12 +96,13 @@
       ></AddPanel>
 
       <StatsPanel
-        v-else-if="panelMode === 'stats'"
+        v-show="panelMode === 'stats'"
+        v-if="statsMounted"
         :bot-name="botName"
         @plugin-missing="$emit('plugin-missing')"
       ></StatsPanel>
 
-      <template v-else>
+      <template v-if="isBrowseMode">
         <div v-if="loading && !games.length" class="bot-social__state">
           <FontAwesomeIcon icon="spinner" spin></FontAwesomeIcon>
           <span>{{ $t('bot-social-loading') }}</span>
@@ -133,7 +134,7 @@
 
 <script>
   import { isPluginMissingError } from '../api/bot-social';
-  import { invalidateGames, loadGames } from '../cache/bot-social-queries';
+  import { invalidateGameStats, invalidateGames, loadGames } from '../cache/bot-social-queries';
   import { resolveLocalData } from '../cache/load-policy';
   import AddPanel from './games/add-panel.vue';
   import CoverTile from './games/cover-tile.vue';
@@ -164,13 +165,15 @@
       pluginMissing: { type: Boolean, default: false },
     },
     data() {
+      const panelMode = readStoredPanel();
       return {
         loading: false,
         refreshing: false,
         error: '',
         games: [],
         query: '',
-        panelMode: readStoredPanel(),
+        panelMode,
+        statsMounted: panelMode === 'stats',
       };
     },
     computed: {
@@ -200,6 +203,7 @@
     methods: {
       setPanelMode(mode) {
         if (!PANEL_MODES.has(mode) || mode === this.panelMode) return;
+        if (mode === 'stats') this.statsMounted = true;
         this.panelMode = mode;
         try {
           localStorage.setItem(PANEL_STORAGE_KEY, mode);
@@ -209,6 +213,7 @@
       },
       async onGameAdded() {
         invalidateGames(this.botName);
+        invalidateGameStats(this.botName);
         await this.load(true);
       },
       bootstrap() {

@@ -1,5 +1,17 @@
 <template>
   <section class="games-stats" :aria-label="$t('bot-social-games-view-stats')">
+    <AchievementDetail
+      v-if="selectedGame"
+      :bot-name="botName"
+      :app-id="selectedGame.appId"
+      :seed-name="selectedGame.name"
+      :seed-header="selectedGame.headerImage"
+      @back="selectedGame = null"
+      @plugin-missing="$emit('plugin-missing')"
+      @changed="onAchievementsChanged"
+    ></AchievementDetail>
+
+    <template v-else>
     <div v-if="loading && !games.length" class="bot-social__state">
       <FontAwesomeIcon icon="spinner" spin></FontAwesomeIcon>
       <span>{{ $t('bot-social-loading') }}</span>
@@ -77,22 +89,26 @@
 
       <div v-if="!filteredGames.length" class="bot-social__state">{{ $t('bot-social-games-empty') }}</div>
       <ul v-else class="games-stats__list" :class="{ 'is-refreshing': refreshing }">
-        <li v-for="game in filteredGames" :key="game.appId" class="games-stats__row">
-          <a
-            class="games-stats__cover-link"
-            :href="storeUrl(game.appId)"
-            target="_blank"
-            rel="noreferrer noopener"
+        <li
+          v-for="game in filteredGames"
+          :key="game.appId"
+          class="games-stats__row"
+          :class="{ 'games-stats__row--clickable': hasAchievements(game) }"
+          :role="hasAchievements(game) ? 'button' : undefined"
+          :tabindex="hasAchievements(game) ? 0 : undefined"
+          :aria-disabled="hasAchievements(game) ? undefined : 'true'"
+          @click="openGame(game)"
+          @keydown.enter.prevent="openGame(game)"
+          @keydown.space.prevent="openGame(game)"
+        >
+          <img
+            class="games-stats__cover"
+            :src="game.headerImage"
+            :alt="''"
+            loading="lazy"
+            decoding="async"
+            @error="onCoverError($event, game.appId)"
           >
-            <img
-              class="games-stats__cover"
-              :src="game.headerImage"
-              :alt="''"
-              loading="lazy"
-              decoding="async"
-              @error="onCoverError($event, game.appId)"
-            >
-          </a>
           <div class="games-stats__body">
             <p class="games-stats__name" :title="game.name">{{ game.name }}</p>
             <div class="games-stats__metrics">
@@ -120,15 +136,26 @@
         </li>
       </ul>
     </template>
+    </template>
   </section>
 </template>
 
 <script>
-  import { fetchGameStats, isPluginMissingError } from '../../api/bot-social';
-  import { steamStoreUrl } from '../../utils/game-cover';
+  import { isPluginMissingError } from '../../api/bot-social';
+  import { invalidateGameStats, loadGameStats } from '../../cache/bot-social-queries';
+  import { resolveLocalData } from '../../cache/load-policy';
+  import AchievementDetail from './achievement-detail.vue';
+
+  const emptySummary = () => ({
+    totalPlaytimeHours: 0,
+    inCollection: 0,
+    played: 0,
+    neverPlayed: 0,
+  });
 
   export default {
     name: 'BotSocialGamesStatsPanel',
+    components: { AchievementDetail },
     props: {
       botName: { type: String, required: true },
     },
@@ -139,13 +166,9 @@
         error: '',
         query: '',
         sortBy: 'playtime',
-        summary: {
-          totalPlaytimeHours: 0,
-          inCollection: 0,
-          played: 0,
-          neverPlayed: 0,
-        },
+        summary: emptySummary(),
         games: [],
+        selectedGame: null,
       };
     },
     computed: {
@@ -179,12 +202,48 @@
       botName: {
         immediate: true,
         handler() {
-          this.load(false);
+          this.bootstrap();
         },
       },
     },
     methods: {
-      storeUrl: steamStoreUrl,
+      hasAchievements(game) {
+        return Number(game?.achievementsTotal) > 0;
+      },
+      openGame(game) {
+        if (!game?.appId) return;
+        if (!this.hasAchievements(game)) {
+          this.$error(this.$t('bot-social-games-ach-none'));
+          return;
+        }
+        this.selectedGame = {
+          appId: game.appId,
+          name: game.name,
+          headerImage: game.headerImage,
+        };
+      },
+      onAchievementsChanged() {
+        invalidateGameStats(this.botName);
+        this.load(true);
+      },
+      applyPayload(data) {
+        this.games = data?.games || [];
+        this.summary = data?.summary ? { ...data.summary } : emptySummary();
+      },
+      bootstrap() {
+        this.selectedGame = null;
+        const resolved = resolveLocalData({
+          resource: 'gameStats',
+          botName: this.botName,
+          isUsable: data => Array.isArray(data?.games),
+        });
+        if (resolved.hasData) {
+          this.applyPayload(resolved.data);
+          this.error = '';
+          return;
+        }
+        this.load(false);
+      },
       formatHours(value) {
         const n = Number(value) || 0;
         return `${n.toLocaleString(undefined, { maximumFractionDigits: 1 })} hrs.`;
@@ -227,36 +286,21 @@
         this.refreshing = force && hasData;
         if (force) this.error = '';
         try {
-          const payload = await fetchGameStats(this.botName);
-          const botResult = payload?.[this.botName]
-            || payload?.[Object.keys(payload || {}).find(k => k.toLowerCase() === String(this.botName || '').toLowerCase())]
-            || payload?.[Object.keys(payload || {})[0]];
-          const games = (botResult?.Games || botResult?.games || []).map(raw => ({
-            appId: Number(raw.AppId ?? raw.appId),
-            name: raw.Name ?? raw.name ?? '',
-            playtimeMinutes: Number(raw.PlaytimeMinutes ?? raw.playtimeMinutes ?? 0),
-            lastPlayedUnix: Number(raw.LastPlayedUnix ?? raw.lastPlayedUnix ?? 0),
-            headerImage: (raw.HeaderImage ?? raw.headerImage)
-              || `https://cdn.cloudflare.steamstatic.com/steam/apps/${raw.AppId ?? raw.appId}/header.jpg`,
-            achievementsUnlocked: raw.AchievementsUnlocked ?? raw.achievementsUnlocked ?? null,
-            achievementsTotal: raw.AchievementsTotal ?? raw.achievementsTotal ?? null,
-          }));
-          this.games = games;
-          this.summary = {
-            totalPlaytimeHours: Number(botResult?.TotalPlaytimeHours ?? botResult?.totalPlaytimeHours ?? 0),
-            inCollection: Number(botResult?.InCollection ?? botResult?.inCollection ?? games.length),
-            played: Number(botResult?.Played ?? botResult?.played ?? 0),
-            neverPlayed: Number(botResult?.NeverPlayed ?? botResult?.neverPlayed ?? 0),
-          };
-          this.error = '';
+          const result = await loadGameStats(this.botName, { force });
+          this.applyPayload(result.data);
+          if (result.rateLimited) this.$error(this.$t('bot-social-rate-limited'));
+          else if (result.error && result.stale) this.error = result.error.message || String(result.error);
+          else this.error = '';
         } catch (err) {
           if (isPluginMissingError(err)) {
             this.$emit('plugin-missing');
             return;
           }
-          if (!hasData) {
+          if (err?.code === 'RATE_LIMITED') this.$error(this.$t('bot-social-rate-limited'));
+          else if (!hasData) {
             this.error = err.message || String(err);
             this.games = [];
+            this.summary = emptySummary();
           } else this.error = err.message || String(err);
         } finally {
           this.loading = false;
@@ -265,6 +309,7 @@
       },
       refresh() {
         if (this.loading || this.refreshing) return;
+        invalidateGameStats(this.botName);
         this.load(true);
       },
     },

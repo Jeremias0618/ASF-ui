@@ -1,6 +1,7 @@
 import {
   fetchFriends,
   fetchGames,
+  fetchGameStats,
   fetchSocialStatus,
   fetchSteamInventory,
   fetchTradeOffers,
@@ -10,7 +11,14 @@ import { normalizeInventoryItems, steamEconomyImageUrl } from '../utils/inventor
 import { invalidate, query } from './query-cache';
 
 function unwrap(result, botName) {
-  return result?.[botName] ?? result;
+  if (!result || typeof result !== 'object') return result;
+  if (result[botName] != null) return result[botName];
+  const matchKey = Object.keys(result).find(
+    key => key.toLowerCase() === String(botName || '').toLowerCase(),
+  );
+  if (matchKey != null) return result[matchKey];
+  const keys = Object.keys(result);
+  return keys.length === 1 ? result[keys[0]] : result;
 }
 
 function mapTradeItem(raw) {
@@ -104,6 +112,42 @@ export function loadGames(botName, { force = false } = {}) {
   });
 }
 
+export function loadGameStats(botName, { force = false } = {}) {
+  return query({
+    resource: 'gameStats',
+    botName,
+    force,
+    fetcher: async () => {
+      const result = await fetchGameStats(botName);
+      const payload = unwrap(result, botName);
+      const list = payload?.Games ?? payload?.games ?? [];
+      const games = list.map(raw => {
+        const appId = Number(raw.AppId ?? raw.appId);
+        return {
+          appId,
+          name: raw.Name ?? raw.name ?? '',
+          playtimeMinutes: Number(raw.PlaytimeMinutes ?? raw.playtimeMinutes ?? 0),
+          lastPlayedUnix: Number(raw.LastPlayedUnix ?? raw.lastPlayedUnix ?? 0),
+          headerImage: (raw.HeaderImage ?? raw.headerImage)
+            || `https://cdn.cloudflare.steamstatic.com/steam/apps/${appId}/header.jpg`,
+          achievementsUnlocked: raw.AchievementsUnlocked ?? raw.achievementsUnlocked ?? null,
+          achievementsTotal: raw.AchievementsTotal ?? raw.achievementsTotal ?? null,
+        };
+      }).filter(game => game.appId > 0);
+
+      return {
+        games,
+        summary: {
+          totalPlaytimeHours: Number(payload?.TotalPlaytimeHours ?? payload?.totalPlaytimeHours ?? 0),
+          inCollection: Number(payload?.InCollection ?? payload?.inCollection ?? games.length),
+          played: Number(payload?.Played ?? payload?.played ?? 0),
+          neverPlayed: Number(payload?.NeverPlayed ?? payload?.neverPlayed ?? 0),
+        },
+      };
+    },
+  });
+}
+
 export function loadWishlist(botName, { force = false } = {}) {
   return query({
     resource: 'wishlist',
@@ -174,6 +218,10 @@ export function invalidateFriends(botName) {
 
 export function invalidateGames(botName) {
   invalidate('games', botName);
+}
+
+export function invalidateGameStats(botName) {
+  invalidate('gameStats', botName);
 }
 
 export function invalidateWishlist(botName) {
