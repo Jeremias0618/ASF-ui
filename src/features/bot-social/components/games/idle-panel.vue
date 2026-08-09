@@ -5,17 +5,32 @@
         <p class="games-idle__lead">{{ $t('bot-social-games-idle-lead') }}</p>
         <p class="games-idle__count" :class="{ 'is-full': isFull }">
           {{ $t('bot-social-games-idle-count', { n: idleAppIds.length, max: MAX_IDLE_GAMES }) }}
+          <span v-if="isDirty" class="games-idle__dirty">{{ $t('bot-social-games-idle-unsaved') }}</span>
         </p>
       </div>
-      <button
-        type="button"
-        class="games-idle__refresh"
-        :disabled="loading || saving"
-        @click="reload"
-      >
-        <FontAwesomeIcon v-if="loading || saving" icon="spinner" spin></FontAwesomeIcon>
-        <span v-else>{{ $t('bot-social-refresh') }}</span>
-      </button>
+      <div class="games-idle__header-actions">
+        <button
+          type="button"
+          class="games-idle__refresh"
+          :disabled="loading || saving"
+          @click="reload"
+        >
+          <FontAwesomeIcon v-if="loading" icon="spinner" spin></FontAwesomeIcon>
+          <span v-else>{{ $t('bot-social-refresh') }}</span>
+        </button>
+        <button
+          type="button"
+          class="games-idle__save"
+          :disabled="loading || saving || !isDirty"
+          @click="save"
+        >
+          <FontAwesomeIcon v-if="saving" icon="spinner" spin></FontAwesomeIcon>
+          <template v-else>
+            <FontAwesomeIcon icon="save" aria-hidden="true"></FontAwesomeIcon>
+            <span>{{ $t('bot-social-games-idle-save') }}</span>
+          </template>
+        </button>
+      </div>
     </div>
 
     <div v-if="loading && !loaded" class="bot-social__state">
@@ -27,19 +42,43 @@
     <template v-else>
       <p v-if="error" class="bot-social__inline-error">{{ error }}</p>
       <p v-if="isFull" class="games-idle__limit-hint">{{ $t('bot-social-games-idle-limit') }}</p>
+      <p class="games-idle__reorder-hint">{{ $t('bot-social-games-idle-reorder-hint') }}</p>
 
       <div class="games-idle__columns">
         <div class="games-idle__column">
           <h3 class="games-idle__column-title">{{ $t('bot-social-games-idle-current') }}</h3>
           <div v-if="!idleEntries.length" class="bot-social__state">{{ $t('bot-social-games-idle-empty') }}</div>
-          <ul v-else class="games-idle__list" :class="{ 'is-busy': saving }">
-            <li v-for="entry in idleEntries" :key="entry.appId" class="games-idle__row">
+          <ul
+            v-else
+            class="games-idle__list"
+            :class="{ 'is-busy': saving }"
+          >
+            <li
+              v-for="(entry, index) in idleEntries"
+              :key="entry.appId"
+              class="games-idle__row games-idle__row--draggable"
+              :class="{
+                'is-dragging': dragIndex === index,
+                'is-drop-target': dropIndex === index && dragIndex !== index
+              }"
+              draggable="true"
+              @dragstart="onDragStart(index, $event)"
+              @dragover.prevent="onDragOver(index, $event)"
+              @dragleave="onDragLeave(index)"
+              @drop.prevent="onDrop(index)"
+              @dragend="onDragEnd"
+            >
+              <span class="games-idle__handle" aria-hidden="true" title="">
+                <FontAwesomeIcon icon="grip-vertical"></FontAwesomeIcon>
+              </span>
+              <span class="games-idle__order">{{ index + 1 }}</span>
               <img
                 class="games-idle__cover"
                 :src="entry.cover"
                 :alt="''"
                 loading="lazy"
                 decoding="async"
+                draggable="false"
                 @error="onCoverError($event, entry.appId)"
               >
               <div class="games-idle__body">
@@ -121,12 +160,19 @@
 </template>
 
 <script>
+  import { botAction } from '../../../../plugins/http';
   import {
     fetchIdleGamesConfig, MAX_IDLE_GAMES, saveIdleGames,
   } from '../../api/idle-games';
   import { gameBannerCandidates } from '../../utils/game-cover';
 
   const CANDIDATE_LIMIT = 80;
+
+  function sameIdList(a, b) {
+    if (a === b) return true;
+    if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
+    return a.every((id, index) => id === b[index]);
+  }
 
   export default {
     name: 'BotSocialGamesIdlePanel',
@@ -144,11 +190,17 @@
         error: '',
         query: '',
         idleAppIds: [],
+        savedIdleAppIds: [],
+        dragIndex: -1,
+        dropIndex: -1,
       };
     },
     computed: {
       isFull() {
         return this.idleAppIds.length >= MAX_IDLE_GAMES;
+      },
+      isDirty() {
+        return !sameIdList(this.idleAppIds, this.savedIdleAppIds);
       },
       gamesById() {
         return (this.games || []).reduce((map, game) => {
@@ -176,7 +228,6 @@
       candidateGames() {
         const q = this.query.trim().toLowerCase();
         return (this.games || []).filter(game => {
-          // Owned library + shared Family Library apps the bot can use.
           if (!game?.isOwned && !game?.isShared) return false;
           const appId = Number(game.appId);
           if (!Number.isInteger(appId) || appId <= 0) return false;
@@ -210,36 +261,22 @@
         if (fallback) img.src = fallback;
       },
       async reload() {
-        if (!this.botName || this.loading) return;
+        if (!this.botName || this.loading || this.saving) return;
+        if (this.isDirty && !window.confirm(this.$t('bot-social-games-idle-discard-confirm'))) {
+          return;
+        }
         this.loading = true;
         this.error = '';
         try {
           const { idleAppIds } = await fetchIdleGamesConfig(this.botName);
-          this.idleAppIds = idleAppIds;
+          this.idleAppIds = [...idleAppIds];
+          this.savedIdleAppIds = [...idleAppIds];
           this.loaded = true;
         } catch (err) {
           if (!this.loaded) this.error = err.message || String(err);
           else this.$error(err.message || String(err));
         } finally {
           this.loading = false;
-        }
-      },
-      async persist(nextIds) {
-        this.saving = true;
-        this.error = '';
-        try {
-          this.idleAppIds = await saveIdleGames(this.botName, nextIds);
-          await this.$store.dispatch('bots/updateBot', { name: this.botName });
-          this.$success(this.$t('bot-social-games-idle-saved'));
-        } catch (err) {
-          if (err?.code === 'IDLE_LIMIT') {
-            this.$error(this.$t('bot-social-games-idle-limit'));
-          } else {
-            this.$error(err.message || String(err));
-          }
-          await this.reload();
-        } finally {
-          this.saving = false;
         }
       },
       addGame(appId) {
@@ -250,12 +287,85 @@
           this.$error(this.$t('bot-social-games-idle-limit'));
           return;
         }
-        this.persist([...this.idleAppIds, id]);
+        this.idleAppIds = [...this.idleAppIds, id];
       },
       removeGame(appId) {
         const id = Number(appId);
         if (!Number.isInteger(id) || id <= 0 || this.saving) return;
-        this.persist(this.idleAppIds.filter(entry => entry !== id));
+        this.idleAppIds = this.idleAppIds.filter(entry => entry !== id);
+      },
+      onDragStart(index, event) {
+        if (this.saving) {
+          event.preventDefault();
+          return;
+        }
+        this.dragIndex = index;
+        this.dropIndex = index;
+        if (event.dataTransfer) {
+          event.dataTransfer.effectAllowed = 'move';
+          event.dataTransfer.setData('text/plain', String(index));
+        }
+      },
+      onDragOver(index, event) {
+        if (this.dragIndex < 0 || this.saving) return;
+        if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+        this.dropIndex = index;
+      },
+      onDragLeave(index) {
+        if (this.dropIndex === index) this.dropIndex = -1;
+      },
+      onDrop(toIndex) {
+        const fromIndex = this.dragIndex;
+        this.dragIndex = -1;
+        this.dropIndex = -1;
+        if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex || this.saving) return;
+        const next = [...this.idleAppIds];
+        const [moved] = next.splice(fromIndex, 1);
+        next.splice(toIndex, 0, moved);
+        this.idleAppIds = next;
+      },
+      onDragEnd() {
+        this.dragIndex = -1;
+        this.dropIndex = -1;
+      },
+      async restartBotIfNeeded() {
+        const bot = this.$store.getters['bots/bot'](this.botName);
+        const wasActive = !!bot?.active;
+        if (!wasActive) return;
+
+        try {
+          await botAction(this.botName, 'stop');
+        } catch {
+          // Bot may already be stopping after config reload.
+        }
+
+        try {
+          await botAction(this.botName, 'start');
+          await this.$store.dispatch('bots/updateBot', { name: this.botName, active: true });
+        } catch (err) {
+          this.$error(err.message || String(err));
+        }
+      },
+      async save() {
+        if (!this.isDirty || this.saving || this.loading) return;
+        this.saving = true;
+        this.error = '';
+        try {
+          const saved = await saveIdleGames(this.botName, this.idleAppIds);
+          this.idleAppIds = [...saved];
+          this.savedIdleAppIds = [...saved];
+          await this.$store.dispatch('bots/updateBot', { name: this.botName });
+          await this.restartBotIfNeeded();
+          this.$success(this.$t('bot-social-games-idle-saved'));
+        } catch (err) {
+          if (err?.code === 'IDLE_LIMIT') {
+            this.$error(this.$t('bot-social-games-idle-limit'));
+          } else {
+            this.$error(err.message || String(err));
+          }
+        } finally {
+          this.saving = false;
+        }
       },
     },
   };
