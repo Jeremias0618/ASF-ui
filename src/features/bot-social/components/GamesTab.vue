@@ -188,8 +188,9 @@
       <IdlePanel
         v-show="panelMode === 'idle'"
         v-if="idleMounted"
-        :bot-name="botName"
+        :botName="botName"
         :games="games"
+        @plugin-missing="$emit('plugin-missing')"
       ></IdlePanel>
 
       <!-- Keep library/cover mounted so tab switches reuse cache + painted tiles. -->

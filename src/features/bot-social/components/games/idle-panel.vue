@@ -24,7 +24,7 @@
         <button
           type="button"
           class="games-idle__btn games-idle__btn--ghost"
-          :disabled="loading || saving"
+          :disabled="loading || saving || suggesting"
           @click="reload"
         >
           <FontAwesomeIcon v-if="loading" icon="spinner" spin></FontAwesomeIcon>
@@ -32,8 +32,21 @@
         </button>
         <button
           type="button"
+          class="games-idle__btn games-idle__btn--accent"
+          :disabled="loading || saving || suggesting"
+          :title="$t('bot-social-games-idle-booster-hint')"
+          @click="fillFromBoosters"
+        >
+          <FontAwesomeIcon v-if="suggesting" icon="spinner" spin></FontAwesomeIcon>
+          <template v-else>
+            <FontAwesomeIcon icon="puzzle-piece" aria-hidden="true"></FontAwesomeIcon>
+            <span>{{ $t('bot-social-games-idle-booster-fill') }}</span>
+          </template>
+        </button>
+        <button
+          type="button"
           class="games-idle__btn games-idle__btn--primary"
-          :disabled="loading || saving || !isDirty"
+          :disabled="loading || saving || suggesting || !isDirty"
           @click="save"
         >
           <FontAwesomeIcon v-if="saving" icon="spinner" spin></FontAwesomeIcon>
@@ -211,10 +224,20 @@
 
 <script>
   import { botAction } from '../../../../plugins/http';
+  import { fetchBoosterIdleSuggestions, isPluginMissingError } from '../../api/bot-social';
   import {
     fetchIdleGamesConfig, MAX_IDLE_GAMES, saveIdleGames,
   } from '../../api/idle-games';
   import CoverImage from './cover-image.vue';
+
+  function unwrapBotPayload(result, botName) {
+    if (!result || typeof result !== 'object') return null;
+    if (result[botName] != null) return result[botName];
+    const key = Object.keys(result).find(k => k.toLowerCase() === String(botName || '').toLowerCase());
+    if (key != null) return result[key];
+    const keys = Object.keys(result);
+    return keys.length === 1 ? result[keys[0]] : null;
+  }
 
   const CANDIDATE_LIMIT = 80;
 
@@ -237,6 +260,7 @@
         CANDIDATE_LIMIT,
         loading: false,
         saving: false,
+        suggesting: false,
         loaded: false,
         error: '',
         query: '',
@@ -338,9 +362,48 @@
         this.idleAppIds = this.idleAppIds.filter(entry => entry !== id);
       },
       clearAll() {
-        if (this.saving || !this.idleAppIds.length) return;
+        if (this.saving || this.suggesting || !this.idleAppIds.length) return;
         if (!window.confirm(this.$t('bot-social-games-idle-clear-confirm'))) return;
         this.idleAppIds = [];
+      },
+      async fillFromBoosters() {
+        if (this.saving || this.suggesting || this.loading) return;
+        if (this.idleAppIds.length
+          && !window.confirm(this.$t('bot-social-games-idle-booster-replace-confirm'))) {
+          return;
+        }
+
+        this.suggesting = true;
+        this.error = '';
+        try {
+          const raw = await fetchBoosterIdleSuggestions(this.botName);
+          const payload = unwrapBotPayload(raw, this.botName);
+          const games = payload?.Games ?? payload?.games ?? [];
+          const ids = games
+            .map(game => Number(game.AppId ?? game.appId))
+            .filter(id => Number.isInteger(id) && id > 0)
+            .slice(0, MAX_IDLE_GAMES);
+
+          if (!ids.length) {
+            this.$info(this.$t('bot-social-games-idle-booster-empty'));
+            return;
+          }
+
+          this.idleAppIds = ids;
+          const eligible = Number(payload?.EligibleTotal ?? payload?.eligibleTotal ?? ids.length);
+          this.$success(this.$t('bot-social-games-idle-booster-filled', {
+            n: ids.length,
+            eligible,
+          }));
+        } catch (err) {
+          if (isPluginMissingError(err)) {
+            this.$emit('plugin-missing');
+            return;
+          }
+          this.$error(err.message || String(err));
+        } finally {
+          this.suggesting = false;
+        }
       },
       onDragStart(index, event) {
         if (this.saving) {

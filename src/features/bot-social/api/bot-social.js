@@ -51,6 +51,11 @@ export function fetchGameStats(botName) {
   return get(`${socialBase(botName)}/Games/Stats`);
 }
 
+/** Booster pack eligibility ranked by playtime for GamesPlayedWhileIdle (max 32). */
+export function fetchBoosterIdleSuggestions(botName) {
+  return get(`${socialBase(botName)}/Games/BoosterIdleSuggestions`);
+}
+
 export function fetchGameAchievements(botName, appId) {
   return get(`${socialBase(botName)}/Games/${encodeURIComponent(appId)}/Achievements`);
 }
