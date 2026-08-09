@@ -490,6 +490,21 @@
         if (this.panelMode === 'received') return this.$t('bot-social-friends-decline-aria', { name });
         return this.$t('bot-social-friends-remove-aria', { name });
       },
+      mutationSucceeded(entry) {
+        if (!entry || typeof entry !== 'object') return false;
+        const ok = entry.Success ?? entry.success;
+        return ok === true;
+      },
+      firstMutationResult(payload) {
+        if (!payload || typeof payload !== 'object') return null;
+        const botResult = payload[this.botName]
+          || payload[Object.keys(payload).find(k => k.toLowerCase() === String(this.botName || '').toLowerCase())]
+          || payload[Object.keys(payload)[0]];
+        if (!botResult) return null;
+        if (Array.isArray(botResult)) return botResult[0] || null;
+        const list = botResult.Results || botResult.results;
+        return Array.isArray(list) ? (list[0] || null) : null;
+      },
       async onAdd() {
         if (this.mutating) return;
         const target = normalizeFriendTarget(this.addTarget);
@@ -499,7 +514,13 @@
         }
         this.mutating = true;
         try {
-          await addFriends(this.botName, [target]);
+          const payload = await addFriends(this.botName, [target]);
+          const first = this.firstMutationResult(payload);
+          if (!this.mutationSucceeded(first)) {
+            const detail = first?.Message || first?.message || this.$t('bot-social-friends-add-failed');
+            this.$error(detail);
+            return;
+          }
           this.$success(this.$t('bot-social-friends-add-success'));
           this.addTarget = '';
           invalidateFriends(this.botName);

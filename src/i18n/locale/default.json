@@ -218,6 +218,7 @@
   "bot-social-friends-add": "Add",
   "bot-social-friends-add-placeholder": "SteamID64, friend code or vanity",
   "bot-social-friends-add-success": "Friend request sent.",
+  "bot-social-friends-add-failed": "Could not send the friend request.",
   "bot-social-friends-remove-confirm": "Remove {name} from friends?",
   "bot-social-friends-remove-title": "Remove friend",
   "bot-social-friends-remove-body": "Remove {name} from this bot’s friend list? This cannot be undone from here.",

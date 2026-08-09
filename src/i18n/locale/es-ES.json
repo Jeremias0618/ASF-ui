@@ -218,6 +218,7 @@
   "bot-social-friends-add": "Agregar",
   "bot-social-friends-add-placeholder": "SteamID64, código de amigo o vanity",
   "bot-social-friends-add-success": "Solicitud de amistad enviada.",
+  "bot-social-friends-add-failed": "No se pudo enviar la solicitud de amistad.",
   "bot-social-friends-remove-confirm": "¿Eliminar a {name} de amigos?",
   "bot-social-friends-remove-title": "Eliminar amigo",
   "bot-social-friends-remove-body": "¿Eliminar a {name} de la lista de amigos de este bot? Esta acción no se puede deshacer desde aquí.",
