@@ -2095,6 +2095,56 @@
   gap: 0.55rem 0.75rem;
 }
 
+.bot-social-games__filterbar {
+  align-items: flex-end;
+  display: grid;
+  gap: 0.55rem 0.65rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  width: 100%;
+
+  @media screen and (max-width: 960px) {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  @media screen and (max-width: 560px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.bot-social-games__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.bot-social-games__field-label {
+  color: #8f98a0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.bot-social-games__clear-filters {
+  appearance: none;
+  align-self: end;
+  background: transparent;
+  border: 0;
+  color: #67c1f5;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.35rem 0.1rem;
+  white-space: nowrap;
+
+  &:focus-visible {
+    outline: 2px solid #66c0f4;
+    outline-offset: 2px;
+  }
+}
+
 .bot-social-games__searchbox {
   align-items: center;
   background: #0e1621;
@@ -2265,6 +2315,26 @@
     align-items: center;
     display: flex;
     justify-content: center;
+  }
+}
+
+.bot-social-games__badge {
+  border-radius: 0.2rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  padding: 0.28rem 0.35rem;
+  position: absolute;
+  right: 0.3rem;
+  text-transform: uppercase;
+  top: 0.3rem;
+  z-index: 1;
+
+  &--shared {
+    background: rgba(16, 24, 34, 0.82);
+    border: 1px solid rgba(102, 192, 244, 0.55);
+    color: #b6ddf5;
   }
 }
 

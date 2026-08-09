@@ -20,6 +20,10 @@
       <span v-else class="bot-social-games__placeholder" aria-hidden="true">
         {{ placeholderLabel }}
       </span>
+      <span
+        v-if="game.isShared && !game.isOwned"
+        class="bot-social-games__badge bot-social-games__badge--shared"
+      >{{ $t('bot-social-games-badge-shared') }}</span>
     </div>
     <div class="bot-social-games__meta">
       <span class="bot-social-games__name" :title="game.name">{{ game.name }}</span>

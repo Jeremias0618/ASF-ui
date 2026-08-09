@@ -103,10 +103,18 @@ export function loadGames(botName, { force = false } = {}) {
       const games = list.map(g => ({
         appId: String(g.AppId ?? g.appId ?? ''),
         name: g.Name ?? g.name ?? `App ${g.AppId ?? g.appId}`,
+        isOwned: g.IsOwned ?? g.isOwned ?? true,
+        isShared: Boolean(g.IsShared ?? g.isShared),
+        hasAchievements: Boolean(g.HasAchievements ?? g.hasAchievements),
+        hasCards: Boolean(g.HasCards ?? g.hasCards),
+        appType: String(g.AppType ?? g.appType ?? 'game').toLowerCase(),
       })).sort((a, b) => a.name.localeCompare(b.name));
       return {
         games,
         total: payload?.Total ?? payload?.total ?? games.length,
+        ownedTotal: payload?.OwnedTotal ?? payload?.ownedTotal ?? games.filter(g => g.isOwned).length,
+        sharedTotal: payload?.SharedTotal ?? payload?.sharedTotal
+          ?? games.filter(g => g.isShared && !g.isOwned).length,
       };
     },
   });

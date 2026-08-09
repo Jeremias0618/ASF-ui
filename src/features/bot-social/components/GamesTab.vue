@@ -86,6 +86,75 @@
             </button>
           </div>
         </div>
+
+        <div
+          v-if="isBrowseMode"
+          class="bot-social-games__filterbar"
+          role="group"
+          :aria-label="$t('bot-social-games-filters')"
+        >
+          <div class="bot-social-games__field">
+            <span id="games-filter-ownership-label" class="bot-social-games__field-label">
+              {{ $t('bot-social-games-filter-ownership') }}
+            </span>
+            <AsfSelect
+              v-model="ownershipFilter"
+              compact
+              aria-labelledby="games-filter-ownership-label"
+              :options="ownershipOptions"
+              :search-placeholder="$t('bot-social-games-filter-search-options')"
+            ></AsfSelect>
+          </div>
+
+          <div class="bot-social-games__field">
+            <span id="games-filter-achievements-label" class="bot-social-games__field-label">
+              {{ $t('bot-social-games-filter-achievements') }}
+            </span>
+            <AsfSelect
+              v-model="achievementsFilter"
+              compact
+              aria-labelledby="games-filter-achievements-label"
+              :options="achievementsOptions"
+              :search-placeholder="$t('bot-social-games-filter-search-options')"
+            ></AsfSelect>
+          </div>
+
+          <div class="bot-social-games__field">
+            <span id="games-filter-cards-label" class="bot-social-games__field-label">
+              {{ $t('bot-social-games-filter-cards') }}
+            </span>
+            <AsfSelect
+              v-model="cardsFilter"
+              compact
+              aria-labelledby="games-filter-cards-label"
+              :options="cardsOptions"
+              :search-placeholder="$t('bot-social-games-filter-search-options')"
+            ></AsfSelect>
+          </div>
+
+          <div class="bot-social-games__field">
+            <span id="games-filter-type-label" class="bot-social-games__field-label">
+              {{ $t('bot-social-games-filter-type') }}
+            </span>
+            <AsfSelect
+              v-model="typeFilter"
+              compact
+              searchable
+              aria-labelledby="games-filter-type-label"
+              :options="typeOptions"
+              :search-placeholder="$t('bot-social-games-filter-search-options')"
+            ></AsfSelect>
+          </div>
+
+          <button
+            v-if="hasActiveFilters"
+            type="button"
+            class="bot-social-games__clear-filters"
+            @click="clearFilters"
+          >
+            {{ $t('bot-social-games-clear-filters') }}
+          </button>
+        </div>
       </div>
 
       <AddPanel
@@ -143,6 +212,18 @@
 
   const PANEL_STORAGE_KEY = 'asf-bot-social-games-panel';
   const PANEL_MODES = new Set(['library', 'banner', 'stats', 'add']);
+  const TYPE_ORDER = ['game', 'dlc', 'demo', 'application', 'tool', 'beta', 'video', 'music', 'other'];
+  const TYPE_LABEL_KEYS = {
+    game: 'bot-social-games-filter-type-game',
+    dlc: 'bot-social-games-filter-type-dlc',
+    demo: 'bot-social-games-filter-type-demo',
+    application: 'bot-social-games-filter-type-application',
+    tool: 'bot-social-games-filter-type-tool',
+    beta: 'bot-social-games-filter-type-beta',
+    video: 'bot-social-games-filter-type-video',
+    music: 'bot-social-games-filter-type-music',
+    other: 'bot-social-games-filter-type-other',
+  };
 
   function readStoredPanel() {
     try {
@@ -172,6 +253,10 @@
         error: '',
         games: [],
         query: '',
+        ownershipFilter: 'all',
+        achievementsFilter: 'all',
+        cardsFilter: 'all',
+        typeFilter: 'all',
         panelMode,
         statsMounted: panelMode === 'stats',
       };
@@ -180,13 +265,61 @@
       isBrowseMode() {
         return this.panelMode === 'library' || this.panelMode === 'banner';
       },
+      hasActiveFilters() {
+        return this.ownershipFilter !== 'all'
+          || this.achievementsFilter !== 'all'
+          || this.cardsFilter !== 'all'
+          || this.typeFilter !== 'all';
+      },
+      ownershipOptions() {
+        return [
+          { value: 'all', label: this.$t('bot-social-games-filter-ownership-all') },
+          { value: 'owned', label: this.$t('bot-social-games-filter-ownership-owned') },
+          { value: 'shared', label: this.$t('bot-social-games-filter-ownership-shared') },
+        ];
+      },
+      achievementsOptions() {
+        return [
+          { value: 'all', label: this.$t('bot-social-games-filter-achievements-all') },
+          { value: 'yes', label: this.$t('bot-social-games-filter-achievements-yes') },
+          { value: 'no', label: this.$t('bot-social-games-filter-achievements-no') },
+        ];
+      },
+      cardsOptions() {
+        return [
+          { value: 'all', label: this.$t('bot-social-games-filter-cards-all') },
+          { value: 'yes', label: this.$t('bot-social-games-filter-cards-yes') },
+          { value: 'no', label: this.$t('bot-social-games-filter-cards-no') },
+        ];
+      },
+      typeOptions() {
+        const present = new Set(this.games.map(g => g.appType || 'game'));
+        const values = TYPE_ORDER.filter(type => present.has(type) || type === 'game');
+        return [
+          { value: 'all', label: this.$t('bot-social-games-filter-type-all') },
+          ...values.map(type => ({
+            value: type,
+            label: this.$t(TYPE_LABEL_KEYS[type] || TYPE_LABEL_KEYS.other),
+          })),
+        ];
+      },
       filteredGames() {
         const q = this.query.trim().toLowerCase();
-        if (!q) return this.games;
-        return this.games.filter(g => (
-          String(g.name || '').toLowerCase().includes(q)
-          || String(g.appId).includes(q)
-        ));
+        return this.games.filter(g => {
+          if (q) {
+            const name = String(g.name || '').toLowerCase();
+            const appId = String(g.appId);
+            if (!name.includes(q) && !appId.includes(q)) return false;
+          }
+          if (this.ownershipFilter === 'owned' && !g.isOwned) return false;
+          if (this.ownershipFilter === 'shared' && !g.isShared) return false;
+          if (this.achievementsFilter === 'yes' && !g.hasAchievements) return false;
+          if (this.achievementsFilter === 'no' && g.hasAchievements) return false;
+          if (this.cardsFilter === 'yes' && !g.hasCards) return false;
+          if (this.cardsFilter === 'no' && g.hasCards) return false;
+          if (this.typeFilter !== 'all' && (g.appType || 'game') !== this.typeFilter) return false;
+          return true;
+        });
       },
     },
     watch: {
@@ -201,6 +334,12 @@
       },
     },
     methods: {
+      clearFilters() {
+        this.ownershipFilter = 'all';
+        this.achievementsFilter = 'all';
+        this.cardsFilter = 'all';
+        this.typeFilter = 'all';
+      },
       setPanelMode(mode) {
         if (!PANEL_MODES.has(mode) || mode === this.panelMode) return;
         if (mode === 'stats') this.statsMounted = true;
