@@ -39,14 +39,14 @@
     </div>
     <ul v-else-if="results.length" class="games-add__list" :class="{ 'is-busy': searching || addingId }">
       <li v-for="item in results" :key="item.appId" class="games-add__row">
-        <img
+        <CoverImage
           class="games-add__thumb"
-          :src="item.tinyImage || gameHeaderUrl(item.appId)"
-          :alt="''"
-          loading="lazy"
-          decoding="async"
-          @error="onThumbError($event, item.appId)"
-        >
+          :appId="item.appId"
+          :name="item.name"
+          :botName="botName"
+          :src="item.tinyImage || ''"
+          variant="banner"
+        ></CoverImage>
         <div class="games-add__meta">
           <p class="games-add__name">
             {{ item.name }}
@@ -91,19 +91,19 @@
 
 <script>
   import { addGames, isPluginMissingError, searchGames } from '../../api/bot-social';
-  import { gameBannerCandidates, gameHeaderUrl } from '../../utils/game-cover';
   import { normalizeGameSearchQuery } from '../../utils/game-target';
+  import CoverImage from './cover-image.vue';
 
   const DEBOUNCE_MS = 400;
 
   export default {
     name: 'BotSocialGamesAddPanel',
+    components: { CoverImage },
     props: {
       botName: { type: String, required: true },
     },
     data() {
       return {
-        gameHeaderUrl,
         query: '',
         results: [],
         searching: false,
@@ -123,18 +123,6 @@
       if (this.debounceTimer) clearTimeout(this.debounceTimer);
     },
     methods: {
-      onThumbError(event, appId) {
-        const img = event?.target;
-        if (!img) return;
-        const candidates = gameBannerCandidates(appId);
-        const idx = Number(img.dataset.coverIndex || 0) + 1;
-        if (idx < candidates.length) {
-          img.dataset.coverIndex = String(idx);
-          img.src = candidates[idx];
-          return;
-        }
-        img.style.visibility = 'hidden';
-      },
       hasPrice(item) {
         return item.finalPrice != null || item.initialPrice != null;
       },

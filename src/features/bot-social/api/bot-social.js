@@ -60,6 +60,11 @@ export function fetchGameAchievements(botName, appId) {
   return get(`${socialBase(botName)}/Games/${encodeURIComponent(appId)}/Achievements`);
 }
 
+/** Hashed Steam store artwork when classic CDN paths 404 (demos / new apps). */
+export function fetchGameCover(botName, appId) {
+  return get(`${socialBase(botName)}/Games/${encodeURIComponent(appId)}/Cover`);
+}
+
 export function unlockGameAchievements(botName, appId, { indices, all } = {}) {
   return post(`${socialBase(botName)}/Games/${encodeURIComponent(appId)}/Achievements/Unlock`, {
     Indices: indices || [],

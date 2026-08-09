@@ -117,6 +117,7 @@
                 class="games-idle__cover"
                 :appId="entry.appId"
                 :name="entry.name"
+                :botName="botName"
                 variant="banner"
               ></CoverImage>
               <div class="games-idle__body">
@@ -186,6 +187,7 @@
                 class="games-idle__cover"
                 :appId="game.appId"
                 :name="game.name"
+                :botName="botName"
                 variant="banner"
               ></CoverImage>
               <div class="games-idle__body">

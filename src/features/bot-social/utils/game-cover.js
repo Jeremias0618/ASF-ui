@@ -106,3 +106,33 @@ export function gamePlaceholderLabel(game) {
   if (name.length >= 2) return name.slice(0, 2).toUpperCase();
   return String(game?.appId || '?').slice(-2);
 }
+
+/** @type {Map<number, { header?: string, capsule?: string }>} */
+const resolvedCoverCache = new Map();
+
+/**
+ * @param {number|string} appId
+ * @param {'library'|'banner'} [variant]
+ * @returns {string}
+ */
+export function peekResolvedCover(appId, variant = 'banner') {
+  const id = Number(appId);
+  if (!Number.isInteger(id) || id <= 0) return '';
+  const entry = resolvedCoverCache.get(id);
+  if (!entry) return '';
+  if (variant === 'library') return entry.capsule || entry.header || '';
+  return entry.header || entry.capsule || '';
+}
+
+/**
+ * @param {number|string} appId
+ * @param {{ header?: string, capsule?: string }} urls
+ */
+export function rememberResolvedCover(appId, urls) {
+  const id = Number(appId);
+  if (!Number.isInteger(id) || id <= 0) return;
+  const header = urls?.header || '';
+  const capsule = urls?.capsule || '';
+  if (!header && !capsule) return;
+  resolvedCoverCache.set(id, { header, capsule });
+}

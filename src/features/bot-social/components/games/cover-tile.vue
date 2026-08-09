@@ -11,6 +11,7 @@
       <CoverImage
         :appId="game.appId"
         :name="game.name"
+        :botName="botName"
         :variant="variant"
       ></CoverImage>
       <span
@@ -36,6 +37,7 @@
         type: Object,
         required: true,
       },
+      botName: { type: String, default: '' },
       variant: {
         type: String,
         default: 'library',

@@ -140,6 +140,7 @@
             class="games-stats__cover"
             :appId="game.appId"
             :name="game.name"
+            :botName="botName"
             variant="banner"
           ></CoverImage>
           <div class="games-stats__body">

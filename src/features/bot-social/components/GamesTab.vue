@@ -215,6 +215,7 @@
               v-for="game in visibleGames"
               :key="game.appId"
               :game="game"
+              :botName="botName"
               :variant="browseVariant"
             ></CoverTile>
           </div>

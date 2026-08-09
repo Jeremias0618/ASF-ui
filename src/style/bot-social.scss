@@ -2612,12 +2612,11 @@
   }
 }
 
-.games-add__thumb {
+.games-add__thumb.game-cover-img {
   background: #0e141b;
   border-radius: 0.1rem;
   flex-shrink: 0;
   height: 2.7rem;
-  object-fit: cover;
   width: 7.2rem;
 }
 
