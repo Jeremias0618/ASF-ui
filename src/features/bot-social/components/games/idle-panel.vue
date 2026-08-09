@@ -46,7 +46,18 @@
 
       <div class="games-idle__columns">
         <div class="games-idle__column">
-          <h3 class="games-idle__column-title">{{ $t('bot-social-games-idle-current') }}</h3>
+          <div class="games-idle__column-head">
+            <h3 class="games-idle__column-title">{{ $t('bot-social-games-idle-current') }}</h3>
+            <button
+              v-if="idleAppIds.length"
+              type="button"
+              class="games-idle__clear"
+              :disabled="saving"
+              @click="clearAll"
+            >
+              {{ $t('bot-social-games-idle-clear') }}
+            </button>
+          </div>
           <div v-if="!idleEntries.length" class="bot-social__state">{{ $t('bot-social-games-idle-empty') }}</div>
           <ul
             v-else
@@ -293,6 +304,11 @@
         const id = Number(appId);
         if (!Number.isInteger(id) || id <= 0 || this.saving) return;
         this.idleAppIds = this.idleAppIds.filter(entry => entry !== id);
+      },
+      clearAll() {
+        if (this.saving || !this.idleAppIds.length) return;
+        if (!window.confirm(this.$t('bot-social-games-idle-clear-confirm'))) return;
+        this.idleAppIds = [];
       },
       onDragStart(index, event) {
         if (this.saving) {

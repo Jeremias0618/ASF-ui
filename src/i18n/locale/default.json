@@ -249,6 +249,8 @@
   "bot-social-games-idle-remove-aria": "Remove {name} from idle playlist",
   "bot-social-games-idle-limit": "Maximum of 32 idle games reached.",
   "bot-social-games-idle-save": "Save",
+  "bot-social-games-idle-clear": "Clear all",
+  "bot-social-games-idle-clear-confirm": "Remove all games from the idle list? Changes apply only after Save.",
   "bot-social-games-idle-unsaved": "Unsaved changes",
   "bot-social-games-idle-reorder-hint": "Drag games in the idle list to change order. Changes apply only after Save (bot restarts).",
   "bot-social-games-idle-discard-confirm": "Discard unsaved idle list changes?",

@@ -3074,6 +3074,14 @@
   min-width: 0;
 }
 
+.games-idle__column-head {
+  align-items: center;
+  display: flex;
+  gap: 0.65rem;
+  justify-content: space-between;
+  min-width: 0;
+}
+
 .games-idle__column-title {
   color: #c7d5e0;
   font-size: 0.78rem;
@@ -3081,6 +3089,24 @@
   letter-spacing: 0.04em;
   margin: 0;
   text-transform: uppercase;
+}
+
+.games-idle__clear {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: #ff9a9a;
+  cursor: pointer;
+  flex-shrink: 0;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.15rem 0.2rem;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
 }
 
 .games-idle__searchbox {

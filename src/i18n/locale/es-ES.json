@@ -249,6 +249,8 @@
   "bot-social-games-idle-remove-aria": "Quitar {name} de la lista de inactividad",
   "bot-social-games-idle-limit": "Se alcanzó el máximo de 32 juegos en inactividad.",
   "bot-social-games-idle-save": "Guardar",
+  "bot-social-games-idle-clear": "Quitar todos",
+  "bot-social-games-idle-clear-confirm": "¿Quitar todos los juegos de la lista de inactividad? Los cambios se aplican solo al Guardar.",
   "bot-social-games-idle-unsaved": "Cambios sin guardar",
   "bot-social-games-idle-reorder-hint": "Arrastra los juegos de la lista de inactividad para cambiar el orden. Solo se aplican al Guardar (el bot se reinicia).",
   "bot-social-games-idle-discard-confirm": "¿Descartar los cambios sin guardar de la lista de inactividad?",
