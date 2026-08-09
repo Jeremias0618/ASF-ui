@@ -10,6 +10,7 @@
           class="modal__main"
           :class="{
             'modal__main--wide': isWide,
+            'modal__main--friends': isFriendsWide,
             'modal__main--dialog': isDialog,
             'modal__main--medium': isMedium,
           }"
@@ -35,6 +36,10 @@
     'bot-wishlist',
   ]);
 
+  const FRIENDS_WIDE_MODAL_ROUTES = new Set([
+    'bot-friends',
+  ]);
+
       const DIALOG_MODAL_ROUTES = new Set([
     'password-encrypt',
     'password-hash',
@@ -57,6 +62,9 @@
       },
       isWide() {
         return WIDE_MODAL_ROUTES.has(this.$route.name);
+      },
+      isFriendsWide() {
+        return FRIENDS_WIDE_MODAL_ROUTES.has(this.$route.name);
       },
       isDialog() {
         return DIALOG_MODAL_ROUTES.has(this.$route.name);
@@ -198,6 +206,11 @@
         min-height: 0;
         overflow: auto;
       }
+    }
+
+    &--friends {
+      max-width: min(60rem, calc(100vw - 1.5rem));
+      width: min(60rem, calc(100vw - 1.5rem));
     }
 
     &--dialog {

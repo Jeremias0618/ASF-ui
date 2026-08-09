@@ -8,9 +8,9 @@
   >
     <button type="button" class="friends-remove__backdrop" :aria-label="$t('cancel')" @click="onCancel"></button>
     <div class="friends-remove__panel">
-      <h3 :id="titleId" class="friends-remove__title">{{ $t('bot-social-friends-remove-title') }}</h3>
+      <h3 :id="titleId" class="friends-remove__title">{{ $t(titleKey) }}</h3>
       <p class="friends-remove__lead">
-        {{ $t('bot-social-friends-remove-body', { name: friendName }) }}
+        {{ $t(bodyKey, { name: friendName }) }}
       </p>
       <div class="friends-remove__actions">
         <button type="button" class="button" :disabled="submitting" @click="onCancel">
@@ -18,12 +18,13 @@
         </button>
         <button
           type="button"
-          class="button button--cancel"
+          class="button"
+          :class="confirmTone === 'primary' ? 'button--confirm' : 'button--cancel'"
           :disabled="submitting"
           @click="$emit('confirm')"
         >
           <FontAwesomeIcon v-if="submitting" icon="spinner" spin></FontAwesomeIcon>
-          <span v-else>{{ $t('bot-social-friends-remove-confirm-btn') }}</span>
+          <span v-else>{{ $t(confirmKey) }}</span>
         </button>
       </div>
     </div>
@@ -39,6 +40,10 @@
       open: { type: Boolean, default: false },
       friendName: { type: String, default: '' },
       submitting: { type: Boolean, default: false },
+      titleKey: { type: String, default: 'bot-social-friends-remove-title' },
+      bodyKey: { type: String, default: 'bot-social-friends-remove-body' },
+      confirmKey: { type: String, default: 'bot-social-friends-remove-confirm-btn' },
+      confirmTone: { type: String, default: 'danger' },
     },
     data() {
       removeUid += 1;
@@ -46,11 +51,8 @@
     },
     watch: {
       open(value) {
-        if (value) {
-          window.addEventListener('keydown', this.onKeydown);
-        } else {
-          window.removeEventListener('keydown', this.onKeydown);
-        }
+        if (value) window.addEventListener('keydown', this.onKeydown);
+        else window.removeEventListener('keydown', this.onKeydown);
       },
     },
     beforeDestroy() {

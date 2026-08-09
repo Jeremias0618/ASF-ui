@@ -3,106 +3,133 @@
     <PluginMissing v-if="pluginMissing"></PluginMissing>
 
     <template v-else>
-      <div class="friends-hub__toolbar">
-        <p class="friends-hub__stat">{{ $t('bot-social-friends-total', { n: friends.length }) }}</p>
+      <div class="friends-hub__modes" role="tablist" :aria-label="$t('bot-social-friends-modes')">
         <button
           type="button"
-          class="friends-hub__refresh"
-          :disabled="loading || refreshing || mutating"
-          @click="refresh"
+          role="tab"
+          class="friends-hub__mode"
+          :class="{ 'is-active': panelMode === 'friends' }"
+          :aria-selected="panelMode === 'friends' ? 'true' : 'false'"
+          @click="setPanelMode('friends')"
         >
-          <FontAwesomeIcon v-if="refreshing" icon="spinner" spin></FontAwesomeIcon>
-          <span v-else>{{ $t('bot-social-refresh') }}</span>
+          {{ $t('bot-social-friends-mode-friends') }}
+          <span class="friends-hub__mode-count">{{ friends.length }}</span>
         </button>
-      </div>
-
-      <div class="friends-hub__chrome">
-        <div class="friends-hub__searchbox">
-          <FontAwesomeIcon icon="search" class="friends-hub__search-icon" aria-hidden="true"></FontAwesomeIcon>
-          <input
-            v-model.trim="query"
-            class="friends-hub__search-input"
-            type="search"
-            :placeholder="$t('bot-social-friends-search-placeholder')"
-            :aria-label="$t('bot-social-friends-search-label')"
-            autocomplete="off"
-          >
-        </div>
-
-        <div class="friends-hub__filter">
-          <span id="friends-status-label" class="friends-hub__filter-label">{{ $t('bot-social-friends-filter-status') }}</span>
-          <AsfSelect
-            v-model="statusFilter"
-            compact
-            searchable
-            aria-labelledby="friends-status-label"
-            :options="statusOptions"
-            :search-placeholder="$t('bot-social-inventory-filter-search-options')"
-          ></AsfSelect>
-        </div>
-
         <button
-          v-if="hasActiveFilters"
           type="button"
-          class="friends-hub__clear"
-          @click="clearFilters"
+          role="tab"
+          class="friends-hub__mode"
+          :class="{ 'is-active': panelMode === 'sent' }"
+          :aria-selected="panelMode === 'sent' ? 'true' : 'false'"
+          @click="setPanelMode('sent')"
         >
-          {{ $t('bot-social-friends-clear-filters') }}
+          {{ $t('bot-social-friends-mode-sent') }}
+          <span class="friends-hub__mode-count">{{ sentRequests.length }}</span>
+        </button>
+        <button
+          type="button"
+          role="tab"
+          class="friends-hub__mode"
+          :class="{ 'is-active': panelMode === 'received' }"
+          :aria-selected="panelMode === 'received' ? 'true' : 'false'"
+          @click="setPanelMode('received')"
+        >
+          {{ $t('bot-social-friends-mode-received') }}
+          <span class="friends-hub__mode-count">{{ receivedRequests.length }}</span>
         </button>
       </div>
 
-      <form class="friends-hub__add" @submit.prevent="onAdd">
-        <input
-          v-model.trim="addTarget"
-          class="friends-hub__add-input"
-          type="text"
-          :placeholder="$t('bot-social-friends-add-placeholder')"
-          :disabled="mutating"
-        >
-        <button type="submit" class="friends-hub__add-btn" :disabled="!addTarget || mutating">
-          <FontAwesomeIcon v-if="mutating" icon="spinner" spin></FontAwesomeIcon>
-          <span v-else>{{ $t('bot-social-friends-add') }}</span>
-        </button>
-      </form>
+      <section class="friends-hub__chrome" :aria-label="$t('bot-social-tab-friends')">
+        <div class="friends-hub__chrome-bar">
+          <div class="friends-hub__searchbox">
+            <FontAwesomeIcon icon="search" class="friends-hub__search-icon" aria-hidden="true"></FontAwesomeIcon>
+            <input
+              v-model.trim="query"
+              class="friends-hub__search-input"
+              type="search"
+              :placeholder="$t('bot-social-friends-search-placeholder')"
+              :aria-label="$t('bot-social-friends-search-label')"
+              autocomplete="off"
+            >
+          </div>
 
-      <div v-if="loading && !friends.length" class="friends-hub__skeleton" aria-busy="true" :aria-label="$t('bot-social-loading')">
-        <div v-for="n in 6" :key="n" class="friends-hub__skel-card"></div>
+          <div class="friends-hub__chrome-actions">
+            <span class="friends-hub__count">{{ countLabel }}</span>
+            <button
+              v-if="hasActiveFilters"
+              type="button"
+              class="friends-hub__clear"
+              @click="clearFilters"
+            >
+              {{ $t('bot-social-friends-clear-filters') }}
+            </button>
+            <button
+              type="button"
+              class="friends-hub__refresh"
+              :disabled="loading || refreshing || mutating"
+              :title="$t('bot-social-refresh')"
+              @click="refresh"
+            >
+              <FontAwesomeIcon :icon="refreshing ? 'spinner' : 'redo-alt'" :spin="refreshing"></FontAwesomeIcon>
+              <span>{{ $t('bot-social-refresh') }}</span>
+            </button>
+          </div>
+        </div>
+
+        <form v-if="panelMode === 'friends'" class="friends-hub__addbar" @submit.prevent="onAdd">
+          <div class="friends-hub__field friends-hub__field--grow">
+            <span class="friends-hub__field-label">{{ $t('bot-social-friends-add-label') }}</span>
+            <input
+              v-model.trim="addTarget"
+              class="friends-hub__add-input"
+              type="text"
+              :placeholder="$t('bot-social-friends-add-placeholder')"
+              :disabled="mutating"
+            >
+          </div>
+          <button type="submit" class="friends-hub__add-btn" :disabled="!addTarget || mutating">
+            <FontAwesomeIcon v-if="mutating" icon="spinner" spin></FontAwesomeIcon>
+            <span v-else>{{ $t('bot-social-friends-add') }}</span>
+          </button>
+        </form>
+      </section>
+
+      <div v-if="loading && !hasAnyData" class="friends-hub__skeleton" aria-busy="true" :aria-label="$t('bot-social-loading')">
+        <div v-for="n in 20" :key="n" class="friends-hub__skel-card"></div>
       </div>
-      <div v-else-if="error && !friends.length" class="bot-social__state bot-social__state--error">{{ error }}</div>
+      <div v-else-if="error && !hasAnyData" class="bot-social__state bot-social__state--error">{{ error }}</div>
       <template v-else>
         <p v-if="error" class="bot-social__inline-error">{{ error }}</p>
-        <div v-if="!friends.length" class="friends-hub__empty">
-          <p>{{ $t('bot-social-friends-empty') }}</p>
+        <div v-if="!activeList.length" class="friends-hub__empty">
+          <p>{{ emptyLabel }}</p>
         </div>
-        <div v-else-if="!filteredFriends.length" class="friends-hub__empty">
+        <div v-else-if="!filteredList.length" class="friends-hub__empty">
           <p>{{ $t('bot-social-friends-search-empty') }}</p>
           <button type="button" class="button button--link" @click="clearFilters">
             {{ $t('bot-social-friends-clear-filters') }}
           </button>
         </div>
         <ul v-else class="friends-hub__grid" :class="{ 'is-refreshing': refreshing }">
-          <li v-for="friend in pageFriends" :key="friend.steamId" class="friends-hub__card-wrap">
+          <li v-for="friend in pageList" :key="`${panelMode}-${friend.steamId}`" class="friends-hub__card-wrap">
             <article
               class="friends-hub__card"
-              :class="{
-                'is-blocked': isBlocked(friend),
-                'is-offline': isOffline(friend),
-              }"
+              :class="{ 'is-blocked': isBlocked(friend) }"
             >
               <a
                 class="friends-hub__avatar-link"
                 :href="profileUrl(friend.steamId)"
                 target="_blank"
                 rel="noreferrer noopener"
-                :aria-label="friend.name || friend.steamId"
+                :aria-label="displayName(friend)"
+                @click="onProfileClick(friend, $event)"
               >
                 <img
                   v-if="friend.avatarUrl && !brokenAvatars[friend.steamId]"
                   class="friends-hub__avatar"
                   :src="friend.avatarUrl"
                   alt=""
-                  width="64"
-                  height="64"
+                  width="40"
+                  height="40"
                   loading="lazy"
                   decoding="async"
                   @error="onAvatarError(friend.steamId)"
@@ -117,25 +144,35 @@
                   :href="profileUrl(friend.steamId)"
                   target="_blank"
                   rel="noreferrer noopener"
-                >{{ friend.name || friend.steamId }}</a>
+                  @click="onProfileClick(friend, $event)"
+                >{{ displayName(friend) }}</a>
                 <span v-if="isBlocked(friend)" class="friends-hub__badge friends-hub__badge--blocked">
                   {{ $t('bot-social-friends-blocked') }}
                 </span>
-                <span v-else-if="personaLabel(friend)" class="friends-hub__badge">
-                  {{ personaLabel(friend) }}
-                </span>
-                <span class="friends-hub__steamid">{{ friend.steamId }}</span>
               </div>
-              <button
-                type="button"
-                class="friends-hub__remove"
-                :disabled="mutating"
-                :title="$t('delete')"
-                :aria-label="$t('bot-social-friends-remove-aria', { name: friend.name || friend.steamId })"
-                @click="askRemove(friend)"
-              >
-                {{ $t('delete') }}
-              </button>
+              <div class="friends-hub__actions">
+                <button
+                  v-if="panelMode === 'received'"
+                  type="button"
+                  class="friends-hub__icon-btn friends-hub__icon-btn--accept"
+                  :disabled="mutating"
+                  :aria-label="$t('bot-social-friends-accept-aria', { name: displayName(friend) })"
+                  :title="$t('bot-social-friends-accept')"
+                  @click="askAction(friend, 'accept')"
+                >
+                  <FontAwesomeIcon icon="check-circle" aria-hidden="true"></FontAwesomeIcon>
+                </button>
+                <button
+                  type="button"
+                  class="friends-hub__icon-btn friends-hub__icon-btn--danger"
+                  :disabled="mutating"
+                  :aria-label="actionAria(friend)"
+                  :title="actionLabel"
+                  @click="askAction(friend, dangerActionMode)"
+                >
+                  <FontAwesomeIcon icon="trash" aria-hidden="true"></FontAwesomeIcon>
+                </button>
+              </div>
             </article>
           </li>
         </ul>
@@ -153,11 +190,15 @@
     </template>
 
     <RemoveDialog
-      :open="Boolean(pendingRemove)"
-      :friend-name="pendingRemoveDisplayName"
+      :open="Boolean(pendingAction)"
+      :friend-name="pendingActionName"
       :submitting="mutating"
-      @cancel="pendingRemove = null"
-      @confirm="confirmRemove"
+      :title-key="dialogTitleKey"
+      :body-key="dialogBodyKey"
+      :confirm-key="dialogConfirmKey"
+      :confirm-tone="dialogConfirmTone"
+      @cancel="pendingAction = null"
+      @confirm="confirmAction"
     ></RemoveDialog>
   </div>
 </template>
@@ -171,7 +212,8 @@
   import PluginMissing from './PluginMissing.vue';
   import RemoveDialog from './friends/remove-dialog.vue';
 
-  const PAGE_SIZE = 24;
+  const PAGE_SIZE = 20;
+  const STEAM_ID64_RE = /^[0-9]{17}$/;
 
   export default {
     name: 'BotSocialFriendsTab',
@@ -182,56 +224,97 @@
     },
     data() {
       return {
+        panelMode: 'friends',
         loading: false,
         refreshing: false,
         mutating: false,
         error: '',
         friends: [],
+        sentRequests: [],
+        receivedRequests: [],
         addTarget: '',
         query: '',
-        statusFilter: 'all',
         page: 1,
-        pendingRemove: null,
+        pendingAction: null,
         brokenAvatars: {},
       };
     },
     computed: {
+      hasAnyData() {
+        return this.friends.length > 0 || this.sentRequests.length > 0 || this.receivedRequests.length > 0;
+      },
       hasActiveFilters() {
-        return Boolean(this.query || this.statusFilter !== 'all');
+        return Boolean(this.query);
       },
-      statusOptions() {
-        const all = this.friends.length;
-        const blocked = this.friends.filter(f => this.isBlocked(f)).length;
-        const online = this.friends.filter(f => this.isOnline(f)).length;
-        return [
-          { value: 'all', label: `${this.$t('bot-social-friends-filter-all')} (${all})` },
-          { value: 'online', label: `${this.$t('bot-social-friends-filter-online')} (${online})` },
-          { value: 'offline', label: `${this.$t('bot-social-friends-filter-offline')} (${all - online - blocked})` },
-          { value: 'blocked', label: `${this.$t('bot-social-friends-blocked')} (${blocked})` },
-        ];
+      activeList() {
+        if (this.panelMode === 'sent') return this.sentRequests;
+        if (this.panelMode === 'received') return this.receivedRequests;
+        return this.friends;
       },
-      filteredFriends() {
+      filteredList() {
         const q = this.query.trim().toLowerCase();
-        return this.friends.filter(f => {
-          if (this.statusFilter === 'blocked' && !this.isBlocked(f)) return false;
-          if (this.statusFilter === 'online' && !this.isOnline(f)) return false;
-          if (this.statusFilter === 'offline' && (this.isOnline(f) || this.isBlocked(f))) return false;
-          if (!q) return true;
-          return String(f.name || '').toLowerCase().includes(q)
-            || String(f.steamId).includes(q);
-        });
+        if (!q) return this.activeList;
+        return this.activeList.filter(f => String(f.name || '').toLowerCase().includes(q));
       },
       totalPages() {
-        return Math.max(1, Math.ceil(this.filteredFriends.length / PAGE_SIZE) || 1);
+        return Math.max(1, Math.ceil(this.filteredList.length / PAGE_SIZE) || 1);
       },
-      pageFriends() {
+      pageList() {
         const safe = Math.min(Math.max(1, this.page), this.totalPages);
         const start = (safe - 1) * PAGE_SIZE;
-        return this.filteredFriends.slice(start, start + PAGE_SIZE);
+        return this.filteredList.slice(start, start + PAGE_SIZE);
       },
-      pendingRemoveDisplayName() {
-        if (!this.pendingRemove) return '';
-        return this.pendingRemove.name || this.pendingRemove.steamId;
+      countLabel() {
+        if (this.panelMode === 'sent') {
+          return this.$t('bot-social-friends-sent-total', { n: this.sentRequests.length });
+        }
+        if (this.panelMode === 'received') {
+          return this.$t('bot-social-friends-received-total', { n: this.receivedRequests.length });
+        }
+        return this.$t('bot-social-friends-total', { n: this.friends.length });
+      },
+      emptyLabel() {
+        if (this.panelMode === 'sent') return this.$t('bot-social-friends-sent-empty');
+        if (this.panelMode === 'received') return this.$t('bot-social-friends-received-empty');
+        return this.$t('bot-social-friends-empty');
+      },
+      dangerActionMode() {
+        if (this.panelMode === 'sent') return 'sent';
+        if (this.panelMode === 'received') return 'received';
+        return 'friends';
+      },
+      actionLabel() {
+        if (this.panelMode === 'sent') return this.$t('bot-social-friends-cancel-request');
+        if (this.panelMode === 'received') return this.$t('bot-social-friends-decline');
+        return this.$t('delete');
+      },
+      pendingActionName() {
+        if (!this.pendingAction) return '';
+        return this.displayName(this.pendingAction.friend);
+      },
+      pendingMode() {
+        return this.pendingAction?.mode || this.panelMode;
+      },
+      dialogTitleKey() {
+        if (this.pendingMode === 'accept') return 'bot-social-friends-accept-title';
+        if (this.pendingMode === 'sent') return 'bot-social-friends-cancel-request-title';
+        if (this.pendingMode === 'received') return 'bot-social-friends-decline-title';
+        return 'bot-social-friends-remove-title';
+      },
+      dialogBodyKey() {
+        if (this.pendingMode === 'accept') return 'bot-social-friends-accept-body';
+        if (this.pendingMode === 'sent') return 'bot-social-friends-cancel-request-body';
+        if (this.pendingMode === 'received') return 'bot-social-friends-decline-body';
+        return 'bot-social-friends-remove-body';
+      },
+      dialogConfirmKey() {
+        if (this.pendingMode === 'accept') return 'bot-social-friends-accept';
+        if (this.pendingMode === 'sent') return 'bot-social-friends-cancel-request';
+        if (this.pendingMode === 'received') return 'bot-social-friends-decline';
+        return 'bot-social-friends-remove-confirm-btn';
+      },
+      dialogConfirmTone() {
+        return this.pendingMode === 'accept' ? 'primary' : 'danger';
       },
     },
     watch: {
@@ -248,51 +331,64 @@
       query() {
         this.page = 1;
       },
-      statusFilter() {
+      panelMode() {
         this.page = 1;
+        this.query = '';
+        this.pendingAction = null;
       },
-      filteredFriends() {
+      filteredList() {
         if (this.page > this.totalPages) this.page = this.totalPages;
       },
     },
     methods: {
+      setPanelMode(mode) {
+        if (mode === this.panelMode) return;
+        this.panelMode = mode;
+      },
       resetView() {
+        this.panelMode = 'friends';
         this.query = '';
-        this.statusFilter = 'all';
         this.page = 1;
-        this.pendingRemove = null;
+        this.pendingAction = null;
         this.brokenAvatars = {};
         this.error = '';
       },
       clearFilters() {
         this.query = '';
-        this.statusFilter = 'all';
         this.page = 1;
+      },
+      applyPayload(data) {
+        this.friends = data?.friends || [];
+        this.sentRequests = data?.sentRequests || [];
+        this.receivedRequests = data?.receivedRequests || [];
       },
       bootstrap() {
         if (this.pluginMissing) return;
         const resolved = resolveLocalData({
           resource: 'friends',
           botName: this.botName,
-          isUsable: data => Array.isArray(data?.friends),
+          isUsable: data => Array.isArray(data?.friends)
+            && Array.isArray(data?.sentRequests)
+            && Array.isArray(data?.receivedRequests)
+            && data.friends.every(f => STEAM_ID64_RE.test(String(f.steamId || ''))),
         });
         if (resolved.hasData) {
-          this.friends = resolved.data.friends;
+          this.applyPayload(resolved.data);
           this.$emit('loaded', { total: resolved.data.total ?? this.friends.length });
           return;
         }
-        this.load(false);
+        this.load(true);
       },
       async load(force) {
         if (this.pluginMissing) return;
-        const hasData = this.friends.length > 0;
+        const hasData = this.hasAnyData;
         this.loading = !hasData;
         this.refreshing = force && hasData;
         if (force) this.error = '';
 
         try {
           const result = await loadFriends(this.botName, { force });
-          this.friends = result.data?.friends || [];
+          this.applyPayload(result.data);
           if (result.rateLimited) this.$error(this.$t('bot-social-rate-limited'));
           else if (result.error && result.stale) this.error = result.error.message || String(result.error);
           else this.error = '';
@@ -305,7 +401,7 @@
           if (err?.code === 'RATE_LIMITED') this.$error(this.$t('bot-social-rate-limited'));
           else if (!hasData) {
             this.error = err.message || String(err);
-            this.friends = [];
+            this.applyPayload(null);
           } else this.error = err.message || String(err);
         } finally {
           this.loading = false;
@@ -319,34 +415,33 @@
       isBlocked(friend) {
         return String(friend.relationship || '').toLowerCase() === 'blocked';
       },
-      isOnline(friend) {
-        if (this.isBlocked(friend)) return false;
-        const state = String(friend.personaState || '').toLowerCase();
-        return state && state !== 'offline' && state !== 'invisible';
-      },
-      isOffline(friend) {
-        return !this.isBlocked(friend) && !this.isOnline(friend);
-      },
-      personaLabel(friend) {
-        if (this.isBlocked(friend)) return '';
-        const state = String(friend.personaState || '');
-        if (!state || state === 'Offline' || state === 'Invisible') {
-          return this.$t('bot-social-friends-state-offline');
-        }
-        if (state === 'Online') return this.$t('bot-social-friends-state-online');
-        if (state === 'Away') return this.$t('bot-social-friends-state-away');
-        if (state === 'Busy' || state === 'Snooze') return this.$t('bot-social-friends-state-busy');
-        return state;
+      displayName(friend) {
+        const name = String(friend.name || '').trim();
+        if (name && name !== friend.steamId) return name;
+        return friend.steamId || '?';
       },
       profileUrl(steamId) {
-        return `https://steamcommunity.com/profiles/${encodeURIComponent(steamId)}`;
+        const id = String(steamId || '').trim();
+        if (!STEAM_ID64_RE.test(id)) return 'https://steamcommunity.com/';
+        return `https://steamcommunity.com/profiles/${id}`;
+      },
+      onProfileClick(friend, event) {
+        if (!STEAM_ID64_RE.test(String(friend.steamId || ''))) {
+          event.preventDefault();
+          this.$error(this.$t('bot-social-friends-profile-invalid'));
+        }
       },
       initials(friend) {
-        const name = String(friend.name || friend.steamId || '?').trim();
-        return name.slice(0, 1).toUpperCase();
+        return String(this.displayName(friend) || '?').trim().slice(0, 1).toUpperCase();
       },
       onAvatarError(steamId) {
         this.$set(this.brokenAvatars, steamId, true);
+      },
+      actionAria(friend) {
+        const name = this.displayName(friend);
+        if (this.panelMode === 'sent') return this.$t('bot-social-friends-cancel-request-aria', { name });
+        if (this.panelMode === 'received') return this.$t('bot-social-friends-decline-aria', { name });
+        return this.$t('bot-social-friends-remove-aria', { name });
       },
       async onAdd() {
         if (!this.addTarget || this.mutating) return;
@@ -364,18 +459,25 @@
           this.mutating = false;
         }
       },
-      askRemove(friend) {
-        if (this.mutating) return;
-        this.pendingRemove = friend;
+      askAction(friend, mode) {
+        if (this.mutating || !friend) return;
+        this.pendingAction = { friend, mode: mode || this.dangerActionMode };
       },
-      async confirmRemove() {
-        const friend = this.pendingRemove;
-        if (!friend || this.mutating) return;
+      async confirmAction() {
+        const pending = this.pendingAction;
+        if (!pending?.friend || this.mutating) return;
         this.mutating = true;
         try {
-          await removeFriends(this.botName, [friend.steamId]);
-          this.$success(this.$t('bot-social-friends-remove-success'));
-          this.pendingRemove = null;
+          if (pending.mode === 'accept') {
+            await addFriends(this.botName, [pending.friend.steamId]);
+            this.$success(this.$t('bot-social-friends-accept-success'));
+          } else {
+            await removeFriends(this.botName, [pending.friend.steamId]);
+            if (pending.mode === 'sent') this.$success(this.$t('bot-social-friends-cancel-request-success'));
+            else if (pending.mode === 'received') this.$success(this.$t('bot-social-friends-decline-success'));
+            else this.$success(this.$t('bot-social-friends-remove-success'));
+          }
+          this.pendingAction = null;
           invalidateFriends(this.botName);
           await this.load(true);
         } catch (err) {

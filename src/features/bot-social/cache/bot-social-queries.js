@@ -51,22 +51,32 @@ export function loadFriends(botName, { force = false } = {}) {
     fetcher: async () => {
       const result = await fetchFriends(botName);
       const payload = unwrap(result, botName);
-      const list = payload?.Friends ?? payload?.friends ?? [];
-      const friends = list.map(raw => {
-        const steamId = String(raw.SteamId ?? raw.steamId ?? '');
+      const mapList = list => (list || []).map(raw => {
+        // Prefer string SteamId — JSON numbers truncate SteamID64 past Number.MAX_SAFE_INTEGER.
+        const steamIdRaw = raw.SteamId ?? raw.steamId;
+        const steamId = typeof steamIdRaw === 'string'
+          ? steamIdRaw.trim()
+          : (steamIdRaw != null ? String(steamIdRaw) : '');
         const avatarHash = raw.AvatarHash ?? raw.avatarHash;
+        const name = String(raw.Name ?? raw.name ?? '').trim();
         return {
           steamId,
-          name: raw.Name ?? raw.name ?? steamId,
+          name: name || steamId,
           relationship: String(raw.Relationship ?? raw.relationship ?? ''),
           personaState: String(raw.PersonaState ?? raw.personaState ?? ''),
           avatarUrl: avatarHash
             ? `https://avatars.steamstatic.com/${avatarHash}_medium.jpg`
             : '',
         };
-      });
+      }).filter(f => /^[0-9]{17}$/.test(f.steamId));
+
+      const friends = mapList(payload?.Friends ?? payload?.friends ?? []);
+      const sentRequests = mapList(payload?.SentRequests ?? payload?.sentRequests ?? []);
+      const receivedRequests = mapList(payload?.ReceivedRequests ?? payload?.receivedRequests ?? []);
       return {
         friends,
+        sentRequests,
+        receivedRequests,
         total: payload?.Total ?? payload?.total ?? friends.length,
       };
     },
