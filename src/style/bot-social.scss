@@ -3891,11 +3891,11 @@
   flex: 1 1 0;
   font-size: 0.84rem;
   font-weight: 700;
-  gap: 0.4rem;
+  gap: 0.45rem;
   justify-content: center;
   min-width: 5.5rem;
   padding: 0.55rem 0.85rem;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
   user-select: none;
 
   &:last-child {
@@ -3908,15 +3908,36 @@
     pointer-events: none;
   }
 
+  svg {
+    flex: 0 0 auto;
+    font-size: 0.9rem;
+  }
+
   &:hover:not(.is-active) {
     background: rgba(102, 192, 244, 0.06);
     color: #c7d5e0;
   }
 
   &.is-active {
-    background: linear-gradient(180deg, rgba(61, 108, 141, 0.55) 0%, rgba(42, 71, 94, 0.72) 100%);
     color: #fff;
-    box-shadow: inset 0 0 0 1px rgba(103, 193, 245, 0.28);
+  }
+
+  &--positive.is-active {
+    background: linear-gradient(180deg, rgba(61, 108, 141, 0.62) 0%, rgba(42, 71, 94, 0.82) 100%);
+    box-shadow: inset 0 0 0 1px rgba(103, 193, 245, 0.35);
+    color: #d6efff;
+  }
+
+  &--negative.is-active {
+    background: linear-gradient(180deg, rgba(164, 62, 62, 0.72) 0%, rgba(110, 36, 36, 0.88) 100%);
+    box-shadow: inset 0 0 0 1px rgba(232, 120, 120, 0.4);
+    color: #ffd6d6;
+  }
+
+  &--funny.is-active {
+    background: linear-gradient(180deg, rgba(176, 132, 48, 0.55) 0%, rgba(120, 86, 24, 0.78) 100%);
+    box-shadow: inset 0 0 0 1px rgba(231, 192, 74, 0.35);
+    color: #ffe9a8;
   }
 }
 

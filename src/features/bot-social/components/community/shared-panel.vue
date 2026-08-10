@@ -45,7 +45,10 @@
               v-for="opt in voteOptions"
               :key="opt.value"
               class="community-hub__vote-chip"
-              :class="{ 'is-active': vote === opt.value }"
+              :class="[
+                `community-hub__vote-chip--${opt.tone}`,
+                { 'is-active': vote === opt.value },
+              ]"
             >
               <input
                 v-model="vote"
@@ -54,6 +57,7 @@
                 :value="opt.value"
                 :disabled="mutating"
               >
+              <FontAwesomeIcon :icon="opt.icon" aria-hidden="true"></FontAwesomeIcon>
               <span>{{ opt.label }}</span>
             </label>
           </div>
@@ -97,8 +101,8 @@
     computed: {
       voteOptions() {
         return [
-          { value: 'like', label: this.$t('bot-social-community-shared-vote-like') },
-          { value: 'dislike', label: this.$t('bot-social-community-shared-vote-dislike') },
+          { value: 'like', tone: 'positive', icon: 'thumbs-up', label: this.$t('bot-social-community-shared-vote-like') },
+          { value: 'dislike', tone: 'negative', icon: 'thumbs-down', label: this.$t('bot-social-community-shared-vote-dislike') },
         ];
       },
       canSubmit() {

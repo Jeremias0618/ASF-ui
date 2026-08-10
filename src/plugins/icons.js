@@ -9,7 +9,7 @@ import {
   faHourglassHalf, faHourglassStart, faRedoAlt, faClipboard, faPuzzlePiece, faUndoAlt, faEye,
   faEyeSlash, faChevronLeft, faChevronRight, faExclamation, faExclamationTriangle, faComments, faBan, faSearch, faSun,
   faSave, faCopy, faDownload, faBoxes, faHeart, faChartBar, faGripVertical, faDice,
-  faGlobe, faStar, faCoins,
+  faGlobe, faStar, faCoins, faThumbsUp, faThumbsDown, faSmile,
 } from '@fortawesome/free-solid-svg-icons';
 
 import { FontAwesomeIcon, FontAwesomeLayers } from '@fortawesome/vue-fontawesome';
@@ -79,6 +79,9 @@ library.add(
   faGlobe,
   faStar,
   faCoins,
+  faThumbsUp,
+  faThumbsDown,
+  faSmile,
 );
 
 export default {
