@@ -3,79 +3,131 @@
     <PluginMissing v-if="pluginMissing"></PluginMissing>
 
     <template v-else>
-      <div class="community-hub__toolbar">
-        <p class="community-hub__hint">{{ $t('bot-social-community-hint') }}</p>
+      <div class="friends-hub__modes" role="tablist" :aria-label="$t('bot-social-community-modes')">
         <button
           type="button"
-          class="community-hub__refresh"
-          :disabled="loading || refreshing"
-          @click="refresh"
+          role="tab"
+          class="friends-hub__mode"
+          :class="{ 'is-active': panelMode === 'account' }"
+          :aria-selected="panelMode === 'account' ? 'true' : 'false'"
+          @click="setPanelMode('account')"
         >
-          <FontAwesomeIcon :icon="loading || refreshing ? 'spinner' : 'redo-alt'" :spin="loading || refreshing"></FontAwesomeIcon>
-          {{ $t('bot-social-refresh') }}
+          <FontAwesomeIcon icon="user" aria-hidden="true"></FontAwesomeIcon>
+          {{ $t('bot-social-community-mode-account') }}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          class="friends-hub__mode"
+          :class="{ 'is-active': panelMode === 'groups' }"
+          :aria-selected="panelMode === 'groups' ? 'true' : 'false'"
+          @click="setPanelMode('groups')"
+        >
+          <FontAwesomeIcon icon="users" aria-hidden="true"></FontAwesomeIcon>
+          {{ $t('bot-social-community-mode-groups') }}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          class="friends-hub__mode"
+          :class="{ 'is-active': panelMode === 'followers' }"
+          :aria-selected="panelMode === 'followers' ? 'true' : 'false'"
+          @click="setPanelMode('followers')"
+        >
+          <FontAwesomeIcon icon="heart" aria-hidden="true"></FontAwesomeIcon>
+          {{ $t('bot-social-community-mode-followers') }}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          class="friends-hub__mode"
+          :class="{ 'is-active': panelMode === 'curators' }"
+          :aria-selected="panelMode === 'curators' ? 'true' : 'false'"
+          @click="setPanelMode('curators')"
+        >
+          <FontAwesomeIcon icon="star" aria-hidden="true"></FontAwesomeIcon>
+          {{ $t('bot-social-community-mode-curators') }}
         </button>
       </div>
 
-      <p v-if="error" class="bot-social__inline-error">{{ error }}</p>
+      <GroupsPanel
+        v-if="panelMode === 'groups'"
+        :bot-name="botName"
+        @plugin-missing="$emit('plugin-missing')"
+      ></GroupsPanel>
 
-      <div v-if="loading && !hasLoaded" class="community-hub__skeleton" aria-busy="true">
-        <div v-for="n in 8" :key="n" class="community-hub__skel-card"></div>
-      </div>
+      <FollowersPanel
+        v-else-if="panelMode === 'followers'"
+        :bot-name="botName"
+        @plugin-missing="$emit('plugin-missing')"
+      ></FollowersPanel>
+
+      <CuratorsPanel
+        v-else-if="panelMode === 'curators'"
+        :bot-name="botName"
+        @plugin-missing="$emit('plugin-missing')"
+      ></CuratorsPanel>
 
       <template v-else>
-        <section class="community-hub__section" :aria-label="$t('bot-social-community-section-account')">
-          <h3 class="community-hub__section-title">{{ $t('bot-social-community-section-account') }}</h3>
-          <ul class="community-hub__grid">
-            <li v-for="row in accountRows" :key="row.key" class="community-hub__card">
-              <span class="community-hub__card-icon" aria-hidden="true">
-                <FontAwesomeIcon :icon="row.icon"></FontAwesomeIcon>
-              </span>
-              <div class="community-hub__card-body">
-                <p class="community-hub__card-label">{{ row.label }}</p>
-                <p class="community-hub__card-value" :title="row.value">
-                  <a
-                    v-if="row.href"
-                    class="community-hub__link"
-                    :href="row.href"
-                    target="_blank"
-                    rel="noreferrer noopener"
-                  >{{ row.value }}</a>
-                  <template v-else>{{ row.value }}</template>
-                </p>
-              </div>
-            </li>
-          </ul>
-        </section>
+        <div class="community-hub__toolbar">
+          <p class="community-hub__hint">{{ $t('bot-social-community-hint') }}</p>
+          <button
+            type="button"
+            class="community-hub__refresh"
+            :disabled="loading || refreshing"
+            @click="refresh"
+          >
+            <FontAwesomeIcon :icon="loading || refreshing ? 'spinner' : 'redo-alt'" :spin="loading || refreshing"></FontAwesomeIcon>
+            {{ $t('bot-social-refresh') }}
+          </button>
+        </div>
 
-        <section class="community-hub__section" :aria-label="$t('bot-social-community-section-economy')">
-          <h3 class="community-hub__section-title">{{ $t('bot-social-community-section-economy') }}</h3>
-          <ul class="community-hub__grid">
-            <li v-for="row in economyRows" :key="row.key" class="community-hub__card">
-              <span class="community-hub__card-icon" aria-hidden="true">
-                <FontAwesomeIcon :icon="row.icon"></FontAwesomeIcon>
-              </span>
-              <div class="community-hub__card-body">
-                <p class="community-hub__card-label">{{ row.label }}</p>
-                <p class="community-hub__card-value" :title="row.value">{{ row.value }}</p>
-              </div>
-            </li>
-          </ul>
-        </section>
+        <p v-if="error" class="bot-social__inline-error">{{ error }}</p>
 
-        <section class="community-hub__section" :aria-label="$t('bot-social-community-section-status')">
-          <h3 class="community-hub__section-title">{{ $t('bot-social-community-section-status') }}</h3>
-          <ul class="community-hub__grid">
-            <li v-for="row in statusRows" :key="row.key" class="community-hub__card">
-              <span class="community-hub__card-icon" aria-hidden="true">
-                <FontAwesomeIcon :icon="row.icon"></FontAwesomeIcon>
-              </span>
-              <div class="community-hub__card-body">
-                <p class="community-hub__card-label">{{ row.label }}</p>
-                <p class="community-hub__card-value" :title="row.value">{{ row.value }}</p>
-              </div>
-            </li>
-          </ul>
-        </section>
+        <div v-if="loading && !hasLoaded" class="community-hub__skeleton" aria-busy="true">
+          <div v-for="n in 6" :key="n" class="community-hub__skel-card"></div>
+        </div>
+
+        <template v-else>
+          <section class="community-hub__section" :aria-label="$t('bot-social-community-section-account')">
+            <h3 class="community-hub__section-title">{{ $t('bot-social-community-section-account') }}</h3>
+            <ul class="community-hub__grid">
+              <li v-for="row in accountRows" :key="row.key" class="community-hub__card">
+                <span class="community-hub__card-icon" aria-hidden="true">
+                  <FontAwesomeIcon :icon="row.icon"></FontAwesomeIcon>
+                </span>
+                <div class="community-hub__card-body">
+                  <p class="community-hub__card-label">{{ row.label }}</p>
+                  <p class="community-hub__card-value" :title="row.value">
+                    <a
+                      v-if="row.href"
+                      class="community-hub__link"
+                      :href="row.href"
+                      target="_blank"
+                      rel="noreferrer noopener"
+                    >{{ row.value }}</a>
+                    <template v-else>{{ row.value }}</template>
+                  </p>
+                </div>
+              </li>
+            </ul>
+          </section>
+
+          <section class="community-hub__section" :aria-label="$t('bot-social-community-section-economy')">
+            <h3 class="community-hub__section-title">{{ $t('bot-social-community-section-economy') }}</h3>
+            <ul class="community-hub__grid">
+              <li v-for="row in economyRows" :key="row.key" class="community-hub__card">
+                <span class="community-hub__card-icon" aria-hidden="true">
+                  <FontAwesomeIcon :icon="row.icon"></FontAwesomeIcon>
+                </span>
+                <div class="community-hub__card-body">
+                  <p class="community-hub__card-label">{{ row.label }}</p>
+                  <p class="community-hub__card-value" :title="row.value">{{ row.value }}</p>
+                </div>
+              </li>
+            </ul>
+          </section>
+        </template>
       </template>
     </template>
   </div>
@@ -83,22 +135,23 @@
 
 <script>
   import { fetchSteamPoints, isPluginMissingError } from '../api/bot-social';
+  import CuratorsPanel from './community/curators-panel.vue';
+  import FollowersPanel from './community/followers-panel.vue';
+  import GroupsPanel from './community/groups-panel.vue';
   import PluginMissing from './PluginMissing.vue';
-
-  // SteamKit EAccountFlags
-  const FLAG_LIMITED_USER = 2048;
-  const FLAG_LIMITED_USER_FORCE = 4096;
-  const FLAG_LOCKDOWN = 64;
 
   export default {
     name: 'BotSocialCommunityTab',
-    components: { PluginMissing },
+    components: {
+      CuratorsPanel, FollowersPanel, GroupsPanel, PluginMissing,
+    },
     props: {
       botName: { type: String, required: true },
       pluginMissing: { type: Boolean, default: false },
     },
     data() {
       return {
+        panelMode: 'account',
         loading: false,
         refreshing: false,
         hasLoaded: false,
@@ -174,64 +227,12 @@
           },
         ];
       },
-      statusRows() {
-        const bot = this.bot;
-        if (!bot) return [];
-        const flags = Number(bot.accountFlags || 0);
-        const limited = (flags & FLAG_LIMITED_USER) !== 0 || (flags & FLAG_LIMITED_USER_FORCE) !== 0;
-        const locked = (flags & FLAG_LOCKDOWN) !== 0;
-        return [
-          {
-            key: 'status',
-            icon: 'tachometer-alt',
-            label: this.$t('bot-social-community-field-status'),
-            value: bot.statusText || '—',
-          },
-          {
-            key: '2fa',
-            icon: 'lock',
-            label: this.$t('bot-social-community-field-2fa'),
-            value: bot.has2FA
-              ? this.$t('bot-social-community-yes')
-              : this.$t('bot-social-community-no'),
-          },
-          {
-            key: 'limited',
-            icon: 'exclamation-triangle',
-            label: this.$t('bot-social-community-field-limited'),
-            value: limited
-              ? this.$t('bot-social-community-yes')
-              : this.$t('bot-social-community-no'),
-          },
-          {
-            key: 'locked',
-            icon: 'ban',
-            label: this.$t('bot-social-community-field-locked'),
-            value: locked
-              ? this.$t('bot-social-community-yes')
-              : this.$t('bot-social-community-no'),
-          },
-          {
-            key: 'playing',
-            icon: 'gamepad',
-            label: this.$t('bot-social-community-field-playing'),
-            value: bot.isPlayingPossible
-              ? this.$t('bot-social-community-yes')
-              : this.$t('bot-social-community-no'),
-          },
-          {
-            key: 'ip',
-            icon: 'laptop',
-            label: this.$t('bot-social-community-field-ip'),
-            value: bot.publicIP || this.$t('bot-social-community-unavailable'),
-          },
-        ];
-      },
     },
     watch: {
       botName: {
         immediate: true,
         handler() {
+          this.panelMode = 'account';
           this.load(false);
         },
       },
@@ -243,6 +244,10 @@
       },
     },
     methods: {
+      setPanelMode(mode) {
+        if (mode === this.panelMode) return;
+        this.panelMode = mode;
+      },
       async refresh() {
         if (this.loading || this.refreshing || this.pluginMissing) return;
         await this.load(true);

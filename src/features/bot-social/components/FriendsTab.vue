@@ -48,17 +48,6 @@
           <FontAwesomeIcon icon="plus" aria-hidden="true"></FontAwesomeIcon>
           {{ $t('bot-social-friends-mode-send') }}
         </button>
-        <button
-          type="button"
-          role="tab"
-          class="friends-hub__mode"
-          :class="{ 'is-active': panelMode === 'groups' }"
-          :aria-selected="panelMode === 'groups' ? 'true' : 'false'"
-          @click="setPanelMode('groups')"
-        >
-          <FontAwesomeIcon icon="users" aria-hidden="true"></FontAwesomeIcon>
-          {{ $t('bot-social-friends-mode-groups') }}
-        </button>
       </div>
 
       <section
@@ -106,55 +95,6 @@
               <li><code>{{ $t('bot-social-friends-send-example-code') }}</code></li>
               <li><code>{{ $t('bot-social-friends-send-example-vanity') }}</code></li>
               <li><code>{{ $t('bot-social-friends-send-example-profiles') }}</code></li>
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      <section
-        v-else-if="panelMode === 'groups'"
-        class="friends-hub__compose"
-        :aria-label="$t('bot-social-friends-groups-title')"
-      >
-        <div class="friends-hub__compose-panel">
-          <header class="friends-hub__compose-header">
-            <p class="friends-hub__compose-eyebrow">{{ $t('bot-social-friends-mode-groups') }}</p>
-            <h3 class="friends-hub__compose-title">{{ $t('bot-social-friends-groups-title') }}</h3>
-            <p class="friends-hub__compose-lead">{{ $t('bot-social-friends-groups-lead') }}</p>
-          </header>
-
-          <form class="friends-hub__compose-form" @submit.prevent="onJoinGroup">
-            <label class="friends-hub__field-label" for="friends-group-target">
-              {{ $t('bot-social-friends-groups-target-label') }}
-            </label>
-            <div class="friends-hub__compose-combo">
-              <input
-                id="friends-group-target"
-                v-model.trim="groupTarget"
-                class="friends-hub__compose-input"
-                type="text"
-                :placeholder="$t('bot-social-friends-groups-placeholder')"
-                :disabled="mutating"
-                autocomplete="off"
-                spellcheck="false"
-              >
-              <button
-                type="submit"
-                class="friends-hub__compose-submit"
-                :disabled="!groupTarget || mutating"
-              >
-                <FontAwesomeIcon v-if="mutating" icon="spinner" spin aria-hidden="true"></FontAwesomeIcon>
-                <span v-else>{{ $t('bot-social-friends-groups-submit') }}</span>
-              </button>
-            </div>
-          </form>
-
-          <div class="friends-hub__compose-help" :aria-label="$t('bot-social-friends-groups-formats')">
-            <p class="friends-hub__compose-help-title">{{ $t('bot-social-friends-groups-formats') }}</p>
-            <ul class="friends-hub__compose-examples">
-              <li><code>{{ $t('bot-social-friends-groups-example-url') }}</code></li>
-              <li><code>{{ $t('bot-social-friends-groups-example-vanity') }}</code></li>
-              <li><code>{{ $t('bot-social-friends-groups-example-gid') }}</code></li>
             </ul>
           </div>
         </div>
@@ -311,12 +251,11 @@
 
 <script>
   import {
-    addFriends, isPluginMissingError, joinGroups, removeFriends,
+    addFriends, isPluginMissingError, removeFriends,
   } from '../api/bot-social';
   import { invalidateFriends, loadFriends } from '../cache/bot-social-queries';
   import { resolveLocalData } from '../cache/load-policy';
   import { normalizeFriendTarget } from '../utils/friend-target';
-  import { isLikelyGroupTarget, normalizeGroupTarget } from '../utils/group-target';
   import PluginMissing from './PluginMissing.vue';
   import RemoveDialog from './friends/remove-dialog.vue';
 
@@ -341,7 +280,6 @@
         sentRequests: [],
         receivedRequests: [],
         addTarget: '',
-        groupTarget: '',
         query: '',
         page: 1,
         pendingAction: null,
@@ -588,40 +526,6 @@
           invalidateFriends(this.botName);
           await this.load(true);
           this.panelMode = 'sent';
-        } catch (err) {
-          if (isPluginMissingError(err)) this.$emit('plugin-missing');
-          else this.$error(err.message || String(err));
-        } finally {
-          this.mutating = false;
-        }
-      },
-      async onJoinGroup() {
-        if (this.mutating) return;
-        const target = normalizeGroupTarget(this.groupTarget);
-        if (!isLikelyGroupTarget(this.groupTarget) || !target) {
-          this.$error(this.$t('bot-social-friends-groups-invalid'));
-          return;
-        }
-        this.mutating = true;
-        try {
-          // Prefer full URL when pasted so the plugin can resolve vanity reliably.
-          const payloadTarget = /steamcommunity\.com\/(?:groups|gid)\//i.test(this.groupTarget)
-            ? this.groupTarget.trim()
-            : target;
-          const payload = await joinGroups(this.botName, [payloadTarget]);
-          const first = this.firstMutationResult(payload);
-          if (!this.mutationSucceeded(first)) {
-            const detail = first?.Message || first?.message || this.$t('bot-social-friends-groups-failed');
-            this.$error(detail);
-            return;
-          }
-          const detail = first?.Message || first?.message || '';
-          this.$success(
-            detail && detail !== 'OK'
-              ? this.$t('bot-social-friends-groups-success-named', { detail: detail.replace(/^OK\s*—\s*/i, '') })
-              : this.$t('bot-social-friends-groups-success'),
-          );
-          this.groupTarget = '';
         } catch (err) {
           if (isPluginMissingError(err)) this.$emit('plugin-missing');
           else this.$error(err.message || String(err));

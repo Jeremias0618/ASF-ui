@@ -3830,3 +3830,31 @@
   border-radius: 0.35rem;
   height: 4.1rem;
 }
+
+.community-hub__followers-stat {
+  align-items: center;
+  background: rgba(15, 24, 34, 0.92);
+  border: 1px solid rgba(102, 192, 244, 0.14);
+  border-radius: 0.35rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem 0.85rem;
+  margin: 0 0 1rem;
+  padding: 0.75rem 0.9rem;
+}
+
+.community-hub__followers-stat-label {
+  color: #8f98a0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.community-hub__followers-stat-value {
+  color: #fff;
+  flex: 1 1 auto;
+  font-size: 1.35rem;
+  font-weight: 750;
+  line-height: 1.1;
+}

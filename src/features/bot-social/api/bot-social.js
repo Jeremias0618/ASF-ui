@@ -45,6 +45,21 @@ export function joinGroups(botName, targets) {
   return post(`${socialBase(botName)}/Groups/Join`, { Targets: targets });
 }
 
+/** Public follower count for the bot Steam profile. */
+export function fetchFollowersCount(botName) {
+  return get(`${socialBase(botName)}/Followers`);
+}
+
+/** Follow Steam community profiles (workshop / profile follow). */
+export function followUsers(botName, targets) {
+  return post(`${socialBase(botName)}/Followers/Follow`, { Targets: targets });
+}
+
+/** Follow Steam Store curators (mentors). */
+export function followCurators(botName, targets) {
+  return post(`${socialBase(botName)}/Curators/Follow`, { Targets: targets });
+}
+
 export function fetchGames(botName) {
   return get(`${socialBase(botName)}/Games`);
 }
