@@ -32,12 +32,7 @@
 
           <div
             class="modal__main"
-            :class="{
-              'modal__main--wide': isWide,
-              'modal__main--friends': isFriendsWide,
-              'modal__main--dialog': isDialog,
-              'modal__main--medium': isMedium,
-            }"
+            :class="modalMainClasses"
           >
             <router-view ref="modal" name="modal"></router-view>
           </div>
@@ -50,36 +45,9 @@
 <script>
   import { mapGetters } from 'vuex';
   import { isBenignNavigationError } from '../../utils/unsaved-changes';
+  import { resolveModalSizeClasses } from '../../utils/modal-size';
 
   const MODAL_DURATION_MS = 220;
-
-  const WIDE_MODAL_ROUTES = new Set([
-    'bot-config',
-    'bot-create',
-    'bot-copy',
-    'bot-inventory',
-    'bot-friends',
-    'bot-community',
-    'bot-games',
-    'bot-wishlist',
-  ]);
-
-  const FRIENDS_WIDE_MODAL_ROUTES = new Set([
-    'bot-friends',
-    'bot-community',
-    'bot-games',
-  ]);
-
-  const DIALOG_MODAL_ROUTES = new Set([
-    'password-encrypt',
-    'password-hash',
-    'bot-delete',
-    'bot-2fa-delete',
-  ]);
-
-  const MEDIUM_MODAL_ROUTES = new Set([
-    'bot-bgr',
-  ]);
 
   export default {
     name: 'Modal',
@@ -99,17 +67,8 @@
       modalTransitionKey() {
         return this.$route.name || this.$route.path;
       },
-      isWide() {
-        return WIDE_MODAL_ROUTES.has(this.$route.name);
-      },
-      isFriendsWide() {
-        return FRIENDS_WIDE_MODAL_ROUTES.has(this.$route.name);
-      },
-      isDialog() {
-        return DIALOG_MODAL_ROUTES.has(this.$route.name);
-      },
-      isMedium() {
-        return MEDIUM_MODAL_ROUTES.has(this.$route.name);
+      modalMainClasses() {
+        return resolveModalSizeClasses(this.$route);
       },
       showArrows() {
         return !!this.$route.meta.arrows && this.bots.length > 1;
@@ -274,6 +233,12 @@
     &--medium {
       max-width: min(36rem, calc(100vw - 1.5rem));
       width: min(36rem, calc(100vw - 1.5rem));
+    }
+
+    /* Reserved footprint so tab/empty swaps do not resize the chrome (CLS). */
+    &--fixed {
+      height: min(90dvh, 56rem);
+      max-height: min(90dvh, 56rem);
     }
   }
 

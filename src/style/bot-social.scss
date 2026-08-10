@@ -105,8 +105,9 @@
 
   &--inventory {
     display: flex;
+    flex: 1 1 auto;
     flex-direction: column;
-    min-height: min(70dvh, 36rem);
+    min-height: 0;
     overflow: hidden;
     padding: 0.65rem 1rem 1rem;
   }
@@ -488,18 +489,73 @@
   }
 }
 
+.steam-inv__grid-viewport {
+  flex: 1 1 auto;
+  min-height: 18rem;
+  overflow: hidden;
+  position: relative;
+}
+
 .steam-inv__grid {
   display: grid;
-  flex: 1 1 auto;
   gap: 0.35rem;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   grid-template-rows: repeat(5, minmax(0, 1fr));
+  height: 100%;
   min-height: 18rem;
   overflow: auto;
+  width: 100%;
 
   @media screen and (max-width: 520px) {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     grid-template-rows: none;
+  }
+}
+
+.steam-inv-page-next-enter-active,
+.steam-inv-page-next-leave-active,
+.steam-inv-page-prev-enter-active,
+.steam-inv-page-prev-leave-active {
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+.steam-inv-page-next-leave-active,
+.steam-inv-page-prev-leave-active {
+  inset: 0;
+  position: absolute;
+  width: 100%;
+}
+
+.steam-inv-page-next-enter {
+  transform: translateX(100%);
+}
+
+.steam-inv-page-next-leave-to {
+  transform: translateX(-100%);
+}
+
+.steam-inv-page-prev-enter {
+  transform: translateX(-100%);
+}
+
+.steam-inv-page-prev-leave-to {
+  transform: translateX(100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .steam-inv-page-next-enter-active,
+  .steam-inv-page-next-leave-active,
+  .steam-inv-page-prev-enter-active,
+  .steam-inv-page-prev-leave-active {
+    transition: none;
+  }
+
+  .steam-inv-page-next-enter,
+  .steam-inv-page-next-leave-to,
+  .steam-inv-page-prev-enter,
+  .steam-inv-page-prev-leave-to {
+    transform: none;
   }
 }
 
@@ -1832,6 +1888,7 @@
 
 .trade-offers {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
   gap: 0.75rem;
   min-height: 0;
@@ -1845,6 +1902,7 @@
 .trade-offers__toolbar {
   align-items: center;
   display: flex;
+  flex-shrink: 0;
   justify-content: space-between;
   gap: 0.75rem;
 }
@@ -1878,8 +1936,10 @@
 
 .trade-offers__skeleton {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
   gap: 0.75rem;
+  min-height: 0;
 }
 
 .trade-offers__skel-card {
@@ -1891,17 +1951,25 @@
 }
 
 .trade-offers__empty {
+  align-items: center;
   color: #8f98a0;
+  display: flex;
+  flex: 1 1 auto;
+  justify-content: center;
+  min-height: 12rem;
   padding: 2.5rem 1rem;
   text-align: center;
 }
 
 .trade-offers__list {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
   gap: 0.85rem;
   list-style: none;
   margin: 0;
+  min-height: 0;
+  overflow: auto;
   padding: 0;
 }
 

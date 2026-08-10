@@ -129,51 +129,56 @@
 
       <div v-else class="steam-inv__shell">
         <div class="steam-inv__grid-pane">
-          <div
-            class="steam-inv__grid"
-            role="listbox"
-            :aria-label="$t('bot-social-tab-inventory')"
-            :aria-activedescendant="selectedOnPage ? `inv-item-${selectedId}` : undefined"
-          >
-            <button
-              v-for="item in pageItems"
-              :id="`inv-item-${item.id}`"
-              :key="item.id"
-              type="button"
-              role="option"
-              class="steam-inv__cell"
-              :class="{
-                'is-selected': selectedId === item.id,
-                'is-checked': isChecked(item.id),
-                'is-locked': selectMode && !item.tradable,
-              }"
-              :aria-selected="selectedId === item.id ? 'true' : 'false'"
-              :title="item.tradable ? item.name : `${item.name} (${$t('bot-social-inventory-not-tradable')})`"
-              @click="onCellClick(item, $event)"
-            >
-              <span
-                v-if="selectMode"
-                class="steam-inv__check"
-                :class="{ 'is-on': isChecked(item.id), 'is-disabled': !item.tradable }"
-                aria-hidden="true"
-              ></span>
-              <span
-                class="steam-inv__cell-bg"
-                :style="item.backgroundColor ? { backgroundColor: `#${item.backgroundColor}` } : null"
+          <div class="steam-inv__grid-viewport">
+            <transition :name="pageTransitionName">
+              <div
+                :key="`inv-page-${page}`"
+                class="steam-inv__grid"
+                role="listbox"
+                :aria-label="$t('bot-social-tab-inventory')"
+                :aria-activedescendant="selectedOnPage ? `inv-item-${selectedId}` : undefined"
               >
-                <img
-                  v-if="item.iconUrl"
-                  class="steam-inv__thumb"
-                  :src="item.iconUrl"
-                  :alt="item.name"
-                  loading="eager"
-                  decoding="async"
-                  draggable="false"
+                <button
+                  v-for="item in pageItems"
+                  :id="`inv-item-${item.id}`"
+                  :key="item.id"
+                  type="button"
+                  role="option"
+                  class="steam-inv__cell"
+                  :class="{
+                    'is-selected': selectedId === item.id,
+                    'is-checked': isChecked(item.id),
+                    'is-locked': selectMode && !item.tradable,
+                  }"
+                  :aria-selected="selectedId === item.id ? 'true' : 'false'"
+                  :title="item.tradable ? item.name : `${item.name} (${$t('bot-social-inventory-not-tradable')})`"
+                  @click="onCellClick(item, $event)"
                 >
-                <span v-else class="steam-inv__thumb-fallback" aria-hidden="true">?</span>
-              </span>
-              <span v-if="item.amount > 1" class="steam-inv__qty">×{{ item.amount }}</span>
-            </button>
+                  <span
+                    v-if="selectMode"
+                    class="steam-inv__check"
+                    :class="{ 'is-on': isChecked(item.id), 'is-disabled': !item.tradable }"
+                    aria-hidden="true"
+                  ></span>
+                  <span
+                    class="steam-inv__cell-bg"
+                    :style="item.backgroundColor ? { backgroundColor: `#${item.backgroundColor}` } : null"
+                  >
+                    <img
+                      v-if="item.iconUrl"
+                      class="steam-inv__thumb"
+                      :src="item.iconUrl"
+                      :alt="item.name"
+                      loading="eager"
+                      decoding="async"
+                      draggable="false"
+                    >
+                    <span v-else class="steam-inv__thumb-fallback" aria-hidden="true">?</span>
+                  </span>
+                  <span v-if="item.amount > 1" class="steam-inv__qty">×{{ item.amount }}</span>
+                </button>
+              </div>
+            </transition>
           </div>
 
           <div v-if="selectMode" class="steam-inv__selection-bar">
@@ -202,7 +207,7 @@
               class="steam-inv__page-btn"
               :disabled="page <= 1"
               :aria-label="$t('bot-social-inventory-page-prev')"
-              @click="page -= 1"
+              @click="goToPage(page - 1)"
             >
               <FontAwesomeIcon icon="chevron-left"></FontAwesomeIcon>
             </button>
@@ -212,7 +217,7 @@
               class="steam-inv__page-btn"
               :disabled="page >= totalPages"
               :aria-label="$t('bot-social-inventory-page-next')"
-              @click="page += 1"
+              @click="goToPage(page + 1)"
             >
               <FontAwesomeIcon icon="chevron-right"></FontAwesomeIcon>
             </button>
@@ -352,6 +357,7 @@
         transferOpen: false,
         transferAssetIds: [],
         page: 1,
+        pageDirection: 'next',
         previewHdReady: false,
         loadToken: 0,
       };
@@ -445,6 +451,9 @@
       },
       selectedOnPage() {
         return this.pageItems.some(item => item.id === this.selectedId);
+      },
+      pageTransitionName() {
+        return this.pageDirection === 'prev' ? 'steam-inv-page-prev' : 'steam-inv-page-next';
       },
       selectedItem() {
         if (!this.selectedId) return null;
@@ -551,6 +560,15 @@
       onViewFiltersChanged() {
         this.page = 1;
         this.ensureSelectionInFilter();
+      },
+      goToPage(nextPage) {
+        const target = Number(nextPage);
+        if (!Number.isInteger(target) || target < 1 || target > this.totalPages || target === this.page) {
+          return;
+        }
+
+        this.pageDirection = target > this.page ? 'next' : 'prev';
+        this.page = target;
       },
       ensureSelectionInFilter() {
         if (!this.filteredItems.length) {

@@ -242,6 +242,7 @@ export default [
       arrows: true,
       closeRoute: routes.bots,
       feature: 'inventory',
+      modalSize: 'workspace-fixed',
     },
   },
   {
