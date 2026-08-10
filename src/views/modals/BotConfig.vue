@@ -5,9 +5,12 @@
       <h2 v-tooltip="displayTitle" class="title bot-config__title">{{ displayTitle }}</h2>
     </header>
 
-    <h3 v-if="loading" class="subtitle bot-config__loading">
-      <FontAwesomeIcon icon="spinner" size="lg" spin></FontAwesomeIcon>
-    </h3>
+    <AsfModalSkeleton
+      v-if="loading"
+      class="bot-config__skeleton"
+      variant="config"
+      :aria-label="$t('modal-loading')"
+    ></AsfModalSkeleton>
 
     <template v-else>
       <div class="bot-config__body">
@@ -49,6 +52,7 @@
 <script>
   import { mapGetters } from 'vuex';
   import ConfigEditor from '../../components/Config/Editor.vue';
+  import AsfModalSkeleton from '../../components/UI/ModalSkeleton.vue';
   import fetchConfigSchema from '../../utils/fetchConfigSchema';
   import loadParameterDescriptions from '../../utils/loadParameterDescriptions';
   import { downloadConfig } from '../../utils/download';
@@ -67,11 +71,12 @@
 
   export default {
     name: 'BotConfig',
-    components: { ConfigEditor },
+    components: { ConfigEditor, AsfModalSkeleton },
     mixins: [unsavedChangesMixin],
     data() {
       return {
-        loading: false,
+        loading: true,
+        loadSeq: 0,
         saving: false,
         fields: [],
         model: {},
@@ -116,8 +121,8 @@
     },
     methods: {
       async loadConfig() {
-        if (this.loading) return;
-
+        const seq = this.loadSeq + 1;
+        this.loadSeq = seq;
         this.loading = true;
         this.originalConfig = null;
 
@@ -131,6 +136,8 @@
             this.$http.get(`bot/${this.bot.name}`),
             loadParameterDescriptions(this.version, this.$i18n.locale),
           ]);
+
+          if (seq !== this.loadSeq) return;
 
           Object.keys(model).forEach(key => {
             if (key.startsWith('s_')) delete model[key.substr(2)];
@@ -189,9 +196,9 @@
 
           if (!this.displayCategories) this.fields = this.fields.sort((a, b) => a.paramName.localeCompare(b.paramName));
         } catch (err) {
-          this.$error(err.message);
+          if (seq === this.loadSeq) this.$error(err.message);
         } finally {
-          this.loading = false;
+          if (seq === this.loadSeq) this.loading = false;
         }
       },
       async onSave() {

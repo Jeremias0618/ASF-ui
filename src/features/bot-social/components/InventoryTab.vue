@@ -118,9 +118,8 @@
       </div>
     </section>
 
-    <div v-if="loading && !items.length" class="bot-social__state">
-      <FontAwesomeIcon icon="spinner" spin></FontAwesomeIcon>
-      <span>{{ $t('bot-social-loading') }}</span>
+    <div v-if="loading && !items.length" class="steam-inv__content-loading">
+      <InventorySkeleton></InventorySkeleton>
     </div>
     <div v-else-if="error && !items.length" class="bot-social__state bot-social__state--error">{{ error }}</div>
     <template v-else>
@@ -326,17 +325,18 @@
   import { prefetchInventoryPageIcons } from '../utils/prefetch-images';
   import TransferDialog from './transfer/dialog.vue';
   import TradeOffersPanel from './inventory/trade-offers-panel.vue';
+  import InventorySkeleton from './inventory/skeleton.vue';
 
   export default {
     name: 'BotSocialInventoryTab',
-    components: { TransferDialog, TradeOffersPanel },
+    components: { TransferDialog, TradeOffersPanel, InventorySkeleton },
     props: {
       botName: { type: String, required: true },
     },
     data() {
       return {
         panelMode: 'inventory',
-        loading: false,
+        loading: true,
         refreshing: false,
         transferring: false,
         error: '',
@@ -511,6 +511,8 @@
         this.statusFilter = 'all';
         this.previewHdReady = false;
         this.error = '';
+        this.loading = true;
+        this.items = [];
       },
       setPanelMode(mode) {
         if (mode === this.panelMode) return;
@@ -527,6 +529,7 @@
         });
         if (resolved.hasData) {
           this.items = sortInventoryItems(resolved.data);
+          this.loading = false;
           this.ensureSelectionInFilter();
           this.$emit('loaded', { total: this.items.length });
           this.warmNearbyIcons();

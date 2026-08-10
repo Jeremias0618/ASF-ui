@@ -50,6 +50,7 @@
   "bgr-used-keys-count": "{PLURAL:n|{n} usada|{n} usadas}",
   "bot-copy": "Copiar bot",
   "bot-config": "Configuración del bot",
+  "modal-loading": "Cargando…",
   "bot-permissions-select": "Seleccionar bot",
   "bot-create-name": "Debes introducir un nombre",
   "bot-create-name-asf": "No puedes nombrar tu bot como ASF",
