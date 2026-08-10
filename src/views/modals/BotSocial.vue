@@ -5,6 +5,7 @@
     :class="{
       'bot-social--inventory': feature === 'inventory',
       'bot-social--games': feature === 'games',
+      'bot-social--wishlist': feature === 'wishlist',
     }"
   >
     <header class="bot-social__header">
@@ -18,6 +19,7 @@
       :class="{
         'bot-social__body--inventory': feature === 'inventory',
         'bot-social__body--games': feature === 'games',
+        'bot-social__body--wishlist': feature === 'wishlist',
       }"
     >
       <InventoryTab

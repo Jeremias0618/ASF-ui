@@ -14,12 +14,12 @@ const PORTRAIT_ASSETS = [
   'capsule_231x87.jpg',
 ];
 
-/** Landscape / list banners. */
+/** Landscape store capsules (Steam store page / wishlist headers). */
 const LANDSCAPE_ASSETS = [
   'header.jpg',
-  'library_hero.jpg',
   'capsule_616x353.jpg',
   'capsule_231x87.jpg',
+  'library_hero.jpg',
   'library_600x900.jpg',
 ];
 

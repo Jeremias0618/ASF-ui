@@ -2471,6 +2471,211 @@
   }
 }
 
+.bot-social__body--wishlist {
+  display: flex;
+  flex-direction: column;
+  min-height: min(70dvh, 36rem);
+  overflow: hidden;
+}
+
+.bot-social--wishlist {
+  .bot-social__lead {
+    margin-bottom: 0;
+  }
+}
+
+.bot-social-tab--wishlist {
+  --games-ink: #c7d5e0;
+  --games-muted: #8f98a0;
+  --games-accent: #66c0f4;
+  --games-shelf: #0e141b;
+  --games-panel: #1b2838;
+  --wish-accent: #66c0f4;
+  --wish-ink: #c7d5e0;
+  flex: 1 1 auto;
+  gap: 0.75rem;
+  min-height: 0;
+}
+
+.wishlist-hub__filterbar {
+  grid-template-columns: minmax(12rem, 18rem) auto;
+  justify-content: start;
+
+  @media screen and (max-width: 560px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.wishlist-hub__tile {
+  min-width: 0;
+  position: relative;
+}
+
+.wishlist-hub__remove {
+  appearance: none;
+  align-items: center;
+  background: rgba(20, 10, 12, 0.9);
+  border: 1px solid rgba(255, 120, 120, 0.45);
+  border-radius: 0.28rem;
+  color: #ff8f8f;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 0.85rem;
+  height: 1.85rem;
+  justify-content: center;
+  opacity: 0;
+  position: absolute;
+  right: 0.35rem;
+  top: 0.35rem;
+  transition: opacity 0.15s ease, background 0.15s ease;
+  width: 1.85rem;
+  z-index: 2;
+
+  &:hover:not(:disabled),
+  &:focus-visible {
+    background: rgba(120, 28, 28, 0.92);
+    color: #fff;
+    opacity: 1;
+    outline: none;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.35;
+  }
+}
+
+.wishlist-hub__tile:hover .wishlist-hub__remove,
+.wishlist-hub__tile:focus-within .wishlist-hub__remove {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .wishlist-hub__remove {
+    opacity: 1;
+  }
+}
+
+.wishlist-hub__add {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0.65rem;
+  min-height: 0;
+  padding: 0.15rem 0.1rem;
+}
+
+.wishlist-hub__add-lead {
+  color: #8f98a0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.wishlist-hub__add-combo {
+  align-items: stretch;
+  background: #0e1621;
+  border: 1px solid #000;
+  border-radius: 0.2rem;
+  box-shadow:
+    inset 0 0 0 1px rgba(103, 140, 177, 0.22),
+    inset 0 1px 2px rgba(0, 0, 0, 0.45);
+  display: flex;
+  max-width: 36rem;
+  min-height: 2.45rem;
+  overflow: hidden;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  width: 100%;
+
+  &:focus-within {
+    border-color: rgba(102, 192, 244, 0.5);
+    box-shadow: 0 0 0 1px rgba(102, 192, 244, 0.18);
+  }
+}
+
+.wishlist-hub__add-icon {
+  align-self: center;
+  color: #67c1f5;
+  flex-shrink: 0;
+  font-size: 0.85rem;
+  margin-left: 0.75rem;
+}
+
+.wishlist-hub__add-input {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: var(--wish-ink);
+  flex: 1 1 auto;
+  font: inherit;
+  font-size: 0.88rem;
+  min-width: 0;
+  padding: 0.55rem 0.7rem;
+
+  &::placeholder {
+    color: #6b7785;
+  }
+
+  &:focus {
+    outline: none;
+  }
+
+  &:disabled {
+    opacity: 0.65;
+  }
+}
+
+.wishlist-hub__add-submit {
+  appearance: none;
+  align-items: center;
+  background: linear-gradient(180deg, #3d6c8d 0%, #2a475e 100%);
+  border: 0;
+  border-left: 1px solid rgba(103, 193, 245, 0.28);
+  color: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  justify-content: center;
+  min-width: 6.75rem;
+  padding: 0 1rem;
+  white-space: nowrap;
+
+  &:hover:not(:disabled) {
+    background: linear-gradient(180deg, #4a7fa3 0%, #355f7d 100%);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--wish-accent);
+    outline-offset: -2px;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+}
+
+@media (max-width: 28rem) {
+  .wishlist-hub__add-combo {
+    flex-direction: column;
+    max-width: none;
+  }
+
+  .wishlist-hub__add-icon {
+    display: none;
+  }
+
+  .wishlist-hub__add-submit {
+    border-left: 0;
+    border-top: 1px solid rgba(103, 193, 245, 0.28);
+    min-height: 2.35rem;
+    width: 100%;
+  }
+}
+
 .games-add {
   display: flex;
   flex: 1 1 auto;
