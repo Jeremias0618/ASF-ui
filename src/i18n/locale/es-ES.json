@@ -33,6 +33,9 @@
   "asf-bans-remove": "Eliminar bloqueo",
   "asf-bans-remove-all": "Eliminar todos los bloqueos",
   "back": "Atrás",
+  "modal-back-bot": "Volver al menú del bot",
+  "modal-close": "Cerrar",
+
   "basic": "Básico",
   "bgr-background-queue": "Hay {PLURAL:n|{n} juego restante|{n} juegos restantes} en la cola en segundo plano.",
   "bgr-check": "¿Deseas añadir {PLURAL:n|la siguiente clave|{n} las siguientes claves} al activador de juegos en segundo plano?",

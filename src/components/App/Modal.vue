@@ -1,23 +1,48 @@
 <template>
-  <transition name="modal" duration="200" appear>
-    <div v-if="isShown" class="modal">
-      <div class="modal__background" @click.self="close"></div>
-      <div class="modal__body">
-        <FontAwesomeIcon icon="times" class="modal__close" @click="close"></FontAwesomeIcon>
-        <FontAwesomeIcon v-if="showArrows" icon="chevron-left" class="modal__arrow left" @click="next('left')"></FontAwesomeIcon>
-        <FontAwesomeIcon v-if="showArrows" icon="chevron-right" class="modal__arrow right" @click="next('right')"></FontAwesomeIcon>
-        <div
-          class="modal__main"
-          :class="{
-            'modal__main--wide': isWide,
-            'modal__main--friends': isFriendsWide,
-            'modal__main--dialog': isDialog,
-            'modal__main--medium': isMedium,
-          }"
-        >
-          <router-view ref="modal" name="modal"></router-view>
+  <transition name="modal" :duration="MODAL_DURATION_MS" appear>
+    <div v-if="isShown" class="modal" role="dialog" aria-modal="true">
+      <div class="modal__background" aria-hidden="true"></div>
+
+      <transition name="modal-panel" :duration="MODAL_DURATION_MS" mode="out-in">
+        <div :key="modalTransitionKey" class="modal__body">
+          <button
+            v-if="showBackToBot"
+            type="button"
+            class="modal__back"
+            v-tooltip="$t('modal-back-bot')"
+            :aria-label="$t('modal-back-bot')"
+            @click="backToBot"
+          >
+            <FontAwesomeIcon icon="chevron-left" aria-hidden="true"></FontAwesomeIcon>
+            <span class="modal__back-text">{{ $t('back') }}</span>
+          </button>
+
+          <button
+            type="button"
+            class="modal__close"
+            v-tooltip="$t('modal-close')"
+            :aria-label="$t('modal-close')"
+            @click="close"
+          >
+            <FontAwesomeIcon icon="times" aria-hidden="true"></FontAwesomeIcon>
+          </button>
+
+          <FontAwesomeIcon v-if="showArrows" icon="chevron-left" class="modal__arrow left" @click="next('left')"></FontAwesomeIcon>
+          <FontAwesomeIcon v-if="showArrows" icon="chevron-right" class="modal__arrow right" @click="next('right')"></FontAwesomeIcon>
+
+          <div
+            class="modal__main"
+            :class="{
+              'modal__main--wide': isWide,
+              'modal__main--friends': isFriendsWide,
+              'modal__main--dialog': isDialog,
+              'modal__main--medium': isMedium,
+            }"
+          >
+            <router-view ref="modal" name="modal"></router-view>
+          </div>
         </div>
-      </div>
+      </transition>
     </div>
   </transition>
 </template>
@@ -25,6 +50,8 @@
 <script>
   import { mapGetters } from 'vuex';
   import { isBenignNavigationError } from '../../utils/unsaved-changes';
+
+  const MODAL_DURATION_MS = 220;
 
   const WIDE_MODAL_ROUTES = new Set([
     'bot-config',
@@ -43,7 +70,7 @@
     'bot-games',
   ]);
 
-      const DIALOG_MODAL_ROUTES = new Set([
+  const DIALOG_MODAL_ROUTES = new Set([
     'password-encrypt',
     'password-hash',
     'bot-delete',
@@ -56,12 +83,21 @@
 
   export default {
     name: 'Modal',
+    data() {
+      return {
+        MODAL_DURATION_MS,
+      };
+    },
     computed: {
       ...mapGetters({
         bots: 'bots/bots',
       }),
       isShown() {
         return !!this.$route.meta.modal;
+      },
+      /** Remount panel on each modal route so enter/leave runs when swapping views. */
+      modalTransitionKey() {
+        return this.$route.name || this.$route.path;
       },
       isWide() {
         return WIDE_MODAL_ROUTES.has(this.$route.name);
@@ -77,6 +113,11 @@
       },
       showArrows() {
         return !!this.$route.meta.arrows && this.bots.length > 1;
+      },
+      showBackToBot() {
+        const botName = this.$route.params?.bot;
+        if (!botName || this.$route.name === 'bot') return false;
+        return true;
       },
     },
     created() {
@@ -95,8 +136,10 @@
       close() {
         this.navigate({ name: this.$route.meta.closeRoute });
       },
-      back() {
-        this.navigate(this.$route.path.slice(0, this.$route.path.lastIndexOf('/')));
+      backToBot() {
+        const botName = this.$route.params?.bot;
+        if (!botName) return;
+        this.navigate({ name: 'bot', params: { bot: botName } });
       },
       onKeyPress(event) {
         // Ignore key presses when the modal is not visible
@@ -132,6 +175,9 @@
 </script>
 
 <style lang="scss">
+  $modal-duration: 220ms;
+  $modal-ease: cubic-bezier(0.16, 1, 0.3, 1);
+
   .modal {
     align-items: center;
     bottom: 0;
@@ -167,14 +213,12 @@
     position: fixed;
     right: 0;
     top: 0;
-    transition: background .2s linear;
   }
 
   .modal__body {
     max-height: 100%;
     max-width: 100%;
     position: relative;
-    transition: opacity .3s ease-out, transform .3s ease-out;
   }
 
   .modal__main {
@@ -233,14 +277,54 @@
     }
   }
 
+  .modal__back,
   .modal__close {
+    appearance: none;
+    background: transparent;
+    border: 0;
     color: var(--color-text-disabled);
     cursor: pointer;
-    font-size: 1.2em;
+    font: inherit;
+    line-height: 1;
+    padding: 0;
     position: absolute;
-    right: -1.5em;
     top: 0.25em;
     z-index: 30;
+
+    &:hover,
+    &:focus-visible {
+      color: var(--color-text);
+      outline: none;
+    }
+  }
+
+  .modal__back {
+    align-items: center;
+    display: inline-flex;
+    font-size: 0.95em;
+    gap: 0.35em;
+    left: 0;
+    transform: translateX(calc(-100% - 1rem));
+    white-space: nowrap;
+
+    @media screen and (max-width: 720px) {
+      background: rgba(0, 0, 0, 0.35);
+      border-radius: 999px;
+      left: 0.65rem;
+      padding: 0.4em 0.7em;
+      top: 0.65rem;
+      transform: none;
+    }
+  }
+
+  .modal__back-text {
+    font-size: 0.85em;
+    font-weight: 650;
+  }
+
+  .modal__close {
+    font-size: 1.2em;
+    right: -1.5em;
 
     @media screen and (max-width: 720px) {
       background: rgba(0, 0, 0, 0.35);
@@ -251,14 +335,70 @@
     }
   }
 
-  .modal-enter, .modal-leave-to {
+  /* Shell open/close: backdrop + panel together */
+  .modal-enter-active,
+  .modal-leave-active {
+    .modal__background {
+      transition: background $modal-duration ease;
+    }
+
+    .modal__body {
+      transition:
+        opacity $modal-duration $modal-ease,
+        transform $modal-duration $modal-ease;
+    }
+  }
+
+  .modal-enter,
+  .modal-leave-to {
     .modal__background {
       background: rgba(#000000, 0);
     }
 
     .modal__body {
       opacity: 0;
-      transform: scale(0.75);
+      transform: translateY(0.65rem) scale(0.96);
+    }
+  }
+
+  /* Route swap while modal stays open (config, inventory, …) */
+  .modal-panel-enter-active,
+  .modal-panel-leave-active {
+    transition:
+      opacity $modal-duration $modal-ease,
+      transform $modal-duration $modal-ease;
+  }
+
+  .modal-panel-enter,
+  .modal-panel-leave-to {
+    opacity: 0;
+    transform: translateY(0.65rem) scale(0.96);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .modal-enter-active,
+    .modal-leave-active {
+      .modal__background,
+      .modal__body {
+        transition: none;
+      }
+    }
+
+    .modal-enter,
+    .modal-leave-to {
+      .modal__body {
+        transform: none;
+      }
+    }
+
+    .modal-panel-enter-active,
+    .modal-panel-leave-active {
+      transition: none;
+    }
+
+    .modal-panel-enter,
+    .modal-panel-leave-to {
+      transform: none;
     }
   }
 

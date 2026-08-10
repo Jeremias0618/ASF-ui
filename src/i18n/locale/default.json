@@ -33,6 +33,9 @@
   "asf-bans-remove": "Remove ban",
   "asf-bans-remove-all": "Remove all bans",
   "back": "Back",
+  "modal-back-bot": "Back to bot menu",
+  "modal-close": "Close",
+
   "basic": "Basic",
   "bgr-background-queue": "There {PLURAL:n|is {n} game|are {n} games} remaining in the background queue.",
   "bgr-check": "Do you want to add the following {PLURAL:n|key|{n} keys} to BGR?",
