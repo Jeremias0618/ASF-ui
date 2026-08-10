@@ -3397,10 +3397,30 @@
   text-transform: uppercase;
 }
 
+.games-idle__meta {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.55rem;
+  margin: 0;
+}
+
 .games-idle__appid {
   color: var(--idle-muted);
   font-size: 0.72rem;
   margin: 0;
+}
+
+.games-idle__achievements {
+  color: #9ec8e6;
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+
+  &.is-complete {
+    color: #7dffb3;
+  }
 }
 
 .games-idle__row-actions {
@@ -3437,6 +3457,12 @@
     background: rgba(190, 238, 17, 0.1);
     border: 1px solid rgba(190, 238, 17, 0.45);
     color: #beee11;
+  }
+
+  &--promote {
+    background: rgba(102, 192, 244, 0.1);
+    border: 1px solid rgba(102, 192, 244, 0.42);
+    color: #66c0f4;
   }
 
   &--remove {

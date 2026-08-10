@@ -128,9 +128,28 @@
                     class="games-idle__shared-badge"
                   >{{ $t('bot-social-games-badge-shared') }}</span>
                 </p>
-                <p class="games-idle__appid">AppID {{ entry.appId }}</p>
+                <p class="games-idle__meta">
+                  <span class="games-idle__appid">AppID {{ entry.appId }}</span>
+                  <span
+                    v-if="entry.achievementsLabel"
+                    class="games-idle__achievements"
+                    :class="{ 'is-complete': entry.achievementsComplete }"
+                    :title="$t('bot-social-games-stats-achievements')"
+                  >{{ entry.achievementsLabel }}</span>
+                </p>
               </div>
               <div class="games-idle__row-actions">
+                <button
+                  v-if="index > 0"
+                  type="button"
+                  class="games-idle__icon-btn games-idle__icon-btn--promote"
+                  :disabled="saving || suggesting"
+                  :aria-label="$t('bot-social-games-idle-promote-aria', { name: entry.name })"
+                  :title="$t('bot-social-games-idle-promote')"
+                  @click="promoteToFirst(index)"
+                >
+                  <FontAwesomeIcon icon="angle-double-up" aria-hidden="true"></FontAwesomeIcon>
+                </button>
                 <button
                   v-if="canSwapBooster"
                   type="button"
@@ -243,6 +262,7 @@
   import {
     fetchIdleGamesConfig, MAX_IDLE_GAMES, saveIdleGames,
   } from '../../api/idle-games';
+  import { loadGameStats } from '../../cache/bot-social-queries';
   import CoverImage from './cover-image.vue';
 
   function unwrapBotPayload(result, botName) {
@@ -284,6 +304,7 @@
         boosterPool: [],
         dragIndex: -1,
         dropIndex: -1,
+        statsById: {},
       };
     },
     computed: {
@@ -319,12 +340,20 @@
       idleEntries() {
         return this.idleAppIds.map(appId => {
           const game = this.gamesById.get(appId);
-          const name = game?.name || this.$t('bot-social-games-idle-unknown', { appId });
+          const stats = this.statsById[appId];
+          const name = game?.name || stats?.name || this.$t('bot-social-games-idle-unknown', { appId });
+          const total = Number(stats?.achievementsTotal);
+          const unlocked = Number(stats?.achievementsUnlocked);
+          const hasAchievements = Number.isFinite(total) && total > 0;
           return {
             appId,
             name,
-            isOwned: !!game?.isOwned,
-            isShared: !!game?.isShared,
+            isOwned: !!game?.isOwned || !!stats?.isOwned,
+            isShared: !!game?.isShared || !!stats?.isShared,
+            achievementsLabel: hasAchievements
+              ? `${Number.isFinite(unlocked) ? unlocked : 0}/${total}`
+              : '',
+            achievementsComplete: hasAchievements && unlocked >= total,
           };
         });
       },
@@ -361,7 +390,10 @@
         this.loading = true;
         this.error = '';
         try {
-          const { idleAppIds } = await fetchIdleGamesConfig(this.botName);
+          const [{ idleAppIds }] = await Promise.all([
+            fetchIdleGamesConfig(this.botName),
+            this.loadAchievementStats(),
+          ]);
           this.idleAppIds = [...idleAppIds];
           this.savedIdleAppIds = [...idleAppIds];
           this.loaded = true;
@@ -370,6 +402,26 @@
           else this.$error(err.message || String(err));
         } finally {
           this.loading = false;
+        }
+      },
+      async loadAchievementStats() {
+        try {
+          const result = await loadGameStats(this.botName, { force: false });
+          const games = result?.data?.games || [];
+          const map = {};
+          games.forEach((game) => {
+            const id = Number(game?.appId);
+            if (!Number.isInteger(id) || id <= 0) return;
+            map[id] = game;
+          });
+          this.statsById = map;
+        } catch (err) {
+          if (isPluginMissingError(err)) {
+            this.$emit('plugin-missing');
+            return;
+          }
+          // Keep idle list usable even if stats fail.
+          this.statsById = {};
         }
       },
       addGame(appId) {
@@ -386,6 +438,15 @@
         const id = Number(appId);
         if (!Number.isInteger(id) || id <= 0 || this.saving) return;
         this.idleAppIds = this.idleAppIds.filter(entry => entry !== id);
+      },
+      promoteToFirst(index) {
+        if (this.saving || this.suggesting) return;
+        const from = Number(index);
+        if (!Number.isInteger(from) || from <= 0 || from >= this.idleAppIds.length) return;
+        const next = [...this.idleAppIds];
+        const [moved] = next.splice(from, 1);
+        next.unshift(moved);
+        this.idleAppIds = next;
       },
       clearAll() {
         if (this.saving || this.suggesting || !this.idleAppIds.length) return;
