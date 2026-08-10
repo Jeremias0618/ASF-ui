@@ -1,27 +1,11 @@
 <template>
-  <section class="friends-hub__compose community-hub__followers" :aria-label="$t('bot-social-community-followers-title')">
+  <section class="friends-hub__compose" :aria-label="$t('bot-social-community-followers-title')">
     <div class="friends-hub__compose-panel">
       <header class="friends-hub__compose-header">
         <p class="friends-hub__compose-eyebrow">{{ $t('bot-social-community-mode-followers') }}</p>
         <h3 class="friends-hub__compose-title">{{ $t('bot-social-community-followers-title') }}</h3>
         <p class="friends-hub__compose-lead">{{ $t('bot-social-community-followers-lead') }}</p>
       </header>
-
-      <div class="community-hub__followers-stat" aria-live="polite">
-        <span class="community-hub__followers-stat-label">{{ $t('bot-social-community-followers-count-label') }}</span>
-        <strong class="community-hub__followers-stat-value">{{ countLabel }}</strong>
-        <button
-          type="button"
-          class="community-hub__refresh"
-          :disabled="loadingCount || refreshingCount"
-          @click="refreshCount"
-        >
-          <FontAwesomeIcon :icon="loadingCount || refreshingCount ? 'spinner' : 'redo-alt'" :spin="loadingCount || refreshingCount"></FontAwesomeIcon>
-          {{ $t('bot-social-refresh') }}
-        </button>
-      </div>
-
-      <p v-if="countError" class="bot-social__inline-error">{{ countError }}</p>
 
       <form class="friends-hub__compose-form" @submit.prevent="onFollow">
         <label class="friends-hub__field-label" for="community-follow-target">
@@ -62,7 +46,7 @@
 </template>
 
 <script>
-  import { fetchFollowersCount, followUsers, isPluginMissingError } from '../../api/bot-social';
+  import { followUsers, isPluginMissingError } from '../../api/bot-social';
   import { normalizeFriendTarget } from '../../utils/friend-target';
 
   export default {
@@ -74,30 +58,12 @@
       return {
         followTarget: '',
         mutating: false,
-        loadingCount: false,
-        refreshingCount: false,
-        hasLoadedCount: false,
-        followerCount: null,
-        countError: '',
       };
     },
-    computed: {
-      countLabel() {
-        if (this.loadingCount && !this.hasLoadedCount) return '…';
-        if (this.followerCount == null) return this.$t('bot-social-community-unavailable');
-        return Number(this.followerCount).toLocaleString(this.$i18n.locale);
-      },
-    },
     watch: {
-      botName: {
-        immediate: true,
-        handler() {
-          this.followTarget = '';
-          this.mutating = false;
-          this.hasLoadedCount = false;
-          this.followerCount = null;
-          this.loadCount(false);
-        },
+      botName() {
+        this.followTarget = '';
+        this.mutating = false;
       },
     },
     methods: {
@@ -114,38 +80,6 @@
         if (Array.isArray(botResult)) return botResult[0] || null;
         const list = botResult.Results || botResult.results;
         return Array.isArray(list) ? (list[0] || null) : null;
-      },
-      async refreshCount() {
-        if (this.loadingCount || this.refreshingCount) return;
-        await this.loadCount(true);
-      },
-      async loadCount(force) {
-        if (!this.botName) return;
-        const first = !this.hasLoadedCount;
-        this.loadingCount = first;
-        this.refreshingCount = !first && !!force;
-        this.countError = '';
-
-        try {
-          const payload = await fetchFollowersCount(this.botName);
-          const botResult = payload?.[this.botName]
-            || payload?.[Object.keys(payload || {}).find(k => k.toLowerCase() === String(this.botName || '').toLowerCase())]
-            || payload?.[Object.keys(payload || {})[0]];
-          const count = botResult?.Count ?? botResult?.count;
-          this.followerCount = count == null ? null : Number(count);
-          this.hasLoadedCount = true;
-        } catch (err) {
-          if (isPluginMissingError(err)) {
-            this.$emit('plugin-missing');
-            return;
-          }
-          this.countError = err.message || String(err);
-          if (!this.hasLoadedCount) this.followerCount = null;
-          this.hasLoadedCount = true;
-        } finally {
-          this.loadingCount = false;
-          this.refreshingCount = false;
-        }
       },
       async onFollow() {
         if (this.mutating) return;
@@ -165,7 +99,6 @@
           }
           this.$success(this.$t('bot-social-community-followers-success', { target }));
           this.followTarget = '';
-          await this.loadCount(true);
         } catch (err) {
           if (isPluginMissingError(err)) this.$emit('plugin-missing');
           else this.$error(err.message || String(err));

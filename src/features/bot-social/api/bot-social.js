@@ -60,6 +60,20 @@ export function followCurators(botName, targets) {
   return post(`${socialBase(botName)}/Curators/Follow`, { Targets: targets });
 }
 
+/** Vote on a Steam review URL: vote = yes | no | funny */
+export function voteReview(botName, { url, vote }) {
+  return post(`${socialBase(botName)}/Reviews/Vote`, { Url: url, Vote: vote });
+}
+
+/** Vote and/or favorite a shared file: vote = like | dislike | null */
+export function actSharedFile(botName, { url, vote, favorite }) {
+  return post(`${socialBase(botName)}/SharedFiles/Act`, {
+    Url: url,
+    Vote: vote || null,
+    Favorite: !!favorite,
+  });
+}
+
 export function fetchGames(botName) {
   return get(`${socialBase(botName)}/Games`);
 }

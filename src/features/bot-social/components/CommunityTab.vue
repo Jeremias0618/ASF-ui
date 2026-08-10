@@ -48,6 +48,28 @@
           <FontAwesomeIcon icon="star" aria-hidden="true"></FontAwesomeIcon>
           {{ $t('bot-social-community-mode-curators') }}
         </button>
+        <button
+          type="button"
+          role="tab"
+          class="friends-hub__mode"
+          :class="{ 'is-active': panelMode === 'reviews' }"
+          :aria-selected="panelMode === 'reviews' ? 'true' : 'false'"
+          @click="setPanelMode('reviews')"
+        >
+          <FontAwesomeIcon icon="comments" aria-hidden="true"></FontAwesomeIcon>
+          {{ $t('bot-social-community-mode-reviews') }}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          class="friends-hub__mode"
+          :class="{ 'is-active': panelMode === 'shared' }"
+          :aria-selected="panelMode === 'shared' ? 'true' : 'false'"
+          @click="setPanelMode('shared')"
+        >
+          <FontAwesomeIcon icon="clone" aria-hidden="true"></FontAwesomeIcon>
+          {{ $t('bot-social-community-mode-shared') }}
+        </button>
       </div>
 
       <GroupsPanel
@@ -67,6 +89,18 @@
         :bot-name="botName"
         @plugin-missing="$emit('plugin-missing')"
       ></CuratorsPanel>
+
+      <ReviewsPanel
+        v-else-if="panelMode === 'reviews'"
+        :bot-name="botName"
+        @plugin-missing="$emit('plugin-missing')"
+      ></ReviewsPanel>
+
+      <SharedPanel
+        v-else-if="panelMode === 'shared'"
+        :bot-name="botName"
+        @plugin-missing="$emit('plugin-missing')"
+      ></SharedPanel>
 
       <template v-else>
         <div class="community-hub__toolbar">
@@ -138,12 +172,14 @@
   import CuratorsPanel from './community/curators-panel.vue';
   import FollowersPanel from './community/followers-panel.vue';
   import GroupsPanel from './community/groups-panel.vue';
+  import ReviewsPanel from './community/reviews-panel.vue';
+  import SharedPanel from './community/shared-panel.vue';
   import PluginMissing from './PluginMissing.vue';
 
   export default {
     name: 'BotSocialCommunityTab',
     components: {
-      CuratorsPanel, FollowersPanel, GroupsPanel, PluginMissing,
+      CuratorsPanel, FollowersPanel, GroupsPanel, ReviewsPanel, SharedPanel, PluginMissing,
     },
     props: {
       botName: { type: String, required: true },
