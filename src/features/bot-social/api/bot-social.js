@@ -126,6 +126,11 @@ export function addWishlist(botName, appIds) {
   return post(`${socialBase(botName)}/Wishlist/Add`, { AppIds: appIds });
 }
 
+/** Add store app to wishlist and follow it (skips actions already done). */
+export function followAndWishlist(botName, url) {
+  return post(`${socialBase(botName)}/Wishlist/FollowAndAdd`, { Url: url });
+}
+
 export function removeWishlist(botName, appIds) {
   return post(`${socialBase(botName)}/Wishlist/Remove`, { AppIds: appIds });
 }

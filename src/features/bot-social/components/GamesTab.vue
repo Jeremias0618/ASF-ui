@@ -53,6 +53,17 @@
             type="button"
             role="tab"
             class="bot-social-games__view"
+            :class="{ 'is-active': panelMode === 'wishlist' }"
+            :aria-selected="panelMode === 'wishlist' ? 'true' : 'false'"
+            @click="setPanelMode('wishlist')"
+          >
+            <FontAwesomeIcon icon="heart" aria-hidden="true"></FontAwesomeIcon>
+            {{ $t('bot-social-games-view-wishlist') }}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            class="bot-social-games__view"
             :class="{ 'is-active': panelMode === 'add' }"
             :aria-selected="panelMode === 'add' ? 'true' : 'false'"
             @click="setPanelMode('add')"
@@ -178,6 +189,12 @@
         @added="onGameAdded"
       ></AddPanel>
 
+      <WishlistPanel
+        v-else-if="panelMode === 'wishlist'"
+        :bot-name="botName"
+        @plugin-missing="$emit('plugin-missing')"
+      ></WishlistPanel>
+
       <StatsPanel
         v-show="panelMode === 'stats'"
         v-if="statsMounted"
@@ -239,10 +256,11 @@
   import CoverTile from './games/cover-tile.vue';
   import IdlePanel from './games/idle-panel.vue';
   import StatsPanel from './games/stats-panel.vue';
+  import WishlistPanel from './games/wishlist-panel.vue';
   import PluginMissing from './PluginMissing.vue';
 
   const PANEL_STORAGE_KEY = 'asf-bot-social-games-panel';
-  const PANEL_MODES = new Set(['library', 'banner', 'stats', 'idle', 'add']);
+  const PANEL_MODES = new Set(['library', 'banner', 'stats', 'idle', 'wishlist', 'add']);
   const TYPE_ORDER = ['game', 'dlc', 'demo', 'application', 'tool', 'beta', 'video', 'music', 'other'];
   const TYPE_LABEL_KEYS = {
     game: 'bot-social-games-filter-type-game',
@@ -276,7 +294,7 @@
   export default {
     name: 'BotSocialGamesTab',
     components: {
-      AddPanel, CoverTile, IdlePanel, StatsPanel, PluginMissing,
+      AddPanel, CoverTile, IdlePanel, StatsPanel, WishlistPanel, PluginMissing,
     },
     props: {
       botName: { type: String, required: true },
