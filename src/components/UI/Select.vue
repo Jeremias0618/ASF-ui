@@ -51,7 +51,18 @@
         <span class="asf-select__value">{{ displayLabel }}</span>
       </button>
 
-      <FontAwesomeIcon class="asf-select__chevron" icon="angle-down" aria-hidden="true"></FontAwesomeIcon>
+      <button
+        type="button"
+        class="asf-select__chevron-btn"
+        :disabled="disabled"
+        :aria-label="chevronAriaLabel"
+        :aria-expanded="open ? 'true' : 'false'"
+        :aria-controls="listId"
+        tabindex="-1"
+        @click.stop="onChevronClick"
+      >
+        <FontAwesomeIcon class="asf-select__chevron" icon="angle-down" aria-hidden="true"></FontAwesomeIcon>
+      </button>
     </div>
 
     <transition name="asf-select">
@@ -200,6 +211,11 @@
         if (this.activeIndex < 0 || !this.visibleOptions[this.activeIndex]) return undefined;
         return this.optionId(this.activeIndex);
       },
+      chevronAriaLabel() {
+        return this.open
+          ? this.$t('input-select-collapse')
+          : this.$t('input-select-expand');
+      },
     },
     watch: {
       open(isOpen) {
@@ -245,13 +261,33 @@
       close() {
         this.open = false;
       },
-      onTriggerClick() {
+      onChevronClick() {
         if (this.disabled) return;
+        if (this.open) {
+          this.close();
+          this.$nextTick(() => {
+            if (this.searchable && this.$refs.search) this.$refs.search.blur();
+            else if (this.$refs.trigger) this.$refs.trigger.focus();
+          });
+          return;
+        }
+        this.openSelect();
+        this.$nextTick(() => {
+          if (this.searchable && this.$refs.search) this.$refs.search.focus();
+          else if (this.$refs.trigger) this.$refs.trigger.focus();
+        });
+      },
+      onTriggerClick(event) {
+        if (this.disabled) return;
+        // Chevron has its own handler; ignore bubbled clicks.
+        if (event?.target?.closest?.('.asf-select__chevron-btn')) return;
         if (this.searchable) {
+          // Field click opens for typing; closing is via chevron, option, Escape, or outside.
           this.openSelect();
           this.$nextTick(() => this.$refs.search?.focus());
           return;
         }
+        // Non-searchable: value button uses @click.stop="toggle"; padding still toggles here.
         this.toggle();
       },
       onInlineFocus() {
@@ -493,10 +529,39 @@
     white-space: nowrap;
   }
 
+  .asf-select__chevron-btn {
+    appearance: none;
+    align-items: center;
+    background: transparent;
+    border: 0;
+    color: inherit;
+    cursor: pointer;
+    display: inline-flex;
+    flex-shrink: 0;
+    justify-content: center;
+    margin: 0;
+    padding: 0.15rem;
+    border-radius: 0.25rem;
+
+    &:disabled {
+      cursor: not-allowed;
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--h2-brand, var(--color-theme));
+      outline-offset: 1px;
+    }
+
+    .asf-select.is-disabled & {
+      cursor: not-allowed;
+    }
+  }
+
   .asf-select__chevron {
     color: var(--h2-muted, var(--color-text-disabled));
     flex-shrink: 0;
     font-size: 0.8rem;
+    pointer-events: none;
     transition: transform 0.18s ease;
 
     .asf-select.is-open & {

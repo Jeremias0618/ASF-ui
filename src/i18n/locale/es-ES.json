@@ -819,6 +819,8 @@
   "input-select-enum-value": "Seleccionar opción",
   "input-select-search-options": "Filtrar opciones…",
   "input-select-no-options": "Sin opciones coincidentes",
+  "input-select-expand": "Abrir opciones",
+  "input-select-collapse": "Cerrar opciones",
   "input-submit": "Enviar",
   "input-switch-show": "Mostrar contraseña",
   "input-switch-hide": "Ocultar contraseña",
