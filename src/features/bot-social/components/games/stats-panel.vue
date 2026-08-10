@@ -120,6 +120,22 @@
         >
           {{ $t('bot-social-games-filter-achievements-yes') }}
         </button>
+        <button
+          type="button"
+          class="games-stats__filter"
+          :class="{ 'is-active': cardsFilter === 'yes' }"
+          @click="setCardsFilter('yes')"
+        >
+          {{ $t('bot-social-games-filter-cards-yes') }}
+        </button>
+        <button
+          type="button"
+          class="games-stats__filter"
+          :class="{ 'is-active': cardsFilter === 'no' }"
+          @click="setCardsFilter('no')"
+        >
+          {{ $t('bot-social-games-filter-cards-no') }}
+        </button>
       </div>
 
       <div v-if="!filteredGames.length" class="bot-social__state">{{ $t('bot-social-games-empty') }}</div>
@@ -209,6 +225,7 @@
         sortBy: 'playtime',
         ownershipFilter: 'all',
         achievementsFilter: 'all',
+        cardsFilter: 'all',
         summary: emptySummary(),
         games: [],
         selectedGame: null,
@@ -229,6 +246,11 @@
         }
         if (this.achievementsFilter === 'yes') {
           list = list.filter(g => this.hasAchievements(g));
+        }
+        if (this.cardsFilter === 'yes') {
+          list = list.filter(g => g.hasCards);
+        } else if (this.cardsFilter === 'no') {
+          list = list.filter(g => !g.hasCards);
         }
         const sorted = [...list];
         if (this.sortBy === 'name') {
@@ -258,6 +280,9 @@
       },
     },
     methods: {
+      setCardsFilter(value) {
+        this.cardsFilter = this.cardsFilter === value ? 'all' : value;
+      },
       hasAchievements(game) {
         return Number(game?.achievementsTotal) > 0;
       },
@@ -283,10 +308,12 @@
       },
       bootstrap() {
         this.selectedGame = null;
+        this.cardsFilter = 'all';
         const resolved = resolveLocalData({
           resource: 'gameStats',
           botName: this.botName,
-          isUsable: data => Array.isArray(data?.games),
+          isUsable: data => Array.isArray(data?.games)
+            && data.games.every(g => typeof g.hasCards === 'boolean'),
         });
         if (resolved.hasData) {
           this.applyPayload(resolved.data);

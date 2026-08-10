@@ -144,6 +144,7 @@ export function loadGameStats(botName, { force = false } = {}) {
           achievementsTotal: raw.AchievementsTotal ?? raw.achievementsTotal ?? null,
           isOwned: raw.IsOwned ?? raw.isOwned ?? true,
           isShared: Boolean(raw.IsShared ?? raw.isShared),
+          hasCards: Boolean(raw.HasCards ?? raw.hasCards),
         };
       }).filter(game => game.appId > 0);
 
