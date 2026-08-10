@@ -22,6 +22,7 @@
         <BotLink v-tooltip="$t('bot-fav-buttons-config')" icon="wrench" :link="{ name: 'bot-config', params: { bot: bot.name } }"></BotLink>
         <BotLink v-tooltip="$t('bot-fav-buttons-inventory')" icon="boxes" :link="{ name: 'bot-inventory', params: { bot: bot.name } }"></BotLink>
         <BotLink v-tooltip="$t('bot-fav-buttons-friends')" icon="users" :link="{ name: 'bot-friends', params: { bot: bot.name } }"></BotLink>
+        <BotLink v-tooltip="$t('bot-fav-buttons-community')" icon="globe" :link="{ name: 'bot-community', params: { bot: bot.name } }"></BotLink>
         <BotLink v-tooltip="$t('bot-fav-buttons-games')" icon="gamepad" :link="{ name: 'bot-games', params: { bot: bot.name } }"></BotLink>
         <BotLink v-tooltip="$t('bot-fav-buttons-wishlist')" icon="heart" :link="{ name: 'bot-wishlist', params: { bot: bot.name } }"></BotLink>
         <BotLink v-tooltip="$t('bot-fav-buttons-bgr')" icon="key" :link="{ name: 'bot-bgr', params: { bot: bot.name } }"></BotLink>

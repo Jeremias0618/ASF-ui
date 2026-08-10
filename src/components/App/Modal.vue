@@ -32,12 +32,14 @@
     'bot-copy',
     'bot-inventory',
     'bot-friends',
+    'bot-community',
     'bot-games',
     'bot-wishlist',
   ]);
 
   const FRIENDS_WIDE_MODAL_ROUTES = new Set([
     'bot-friends',
+    'bot-community',
     'bot-games',
   ]);
 

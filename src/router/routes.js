@@ -14,6 +14,7 @@ const routes = {
   botDelete: 'bot-delete',
   botInput: 'bot-input',
   botFriends: 'bot-friends',
+  botCommunity: 'bot-community',
   botGames: 'bot-games',
   botInventory: 'bot-inventory',
   botSocial: 'bot-social',
@@ -255,6 +256,20 @@ export default [
       arrows: true,
       closeRoute: routes.bots,
       feature: 'friends',
+    },
+  },
+  {
+    path: '/bot/:bot/community',
+    name: routes.botCommunity,
+    components: {
+      default: () => import('../views/Bots.vue'),
+      modal: () => import('../views/modals/BotSocial.vue'),
+    },
+    meta: {
+      modal: true,
+      arrows: true,
+      closeRoute: routes.bots,
+      feature: 'community',
     },
   },
   {

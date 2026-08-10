@@ -23,6 +23,11 @@ export function fetchSocialStatus(botName) {
   return get(`${socialBase(botName)}/Status`);
 }
 
+/** Steam Points (loyalty) balance for the bot profile modal. */
+export function fetchSteamPoints(botName) {
+  return get(`${socialBase(botName)}/Points`);
+}
+
 export function fetchFriends(botName) {
   return get(`${socialBase(botName)}/Friends`);
 }

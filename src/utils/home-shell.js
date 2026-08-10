@@ -12,6 +12,7 @@ export const HOME2_SHELL_ROUTES = new Set([
   'bot-social',
   'bot-inventory',
   'bot-friends',
+  'bot-community',
   'bot-games',
   'bot-wishlist',
   'bot-bgr',

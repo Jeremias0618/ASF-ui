@@ -3690,3 +3690,143 @@
     color: #beee11;
   }
 }
+
+.community-hub {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  min-height: 12rem;
+}
+
+.community-hub__toolbar {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  justify-content: space-between;
+}
+
+.community-hub__hint {
+  color: #8f98a0;
+  flex: 1 1 14rem;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.community-hub__refresh {
+  appearance: none;
+  background: rgba(102, 192, 244, 0.08);
+  border: 1px solid rgba(102, 192, 244, 0.28);
+  border-radius: 0.25rem;
+  color: #66c0f4;
+  cursor: pointer;
+  display: inline-flex;
+  gap: 0.4rem;
+  align-items: center;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 0.4rem 0.75rem;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+}
+
+.community-hub__section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.community-hub__section-title {
+  color: #66c0f4;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.community-hub__grid,
+.community-hub__skeleton {
+  display: grid;
+  gap: 0.55rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  @media screen and (max-width: 640px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.community-hub__card {
+  align-items: flex-start;
+  background: rgba(15, 24, 34, 0.92);
+  border: 1px solid rgba(102, 192, 244, 0.14);
+  border-radius: 0.35rem;
+  display: flex;
+  gap: 0.7rem;
+  padding: 0.75rem 0.85rem;
+}
+
+.community-hub__card-icon {
+  align-items: center;
+  background: rgba(102, 192, 244, 0.1);
+  border-radius: 0.25rem;
+  color: #66c0f4;
+  display: inline-flex;
+  flex-shrink: 0;
+  font-size: 0.9rem;
+  height: 2rem;
+  justify-content: center;
+  width: 2rem;
+}
+
+.community-hub__card-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.community-hub__card-label {
+  color: #8f98a0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.community-hub__card-value {
+  color: #fff;
+  font-size: 0.92rem;
+  font-weight: 650;
+  line-height: 1.3;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.community-hub__link {
+  color: #66c0f4;
+  text-decoration: none;
+
+  &:hover,
+  &:focus-visible {
+    text-decoration: underline;
+  }
+}
+
+.community-hub__skel-card {
+  animation: friends-skel 1.2s ease-in-out infinite;
+  background: rgba(15, 24, 34, 0.92);
+  border-radius: 0.35rem;
+  height: 4.1rem;
+}

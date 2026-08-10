@@ -31,6 +31,12 @@
         :plugin-missing="pluginMissing"
         @plugin-missing="pluginMissing = true"
       ></FriendsTab>
+      <CommunityTab
+        v-else-if="feature === 'community'"
+        :bot-name="bot.name"
+        :plugin-missing="pluginMissing"
+        @plugin-missing="pluginMissing = true"
+      ></CommunityTab>
       <GamesTab
         v-else-if="feature === 'games'"
         :bot-name="bot.name"
@@ -49,18 +55,19 @@
 
 <script>
   import FriendsTab from '../../features/bot-social/components/FriendsTab.vue';
+  import CommunityTab from '../../features/bot-social/components/CommunityTab.vue';
   import GamesTab from '../../features/bot-social/components/GamesTab.vue';
   import InventoryTab from '../../features/bot-social/components/InventoryTab.vue';
   import WishlistTab from '../../features/bot-social/components/WishlistTab.vue';
   import { isPluginMissingError } from '../../features/bot-social/api/bot-social';
   import { loadStatus } from '../../features/bot-social/cache/bot-social-queries';
 
-  const FEATURES = new Set(['inventory', 'friends', 'games', 'wishlist']);
+  const FEATURES = new Set(['inventory', 'friends', 'community', 'games', 'wishlist']);
 
   export default {
     name: 'BotSocial',
     components: {
-      InventoryTab, FriendsTab, GamesTab, WishlistTab,
+      InventoryTab, FriendsTab, CommunityTab, GamesTab, WishlistTab,
     },
     data() {
       return {

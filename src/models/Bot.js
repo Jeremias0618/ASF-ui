@@ -22,6 +22,9 @@ export class Bot {
     this.walletCurrency = data.WalletCurrency;
     this.has2FA = data.HasMobileAuthenticator;
     this.requiredInput = data.RequiredInput;
+    this.accountFlags = data.AccountFlags ?? 0;
+    this.publicIP = data.PublicIP || null;
+    this.isPlayingPossible = data.IsPlayingPossible !== false;
 
     this.active = data.KeepRunning;
     this.config = data.BotConfig;
