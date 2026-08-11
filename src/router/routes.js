@@ -20,6 +20,7 @@ const routes = {
   botSocial: 'bot-social',
   botWishlist: 'bot-wishlist',
   bots: 'bots',
+  bulkActions: 'bulk-actions',
   commands: 'commands',
   configuration: 'configuration',
   home: 'home',
@@ -330,6 +331,11 @@ export default [
     path: '/commands',
     name: routes.commands,
     component: () => import('../views/Commands.vue'),
+  },
+  {
+    path: '/bulk-actions',
+    name: routes.bulkActions,
+    component: () => import('../views/BulkActions.vue'),
   },
   {
     path: '/configuration',

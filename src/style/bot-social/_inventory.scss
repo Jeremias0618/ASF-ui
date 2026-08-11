@@ -289,12 +289,13 @@
   grid-template-rows: repeat(5, minmax(0, 1fr));
   height: 100%;
   min-height: 18rem;
-  overflow: auto;
+  overflow: hidden;
   width: 100%;
 
   @media screen and (max-width: 520px) {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     grid-template-rows: none;
+    overflow: auto;
   }
 }
 
@@ -347,16 +348,24 @@
 
 .steam-inv__cell {
   appearance: none;
+  align-self: center;
   aspect-ratio: 1;
   background: var(--steam-inv-cell);
   border: 2px solid transparent;
   box-shadow: inset 0 0 0 1px var(--steam-inv-cell-ring);
   color: inherit;
   cursor: pointer;
+  height: auto;
+  justify-self: center;
   margin: 0;
+  max-height: 100%;
+  max-width: 100%;
+  min-height: 0;
+  min-width: 0;
   padding: 0;
   position: relative;
   transition: border-color 0.12s ease, box-shadow 0.12s ease;
+  width: 100%;
 
   &:hover {
     border-color: color-mix(in srgb, var(--steam-inv-select) 45%, transparent);

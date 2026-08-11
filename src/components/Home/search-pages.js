@@ -15,6 +15,13 @@ export const SEARCH_PAGES = [
     keywords: 'bots accounts',
   },
   {
+    route: 'bulk-actions',
+    labelKey: 'bulk-actions',
+    descKey: 'home2-search-desc-bulk-actions',
+    icon: 'layer-group',
+    keywords: 'bulk actions acciones lote social inventory friends',
+  },
+  {
     route: 'commands',
     labelKey: 'commands',
     descKey: 'home2-search-desc-commands',

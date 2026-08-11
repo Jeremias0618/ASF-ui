@@ -22,6 +22,7 @@ export const HOME2_SHELL_ROUTES = new Set([
   'password-encrypt',
   'password-hash',
   'commands',
+  'bulk-actions',
   'configuration',
   'log',
   'plugins',

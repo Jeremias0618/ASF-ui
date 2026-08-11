@@ -157,6 +157,7 @@
       items: [
         { route: 'home', labelKey: 'home2-nav-dashboard', icon: 'home' },
         { route: 'bots', labelKey: 'bots', icon: 'users' },
+        { route: 'bulk-actions', labelKey: 'bulk-actions', icon: 'layer-group' },
         { route: 'commands', labelKey: 'commands', icon: 'laptop' },
         { route: 'log', labelKey: 'log', icon: 'file-alt' },
         { route: 'plugins', labelKey: 'plugins', icon: 'puzzle-piece' },
