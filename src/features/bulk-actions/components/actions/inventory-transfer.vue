@@ -57,9 +57,29 @@
       </div>
 
       <p v-if="loadError" class="bot-social__inline-error">{{ loadError }}</p>
-      <p class="bulk-actions__inv-count">
-        {{ $t('bulk-action-inventory-showing', { shown: filteredItems.length, selected: selectedIds.length }) }}
-      </p>
+      <div class="bulk-actions__inv-count-row">
+        <p class="bulk-actions__inv-count">
+          {{ $t('bulk-action-inventory-showing', { shown: filteredItems.length, selected: selectedIds.length }) }}
+        </p>
+        <div class="bulk-actions__inv-count-actions">
+          <button
+            type="button"
+            class="bulk-actions-bots__chip"
+            :disabled="!selectableFilteredCount"
+            @click="selectAllFiltered"
+          >
+            {{ $t('bulk-action-inventory-select-all') }}
+          </button>
+          <button
+            type="button"
+            class="bulk-actions-bots__chip"
+            :disabled="!selectedIds.length"
+            @click="clearSelection"
+          >
+            {{ $t('bulk-action-inventory-clear-selection') }}
+          </button>
+        </div>
+      </div>
 
       <div v-if="loading && !allItems.length" class="bulk-actions__inv-loading" role="status">
         <FontAwesomeIcon icon="spinner" spin></FontAwesomeIcon>
@@ -240,6 +260,9 @@
       selectedSourceBots() {
         return [...new Set(this.selectedItems.map(i => i.botName))];
       },
+      selectableFilteredCount() {
+        return this.filteredItems.filter(item => item.tradable).length;
+      },
       canSubmit() {
         return this.selectedItems.length > 0
           && Boolean(this.destinationBot)
@@ -278,6 +301,14 @@
         if (!item.tradable) return;
         const key = this.itemKey(item);
         this.$set(this.selectedKeys, key, !this.selectedKeys[key]);
+      },
+      selectAllFiltered() {
+        const next = { ...this.selectedKeys };
+        this.filteredItems.forEach(item => {
+          if (!item.tradable) return;
+          next[this.itemKey(item)] = true;
+        });
+        this.selectedKeys = next;
       },
       clearSelection() {
         this.selectedKeys = {};

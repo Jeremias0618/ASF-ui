@@ -1048,6 +1048,20 @@
     margin: 0;
   }
 
+  .bulk-actions__inv-count-row {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem 0.85rem;
+    justify-content: space-between;
+  }
+
+  .bulk-actions__inv-count-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+  }
+
   .bulk-actions__inv-grid {
     display: grid;
     gap: 0.55rem;

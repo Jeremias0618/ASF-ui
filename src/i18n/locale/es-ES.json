@@ -1072,6 +1072,7 @@
   "bulk-action-inventory-filter-game-all": "Todos los juegos",
   "bulk-action-inventory-filter-status": "Estado",
   "bulk-action-inventory-showing": "Mostrando {shown} · seleccionados {selected}",
+  "bulk-action-inventory-select-all": "Seleccionar todo",
   "bulk-action-inventory-empty": "Ningún ítem coincide con estos filtros.",
   "bulk-action-inventory-grid": "Ítems de inventario",
   "bulk-action-inventory-destination": "Bot destino",

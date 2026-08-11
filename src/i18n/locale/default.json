@@ -1072,6 +1072,7 @@
   "bulk-action-inventory-filter-game-all": "All games",
   "bulk-action-inventory-filter-status": "Status",
   "bulk-action-inventory-showing": "Showing {shown} · selected {selected}",
+  "bulk-action-inventory-select-all": "Select all",
   "bulk-action-inventory-empty": "No items match these filters.",
   "bulk-action-inventory-grid": "Inventory items",
   "bulk-action-inventory-destination": "Destination bot",
