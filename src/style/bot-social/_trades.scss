@@ -1,0 +1,327 @@
+/* Inventory trade offers */
+
+.steam-inv__modes {
+  background: var(--steam-inv-mode-track);
+  border: 1px solid var(--steam-inv-mode-border);
+  border-radius: 0.4rem;
+  display: inline-flex;
+  gap: 0.25rem;
+  margin-bottom: 0.65rem;
+  padding: 0.2rem;
+}
+
+.steam-inv__mode {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  border-radius: 0.3rem;
+  color: var(--steam-inv-mode-idle);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 0.4rem 0.85rem;
+
+  &.is-active {
+    background: var(--steam-inv-btn-bg);
+    color: #fff;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--steam-inv-accent);
+    outline-offset: 1px;
+  }
+}
+
+.trade-offers {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 0;
+}
+
+.trade-offers.is-refreshing .trade-offers__list {
+  opacity: 0.72;
+  transition: opacity 0.2s ease;
+}
+
+.trade-offers__toolbar {
+  align-items: center;
+  display: flex;
+  flex-shrink: 0;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.trade-offers__stat {
+  color: var(--steam-inv-muted);
+  font-size: 0.84rem;
+  margin: 0;
+}
+
+.trade-offers__refresh {
+  appearance: none;
+  align-items: center;
+  background: var(--steam-inv-btn-bg);
+  border: 1px solid color-mix(in srgb, var(--steam-inv-accent) 30%, transparent);
+  border-radius: 0.3rem;
+  color: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  gap: 0.4rem;
+  padding: 0.4rem 0.75rem;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+}
+
+.trade-offers__skeleton {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 0;
+}
+
+.trade-offers__skel-card {
+  animation: friends-skel 1.2s ease-in-out infinite;
+  background: var(--steam-inv-skel);
+  background-size: 200% 100%;
+  border-radius: 0.25rem;
+  min-height: 10rem;
+}
+
+.trade-offers__empty {
+  align-items: center;
+  color: var(--steam-inv-muted);
+  display: flex;
+  flex: 1 1 auto;
+  justify-content: center;
+  min-height: 12rem;
+  padding: 2.5rem 1rem;
+  text-align: center;
+}
+
+.trade-offers__list {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0.85rem;
+  list-style: none;
+  margin: 0;
+  min-height: 0;
+  overflow: auto;
+  padding: 0;
+}
+
+.trade-card {
+  background: var(--steam-inv-card-bg);
+  border: 1px solid var(--steam-inv-card-border);
+  display: flex;
+  flex-direction: column;
+}
+
+.trade-card__head {
+  align-items: center;
+  background: var(--steam-inv-card-head);
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+  padding: 0.55rem 0.7rem;
+}
+
+.trade-card__partner {
+  align-items: center;
+  color: var(--steam-inv-text);
+  display: flex;
+  gap: 0.55rem;
+  min-width: 0;
+  text-decoration: none;
+
+  &:hover .trade-card__headline {
+    color: var(--steam-inv-name);
+  }
+}
+
+.trade-card__avatar {
+  background: var(--steam-inv-panel);
+  display: block;
+  flex-shrink: 0;
+  height: 40px;
+  object-fit: cover;
+  width: 40px;
+
+  &--fallback {
+    align-items: center;
+    color: var(--steam-inv-name);
+    display: flex;
+    font-weight: 700;
+    justify-content: center;
+  }
+}
+
+.trade-card__headline {
+  font-size: 0.92rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trade-card__id {
+  color: var(--steam-inv-muted);
+  flex-shrink: 0;
+  font-size: 0.72rem;
+}
+
+.trade-card__banner {
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 0.45rem 0.75rem;
+  text-align: center;
+
+  &.is-needs_confirmation {
+    background: #c27d0e;
+  }
+
+  &.is-waiting_bot {
+    background: #1a6ea5;
+  }
+
+  &.is-waiting_partner {
+    background: #3d4450;
+  }
+}
+
+.trade-card__footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0.35rem 0.7rem 0.65rem;
+}
+
+.trade-card__cancel-link {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: var(--steam-inv-text);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.82rem;
+  padding: 0.2rem 0;
+  text-align: right;
+  text-decoration: none;
+
+  &:hover:not(:disabled) {
+    color: #fff;
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #66c0f4;
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+}
+
+.trade-card__side {
+  border-top: 1px solid var(--steam-inv-card-border);
+  padding: 0.65rem 0.7rem 0.75rem;
+}
+
+.trade-card__side-title {
+  align-items: baseline;
+  color: var(--steam-inv-muted);
+  display: flex;
+  font-size: 0.78rem;
+  font-weight: 600;
+  gap: 0.45rem;
+  margin: 0 0 0.5rem;
+}
+
+.trade-card__side-count {
+  color: var(--steam-inv-name);
+  font-size: 0.72rem;
+}
+
+.trade-card__grid {
+  display: grid;
+  gap: 0.45rem;
+  grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
+}
+
+.trade-card__cell {
+  background: var(--steam-inv-card-cell);
+  border: 1px solid var(--steam-inv-card-border);
+  display: flex;
+  flex-direction: column;
+  min-height: 5.5rem;
+  overflow: hidden;
+  position: relative;
+}
+
+.trade-card__thumb {
+  display: block;
+  height: 64px;
+  margin: 0.35rem auto 0;
+  object-fit: contain;
+  width: 64px;
+}
+
+.trade-card__thumb-fallback {
+  align-items: center;
+  color: var(--steam-inv-muted);
+  display: flex;
+  height: 64px;
+  justify-content: center;
+}
+
+.trade-card__cell-name,
+.trade-card__cell-game {
+  font-size: 0.62rem;
+  line-height: 1.2;
+  overflow: hidden;
+  padding: 0.15rem 0.3rem;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trade-card__cell-name {
+  color: var(--steam-inv-text);
+  font-weight: 600;
+}
+
+.trade-card__cell-game {
+  color: var(--steam-inv-name);
+  padding-bottom: 0.3rem;
+  text-transform: uppercase;
+}
+
+.trade-card__qty {
+  background: color-mix(in srgb, #000 65%, transparent);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.1rem 0.3rem;
+  position: absolute;
+  right: 0.2rem;
+  top: 0.2rem;
+}
+
+.trade-card__none {
+  color: var(--steam-inv-muted);
+  font-size: 0.78rem;
+  margin: 0;
+}

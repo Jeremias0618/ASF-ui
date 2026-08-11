@@ -1,0 +1,76 @@
+/* Inventory transfer dialog */
+
+.steam-inv-transfer {
+  bottom: 0;
+  left: 0;
+  position: fixed;
+  right: 0;
+  top: 0;
+  z-index: 80;
+}
+
+.steam-inv-transfer__backdrop {
+  appearance: none;
+  background: rgba(0, 0, 0, 0.55);
+  border: 0;
+  cursor: default;
+  inset: 0;
+  position: absolute;
+}
+
+.steam-inv-transfer__panel {
+  background: var(--steam-inv-panel, #1b2838);
+  border: 1px solid var(--steam-inv-border, rgba(255, 255, 255, 0.1));
+  border-radius: 0.55rem;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+  box-sizing: border-box;
+  color: var(--steam-inv-text, #c6d4df);
+  left: 50%;
+  max-width: 26rem;
+  padding: 1.1rem 1.15rem 1rem;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: calc(100% - 2rem);
+  z-index: 1;
+}
+
+.steam-inv-transfer__title {
+  font-size: 1.05rem;
+  margin: 0 0 0.35rem;
+}
+
+.steam-inv-transfer__lead,
+.steam-inv-transfer__hint,
+.steam-inv-transfer__warn {
+  color: var(--steam-inv-muted, #8f98a0);
+  font-size: 0.82rem;
+  line-height: 1.4;
+  margin: 0 0 0.75rem;
+}
+
+.steam-inv-transfer__warn {
+  color: #e3b341;
+}
+
+.steam-inv-transfer__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-bottom: 0.75rem;
+}
+
+.steam-inv-transfer__label {
+  color: #8f98a0;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.steam-inv-transfer__actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin-top: 0.35rem;
+}

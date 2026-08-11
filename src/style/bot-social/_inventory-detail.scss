@@ -1,0 +1,169 @@
+/* Inventory detail pane */
+
+.steam-inv__detail {
+  background: linear-gradient(180deg, var(--steam-inv-panel) 0%, var(--steam-inv-panel-2) 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  min-height: 0;
+  min-width: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 0.9rem 1rem 1.1rem;
+}
+
+.steam-inv__detail--empty {
+  align-items: center;
+  color: var(--steam-inv-muted);
+  justify-content: center;
+  text-align: center;
+}
+
+.steam-inv__preview {
+  align-items: center;
+  background: var(--steam-inv-preview-bg);
+  border: 1px solid var(--steam-inv-preview-border);
+  box-sizing: border-box;
+  display: flex;
+  flex-shrink: 0;
+  height: 11.5rem;
+  justify-content: center;
+  max-width: 100%;
+  overflow: hidden;
+  padding: 0.65rem;
+  position: relative;
+  width: 100%;
+}
+
+.steam-inv__preview-lq,
+.steam-inv__preview-img {
+  box-sizing: border-box;
+  display: block;
+  height: auto;
+  max-height: calc(11.5rem - 1.3rem);
+  max-width: 100%;
+  object-fit: contain;
+  width: auto;
+}
+
+.steam-inv__preview-lq {
+  filter: blur(0.6px) saturate(0.95);
+  opacity: 0.92;
+  position: relative;
+  z-index: 1;
+}
+
+.steam-inv__preview-img {
+  left: 50%;
+  max-height: calc(11.5rem - 1.3rem);
+  max-width: calc(100% - 1.3rem);
+  opacity: 0;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  transition: opacity 0.15s ease;
+  z-index: 2;
+
+  &.is-ready {
+    opacity: 1;
+  }
+}
+
+.steam-inv__name,
+.steam-inv__type,
+.steam-inv__tags,
+.steam-inv__game {
+  max-width: 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.steam-inv__name {
+  color: var(--steam-inv-name);
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1.25;
+  margin: 0.15rem 0 0;
+}
+
+.steam-inv__type {
+  color: var(--steam-inv-muted);
+  font-size: 0.84rem;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.steam-inv__game {
+  margin: 0;
+}
+
+.steam-inv__game-link {
+  color: var(--steam-inv-name);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.steam-inv__tags {
+  color: var(--steam-inv-text);
+  font-size: 0.8rem;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.steam-inv__tags-label {
+  color: var(--steam-inv-muted);
+  font-weight: 600;
+}
+
+.steam-inv__flags {
+  color: var(--steam-inv-muted);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.78rem;
+  gap: 0.4rem;
+  list-style: none;
+  margin: 0.15rem 0 0;
+  padding: 0;
+
+  li {
+    background: var(--steam-inv-flag-bg);
+    border: 1px solid var(--steam-inv-flag-border);
+    padding: 0.2rem 0.45rem;
+
+    &.is-on {
+      color: var(--steam-inv-text);
+    }
+  }
+}
+
+.steam-inv__market {
+  border-top: 1px solid var(--steam-inv-selection-border);
+  margin-top: auto;
+  padding-top: 0.75rem;
+}
+
+.steam-inv__market-btn {
+  align-items: center;
+  background: var(--steam-inv-btn-secondary-bg);
+  border: 1px solid var(--steam-inv-btn-secondary-border);
+  color: var(--steam-inv-text);
+  display: flex;
+  font-size: 0.84rem;
+  font-weight: 600;
+  justify-content: center;
+  padding: 0.65rem 0.75rem;
+  text-decoration: none;
+  transition: filter 0.15s ease;
+
+  &:hover {
+    color: var(--steam-inv-name);
+    filter: brightness(1.05);
+  }
+}

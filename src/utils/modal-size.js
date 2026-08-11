@@ -6,9 +6,10 @@
  * - default — content-sized (max bounds only)
  * - medium / dialog — fixed width presets
  * - wide — 52rem width, height follows content
- * - wide-fixed — 52rem + reserved height (stable across tabs / empty states)
- * - workspace — 60rem width (friends / dense UIs)
- * - workspace-fixed — 60rem + reserved height
+ * - workspace — 60rem width (dense social hubs), height follows content
+ *
+ * Height always follows each modal’s own content. Do not force a shared
+ * global height across unrelated modals.
  */
 
 export const MODAL_SIZE = Object.freeze({
@@ -16,9 +17,7 @@ export const MODAL_SIZE = Object.freeze({
   MEDIUM: 'medium',
   DIALOG: 'dialog',
   WIDE: 'wide',
-  WIDE_FIXED: 'wide-fixed',
   WORKSPACE: 'workspace',
-  WORKSPACE_FIXED: 'workspace-fixed',
 });
 
 const SIZE_CLASSES = Object.freeze({
@@ -26,9 +25,13 @@ const SIZE_CLASSES = Object.freeze({
   [MODAL_SIZE.MEDIUM]: ['modal__main--medium'],
   [MODAL_SIZE.DIALOG]: ['modal__main--dialog'],
   [MODAL_SIZE.WIDE]: ['modal__main--wide'],
-  [MODAL_SIZE.WIDE_FIXED]: ['modal__main--wide', 'modal__main--fixed'],
   [MODAL_SIZE.WORKSPACE]: ['modal__main--wide', 'modal__main--friends'],
-  [MODAL_SIZE.WORKSPACE_FIXED]: ['modal__main--wide', 'modal__main--friends', 'modal__main--fixed'],
+});
+
+/** Legacy aliases kept so older route meta still resolves. */
+const SIZE_ALIASES = Object.freeze({
+  'wide-fixed': MODAL_SIZE.WIDE,
+  'workspace-fixed': MODAL_SIZE.WORKSPACE,
 });
 
 /** Legacy route-name → size when `meta.modalSize` is omitted. */
@@ -36,11 +39,11 @@ const ROUTE_SIZE_FALLBACK = Object.freeze({
   'bot-config': MODAL_SIZE.WIDE,
   'bot-create': MODAL_SIZE.WIDE,
   'bot-copy': MODAL_SIZE.WIDE,
-  'bot-inventory': MODAL_SIZE.WORKSPACE_FIXED,
+  'bot-inventory': MODAL_SIZE.WORKSPACE,
   'bot-friends': MODAL_SIZE.WORKSPACE,
   'bot-community': MODAL_SIZE.WORKSPACE,
   'bot-games': MODAL_SIZE.WORKSPACE,
-  'bot-wishlist': MODAL_SIZE.WIDE,
+  'bot-wishlist': MODAL_SIZE.WORKSPACE,
   'password-encrypt': MODAL_SIZE.DIALOG,
   'password-hash': MODAL_SIZE.DIALOG,
   'bot-delete': MODAL_SIZE.DIALOG,
@@ -50,10 +53,20 @@ const ROUTE_SIZE_FALLBACK = Object.freeze({
 
 /**
  * @param {string|undefined|null} size
+ * @returns {string|undefined|null}
+ */
+function normalizeSizeToken(size) {
+  if (!size) return size;
+  return SIZE_ALIASES[size] || size;
+}
+
+/**
+ * @param {string|undefined|null} size
  * @returns {boolean}
  */
 export function isKnownModalSize(size) {
-  return Boolean(size && Object.prototype.hasOwnProperty.call(SIZE_CLASSES, size));
+  const token = normalizeSizeToken(size);
+  return Boolean(token && Object.prototype.hasOwnProperty.call(SIZE_CLASSES, token));
 }
 
 /**
@@ -62,7 +75,7 @@ export function isKnownModalSize(size) {
  * @returns {string}
  */
 export function resolveModalSize(route) {
-  const fromMeta = route?.meta?.modalSize;
+  const fromMeta = normalizeSizeToken(route?.meta?.modalSize);
   if (isKnownModalSize(fromMeta)) return fromMeta;
 
   const fromName = route?.name ? ROUTE_SIZE_FALLBACK[route.name] : undefined;
@@ -76,13 +89,4 @@ export function resolveModalSize(route) {
  */
 export function resolveModalSizeClasses(route) {
   return SIZE_CLASSES[resolveModalSize(route)] || [];
-}
-
-/**
- * Whether the modal reserves a fixed height (avoids CLS on tab / empty swaps).
- * @param {{ name?: string, meta?: { modalSize?: string } }|null|undefined} route
- * @returns {boolean}
- */
-export function isFixedModalSize(route) {
-  return resolveModalSizeClasses(route).includes('modal__main--fixed');
 }

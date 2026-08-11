@@ -1,27 +1,6 @@
 <template>
   <div class="steam-inv" :class="{ 'is-refreshing': refreshing && panelMode === 'inventory' }">
-    <div class="steam-inv__modes" role="tablist" :aria-label="$t('bot-social-inventory-modes')">
-      <button
-        type="button"
-        role="tab"
-        class="steam-inv__mode"
-        :class="{ 'is-active': panelMode === 'inventory' }"
-        :aria-selected="panelMode === 'inventory' ? 'true' : 'false'"
-        @click="setPanelMode('inventory')"
-      >
-        {{ $t('bot-social-tab-inventory') }}
-      </button>
-      <button
-        type="button"
-        role="tab"
-        class="steam-inv__mode"
-        :class="{ 'is-active': panelMode === 'trades' }"
-        :aria-selected="panelMode === 'trades' ? 'true' : 'false'"
-        @click="setPanelMode('trades')"
-      >
-        {{ $t('bot-social-tab-trades') }}
-      </button>
-    </div>
+    <InventoryModeTabs :value="panelMode" @input="setPanelMode"></InventoryModeTabs>
 
     <TradeOffersPanel
       v-if="panelMode === 'trades'"
@@ -30,275 +9,79 @@
     ></TradeOffersPanel>
 
     <template v-else>
-    <section class="steam-inv__chrome" :aria-label="$t('bot-social-tab-inventory')">
-      <div class="steam-inv__chrome-bar">
-        <div class="steam-inv__searchbox">
-          <FontAwesomeIcon icon="search" class="steam-inv__search-icon" aria-hidden="true"></FontAwesomeIcon>
-          <input
-            v-model.trim="query"
-            class="steam-inv__search-input"
-            type="search"
-            :placeholder="$t('bot-social-inventory-search-placeholder')"
-            :aria-label="$t('bot-social-inventory-search-label')"
-            autocomplete="off"
-          >
-        </div>
+      <InventoryChrome
+        :query.sync="query"
+        :kind-filter.sync="kindFilter"
+        :game-filter.sync="gameFilter"
+        :status-filter.sync="statusFilter"
+        :shown-count="filteredItems.length"
+        :total-count="items.length"
+        :select-mode="selectMode"
+        :select-disabled="loading || transferring"
+        :refreshing="refreshing"
+        :refresh-disabled="loading || refreshing || transferring"
+        :has-active-filters="hasActiveFilters"
+        :type-options="typeSelectOptions"
+        :game-options="gameSelectOptions"
+        :status-options="statusSelectOptions"
+        @toggle-select="toggleSelectMode"
+        @refresh="refresh"
+        @clear-filters="clearFilters"
+      ></InventoryChrome>
 
-        <div class="steam-inv__chrome-actions">
-          <span class="steam-inv__count">{{ $t('bot-social-inventory-showing', { shown: filteredItems.length, total: items.length }) }}</span>
-          <button
-            type="button"
-            class="steam-inv__select-toggle"
-            :class="{ 'is-on': selectMode }"
-            :disabled="loading || transferring"
-            @click="toggleSelectMode"
-          >
-            {{ selectMode ? $t('bot-social-inventory-select-done') : $t('bot-social-inventory-select-mode') }}
-          </button>
-          <button
-            type="button"
-            class="steam-inv__refresh"
-            :disabled="loading || refreshing || transferring"
-            :title="$t('bot-social-refresh')"
-            @click="refresh"
-          >
-            <FontAwesomeIcon :icon="refreshing ? 'spinner' : 'redo-alt'" :spin="refreshing"></FontAwesomeIcon>
-            <span>{{ $t('bot-social-refresh') }}</span>
-          </button>
-        </div>
+      <div v-if="loading && !items.length" class="steam-inv__content-loading">
+        <InventorySkeleton></InventorySkeleton>
       </div>
+      <div v-else-if="error && !items.length" class="bot-social__state bot-social__state--error">{{ error }}</div>
+      <template v-else>
+        <p v-if="error" class="bot-social__inline-error">{{ error }}</p>
+        <div v-if="!items.length" class="bot-social__state">{{ $t('bot-social-inventory-empty') }}</div>
+        <div v-else-if="!filteredItems.length" class="bot-social__state">{{ $t('bot-social-inventory-items-empty') }}</div>
 
-      <div class="steam-inv__filterbar">
-        <!-- Use div, not label: wrapping AsfSelect in <label> steals clicks and re-opens the menu. -->
-        <div class="steam-inv__field">
-          <span id="inv-filter-type-label" class="steam-inv__field-label">{{ $t('bot-social-inventory-filter-type') }}</span>
-          <AsfSelect
-            v-model="kindFilter"
-            searchable
-            compact
-            aria-labelledby="inv-filter-type-label"
-            :options="typeSelectOptions"
-            :search-placeholder="$t('bot-social-inventory-filter-search-options')"
-          ></AsfSelect>
+        <div v-else class="steam-inv__shell">
+          <InventoryItemGrid
+            :page-items="pageItems"
+            :page="page"
+            :total-pages="totalPages"
+            :page-transition-name="pageTransitionName"
+            :selected-id="selectedId"
+            :selected-on-page="selectedOnPage"
+            :select-mode="selectMode"
+            :checked-ids="checkedIds"
+            :checked-count="checkedCount"
+            :filtered-tradable-count="filteredTradableCount"
+            :transferring="transferring"
+            @cell-click="onCellClick"
+            @select-all="selectAllFilteredTradable"
+            @clear-selection="clearChecked"
+            @transfer-selected="openTransferDialog"
+            @page-prev="goToPage(page - 1)"
+            @page-next="goToPage(page + 1)"
+          ></InventoryItemGrid>
+
+          <InventoryItemDetail
+            :item="selectedItem"
+            :tag-summary="tagSummary"
+            :preview-hd-ready="previewHdReady"
+            :transferring="transferring"
+            @preview-hd-load="onPreviewHdLoad"
+            @preview-hd-error="onPreviewHdError"
+            @transfer-one="transferSingle"
+          ></InventoryItemDetail>
         </div>
-
-        <div class="steam-inv__field steam-inv__field--grow">
-          <span id="inv-filter-game-label" class="steam-inv__field-label">{{ $t('bot-social-inventory-filter-game') }}</span>
-          <AsfSelect
-            v-model="gameFilter"
-            searchable
-            compact
-            aria-labelledby="inv-filter-game-label"
-            :options="gameSelectOptions"
-            :search-placeholder="$t('bot-social-inventory-filter-search-options')"
-          ></AsfSelect>
-        </div>
-
-        <div class="steam-inv__field">
-          <span id="inv-filter-status-label" class="steam-inv__field-label">{{ $t('bot-social-inventory-filter-status') }}</span>
-          <AsfSelect
-            v-model="statusFilter"
-            searchable
-            compact
-            aria-labelledby="inv-filter-status-label"
-            :disabled="selectMode"
-            :options="statusSelectOptions"
-            :search-placeholder="$t('bot-social-inventory-filter-search-options')"
-          ></AsfSelect>
-        </div>
-
-        <button
-          v-if="hasActiveFilters"
-          type="button"
-          class="steam-inv__clear"
-          @click="clearFilters"
-        >
-          {{ $t('bot-social-inventory-clear-filters') }}
-        </button>
-      </div>
-    </section>
-
-    <div v-if="loading && !items.length" class="steam-inv__content-loading">
-      <InventorySkeleton></InventorySkeleton>
-    </div>
-    <div v-else-if="error && !items.length" class="bot-social__state bot-social__state--error">{{ error }}</div>
-    <template v-else>
-      <p v-if="error" class="bot-social__inline-error">{{ error }}</p>
-      <div v-if="!items.length" class="bot-social__state">{{ $t('bot-social-inventory-empty') }}</div>
-      <div v-else-if="!filteredItems.length" class="bot-social__state">{{ $t('bot-social-inventory-items-empty') }}</div>
-
-      <div v-else class="steam-inv__shell">
-        <div class="steam-inv__grid-pane">
-          <div class="steam-inv__grid-viewport">
-            <transition :name="pageTransitionName">
-              <div
-                :key="`inv-page-${page}`"
-                class="steam-inv__grid"
-                role="listbox"
-                :aria-label="$t('bot-social-tab-inventory')"
-                :aria-activedescendant="selectedOnPage ? `inv-item-${selectedId}` : undefined"
-              >
-                <button
-                  v-for="item in pageItems"
-                  :id="`inv-item-${item.id}`"
-                  :key="item.id"
-                  type="button"
-                  role="option"
-                  class="steam-inv__cell"
-                  :class="{
-                    'is-selected': selectedId === item.id,
-                    'is-checked': isChecked(item.id),
-                    'is-locked': selectMode && !item.tradable,
-                  }"
-                  :aria-selected="selectedId === item.id ? 'true' : 'false'"
-                  :title="item.tradable ? item.name : `${item.name} (${$t('bot-social-inventory-not-tradable')})`"
-                  @click="onCellClick(item, $event)"
-                >
-                  <span
-                    v-if="selectMode"
-                    class="steam-inv__check"
-                    :class="{ 'is-on': isChecked(item.id), 'is-disabled': !item.tradable }"
-                    aria-hidden="true"
-                  ></span>
-                  <span
-                    class="steam-inv__cell-bg"
-                    :style="item.backgroundColor ? { backgroundColor: `#${item.backgroundColor}` } : null"
-                  >
-                    <img
-                      v-if="item.iconUrl"
-                      class="steam-inv__thumb"
-                      :src="item.iconUrl"
-                      :alt="item.name"
-                      loading="eager"
-                      decoding="async"
-                      draggable="false"
-                    >
-                    <span v-else class="steam-inv__thumb-fallback" aria-hidden="true">?</span>
-                  </span>
-                  <span v-if="item.amount > 1" class="steam-inv__qty">×{{ item.amount }}</span>
-                </button>
-              </div>
-            </transition>
-          </div>
-
-          <div v-if="selectMode" class="steam-inv__selection-bar">
-            <span>{{ $t('bot-social-inventory-selected-count', { n: checkedCount }) }}</span>
-            <div class="steam-inv__selection-actions">
-              <button type="button" class="button button--link" :disabled="!filteredTradableCount" @click="selectAllFilteredTradable">
-                {{ $t('bot-social-inventory-select-all-filtered') }}
-              </button>
-              <button type="button" class="button button--link" :disabled="!checkedCount" @click="clearChecked">
-                {{ $t('bot-social-inventory-clear-selection') }}
-              </button>
-              <button
-                type="button"
-                class="button button--confirm"
-                :disabled="!checkedCount || transferring"
-                @click="openTransferDialog"
-              >
-                {{ $t('bot-social-inventory-transfer-n', { n: checkedCount }) }}
-              </button>
-            </div>
-          </div>
-
-          <div class="steam-inv__pager">
-            <button
-              type="button"
-              class="steam-inv__page-btn"
-              :disabled="page <= 1"
-              :aria-label="$t('bot-social-inventory-page-prev')"
-              @click="goToPage(page - 1)"
-            >
-              <FontAwesomeIcon icon="chevron-left"></FontAwesomeIcon>
-            </button>
-            <span class="steam-inv__page-label">{{ $t('bot-social-inventory-page', { current: page, total: totalPages }) }}</span>
-            <button
-              type="button"
-              class="steam-inv__page-btn"
-              :disabled="page >= totalPages"
-              :aria-label="$t('bot-social-inventory-page-next')"
-              @click="goToPage(page + 1)"
-            >
-              <FontAwesomeIcon icon="chevron-right"></FontAwesomeIcon>
-            </button>
-          </div>
-        </div>
-
-        <aside v-if="selectedItem" class="steam-inv__detail">
-          <div
-            class="steam-inv__preview"
-            :class="{ 'is-loading-hd': !previewHdReady }"
-            :style="selectedItem.backgroundColor ? { backgroundColor: `#${selectedItem.backgroundColor}` } : null"
-          >
-            <img
-              v-if="selectedItem.iconUrl"
-              class="steam-inv__preview-lq"
-              :src="selectedItem.iconUrl"
-              alt=""
-              decoding="async"
-            >
-            <img
-              v-if="selectedItem.iconUrlLarge || selectedItem.iconUrl"
-              :key="`hd-${selectedItem.id}`"
-              class="steam-inv__preview-img"
-              :class="{ 'is-ready': previewHdReady }"
-              :src="selectedItem.iconUrlLarge || selectedItem.iconUrl"
-              :alt="selectedItem.name"
-              decoding="async"
-              @load="onPreviewHdLoad"
-              @error="onPreviewHdError"
-            >
-          </div>
-          <h3 class="steam-inv__name">{{ selectedItem.name }}</h3>
-          <p v-if="selectedItem.gameName" class="steam-inv__game">
-            <a
-              v-if="selectedItem.storeUrl"
-              class="steam-inv__game-link"
-              :href="selectedItem.storeUrl"
-              target="_blank"
-              rel="noreferrer noopener"
-            >{{ selectedItem.gameName }}</a>
-            <span v-else>{{ selectedItem.gameName }}</span>
-          </p>
-          <p v-if="selectedItem.tags.length" class="steam-inv__tags">
-            <span class="steam-inv__tags-label">{{ $t('bot-social-inventory-tags') }}</span>
-            {{ tagSummary }}
-          </p>
-          <ul class="steam-inv__flags" :aria-label="$t('bot-social-inventory-flags')">
-            <li :class="{ 'is-on': selectedItem.tradable }">
-              {{ selectedItem.tradable ? $t('bot-social-inventory-tradable') : $t('bot-social-inventory-not-tradable') }}
-            </li>
-            <li :class="{ 'is-on': selectedItem.marketable }">
-              {{ selectedItem.marketable ? $t('bot-social-inventory-marketable') : $t('bot-social-inventory-not-marketable') }}
-            </li>
-            <li v-if="selectedItem.amount > 1">{{ $t('bot-social-inventory-amount', { n: selectedItem.amount }) }}</li>
-          </ul>
-          <div class="steam-inv__detail-actions">
-            <button
-              v-if="selectedItem.tradable"
-              type="button"
-              class="steam-inv__transfer-one"
-              :disabled="transferring"
-              @click="transferSingle(selectedItem)"
-            >
-              {{ $t('bot-social-inventory-transfer-one') }}
-            </button>
-            <a
-              v-if="selectedItem.marketable && selectedItem.marketUrl"
-              class="steam-inv__market-btn"
-              :href="selectedItem.marketUrl"
-              target="_blank"
-              rel="noreferrer noopener"
-            >
-              {{ $t('bot-social-inventory-market-link') }}
-            </a>
-          </div>
-        </aside>
-        <aside v-else class="steam-inv__detail steam-inv__detail--empty">
-          <p>{{ $t('bot-social-inventory-select-hint') }}</p>
-        </aside>
-      </div>
+      </template>
     </template>
+
+    <TransferDialog
+      :open="transferOpen"
+      :source-bot-name="botName"
+      :asset-ids="transferAssetIds"
+      :submitting="transferring"
+      @cancel="closeTransferDialog"
+      @confirm="onTransferConfirm"
+    ></TransferDialog>
+  </div>
+</template>
     </template>
 
     <TransferDialog
@@ -331,16 +114,28 @@
   import TransferDialog from './transfer/dialog.vue';
   import TradeOffersPanel from './inventory/trade-offers-panel.vue';
   import InventorySkeleton from './inventory/skeleton.vue';
+  import { readModalView, replaceModalView } from '../../../utils/modal-view-query';
+
+  const INVENTORY_VIEWS = new Set(['inventory', 'trades']);
+  const INVENTORY_VIEW_DEFAULT = 'inventory';
 
   export default {
     name: 'BotSocialInventoryTab',
-    components: { TransferDialog, TradeOffersPanel, InventorySkeleton },
+    components: {
+      TransferDialog,
+      TradeOffersPanel,
+      InventorySkeleton,
+      InventoryModeTabs,
+      InventoryChrome,
+      InventoryItemGrid,
+      InventoryItemDetail,
+    },
     props: {
       botName: { type: String, required: true },
     },
     data() {
       return {
-        panelMode: 'inventory',
+        panelMode: readModalView(this.$route, INVENTORY_VIEWS, INVENTORY_VIEW_DEFAULT),
         loading: true,
         refreshing: false,
         transferring: false,
@@ -498,15 +293,22 @@
       page() {
         this.warmNearbyIcons();
       },
+      '$route.query.view'() {
+        this.syncPanelFromRoute();
+      },
     },
     methods: {
+      syncPanelFromRoute() {
+        const next = readModalView(this.$route, INVENTORY_VIEWS, INVENTORY_VIEW_DEFAULT);
+        if (next !== this.panelMode) this.panelMode = next;
+      },
       warmNearbyIcons() {
         this.$nextTick(() => {
           prefetchInventoryPageIcons(this.filteredItems, this.page, INVENTORY_PAGE_SIZE);
         });
       },
       resetViewState() {
-        this.panelMode = 'inventory';
+        this.syncPanelFromRoute();
         this.selectedId = '';
         this.checkedIds = [];
         this.selectMode = false;
@@ -524,11 +326,9 @@
         this.items = [];
       },
       setPanelMode(mode) {
-        if (mode === this.panelMode) return;
+        if (!INVENTORY_VIEWS.has(mode) || mode === this.panelMode) return;
         this.panelMode = mode;
-        if (mode === 'inventory' && this.selectMode) {
-          // keep select mode; no-op
-        }
+        replaceModalView(this.$router, this.$route, mode, INVENTORY_VIEW_DEFAULT);
       },
       bootstrap(botName) {
         const resolved = resolveLocalData({

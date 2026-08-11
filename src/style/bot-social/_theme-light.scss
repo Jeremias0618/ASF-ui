@@ -1,0 +1,272 @@
+/* Light-theme overrides for bot-social hubs */
+
+.app:not(.app--dark-mode) .steam-inv {
+  --steam-inv-panel: #f4f6f8;
+  --steam-inv-panel-2: #eef1f4;
+  --steam-inv-cell: #ffffff;
+  --steam-inv-border: #d0d7de;
+  --steam-inv-select: #b8860b;
+  --steam-inv-name: #1570a8;
+  --steam-inv-muted: #475467;
+  --steam-inv-text: #101828;
+  --steam-inv-accent: #1a7bb8;
+  --steam-inv-chrome-bg: linear-gradient(180deg, #e8eef4 0%, #f5f7fa 100%);
+  --steam-inv-chrome-border: #d0d7de;
+  --steam-inv-search-bg: #ffffff;
+  --steam-inv-search-border: #d0d7de;
+  --steam-inv-search-shadow: inset 0 0 0 1px rgba(16, 24, 40, 0.04);
+  --steam-inv-btn-bg: linear-gradient(180deg, #2f80b5 0%, #1f6a99 100%);
+  --steam-inv-btn-border: #1570a8;
+  --steam-inv-btn-secondary-bg: linear-gradient(180deg, #eef1f4 0%, #e4e7ec 100%);
+  --steam-inv-btn-secondary-border: #d0d7de;
+  --steam-inv-mode-track: #e4e7ec;
+  --steam-inv-mode-border: #d0d7de;
+  --steam-inv-mode-idle: #344054;
+  --steam-inv-preview-bg: #ffffff;
+  --steam-inv-preview-border: #d0d7de;
+  --steam-inv-flag-bg: #ffffff;
+  --steam-inv-flag-border: #d0d7de;
+  --steam-inv-selection-bg: #ffffff;
+  --steam-inv-selection-border: #d0d7de;
+  --steam-inv-cell-ring: rgba(16, 24, 40, 0.08);
+  --steam-inv-inset: rgba(16, 24, 40, 0.06);
+  --steam-inv-card-bg: #ffffff;
+  --steam-inv-card-border: #d0d7de;
+  --steam-inv-card-head: #eef1f4;
+  --steam-inv-card-cell: #f8fafc;
+  --steam-inv-skel: linear-gradient(90deg, rgba(16, 24, 40, 0.04), rgba(16, 24, 40, 0.09), rgba(16, 24, 40, 0.04));
+
+  .steam-inv__search-input::-webkit-search-cancel-button {
+    filter: none;
+  }
+
+  .steam-inv__market-btn {
+    color: #101828;
+
+    &:hover {
+      color: #1570a8;
+    }
+  }
+
+  .steam-inv__page-btn:disabled {
+    color: rgba(71, 84, 103, 0.4);
+  }
+
+  .steam-inv__check.is-on::after {
+    color: #fff;
+  }
+}
+
+/* Friends / Games / Wishlist / Community — light theme */
+.app:not(.app--dark-mode) {
+  .friends-hub {
+    --friends-ink: #101828;
+    --friends-muted: #475467;
+    --friends-accent: #1a7bb8;
+    --friends-name: #1570a8;
+    --friends-mode-track: #e4e7ec;
+    --friends-mode-border: #d0d7de;
+    --friends-mode-idle: #344054;
+    --friends-btn-bg: linear-gradient(180deg, #2f80b5 0%, #1f6a99 100%);
+    --friends-chrome-bg: linear-gradient(180deg, #e8eef4 0%, #f5f7fa 100%);
+    --friends-chrome-border: #d0d7de;
+    --friends-search-bg: #ffffff;
+    --friends-search-border: #d0d7de;
+    --friends-search-shadow: inset 0 0 0 1px rgba(16, 24, 40, 0.04);
+    --friends-card-bg: #ffffff;
+    --friends-card-bg-hover: #f8fafc;
+    --friends-card-border: #d0d7de;
+    --friends-avatar-bg: #eef1f4;
+    --friends-compose-bg: linear-gradient(165deg, #f5f7fa 0%, #eef1f4 55%, #e8eef4 100%);
+    --friends-compose-border: #d0d7de;
+    --friends-panel-bg: #ffffff;
+    --friends-example-bg: #ffffff;
+    --friends-example-border: #d0d7de;
+    --friends-example-ink: #344054;
+    --friends-combo-bg: #ffffff;
+    --friends-combo-border: #d0d7de;
+    --friends-help-border: #e4e7ec;
+
+    .friends-hub__mode-count {
+      background: rgba(16, 24, 40, 0.08);
+    }
+
+    .friends-hub__icon-btn--accept {
+      color: #1570a8;
+    }
+
+    .friends-hub__compose-combo {
+      box-shadow: inset 0 0 0 1px rgba(16, 24, 40, 0.04);
+    }
+  }
+
+  .bot-social-tab--games,
+  .bot-social-tab--wishlist {
+    --games-ink: #101828;
+    --games-muted: #475467;
+    --games-accent: #1570a8;
+    --games-shelf: #f4f6f8;
+    --games-panel: #ffffff;
+    --games-chrome-bg: linear-gradient(180deg, #e8eef4 0%, #f5f7fa 100%);
+    --games-chrome-border: #d0d7de;
+    --games-mode-track: #e4e7ec;
+    --games-mode-border: #d0d7de;
+    --games-mode-idle: #344054;
+    --games-btn-bg: linear-gradient(180deg, #2f80b5 0%, #1f6a99 100%);
+    --games-search-bg: #ffffff;
+    --games-search-border: #d0d7de;
+    --games-search-shadow: inset 0 0 0 1px rgba(16, 24, 40, 0.04);
+    --games-card-bg: #ffffff;
+    --games-card-border: #d0d7de;
+    --wish-accent: #1570a8;
+    --wish-ink: #101828;
+  }
+
+  .community-hub {
+    --community-ink: #101828;
+    --community-muted: #475467;
+    --community-accent: #1570a8;
+    --community-card-bg: #ffffff;
+    --community-card-border: #d0d7de;
+    --community-icon-bg: rgba(21, 112, 168, 0.1);
+    --community-refresh-bg: rgba(21, 112, 168, 0.08);
+    --community-refresh-border: rgba(21, 112, 168, 0.28);
+  }
+
+  .games-idle {
+    --idle-ink: #101828;
+    --idle-muted: #475467;
+    --idle-line: #d0d7de;
+    --idle-panel: #ffffff;
+    --idle-accent: #1570a8;
+  }
+
+  .games-idle__toolbar {
+    background: linear-gradient(180deg, rgba(21, 112, 168, 0.06), transparent 70%), #f5f7fa;
+  }
+
+  .friends-remove__panel,
+  .steam-inv-transfer__panel {
+    background: #fff;
+    border-color: #d0d7de;
+    color: #101828;
+  }
+
+  .friends-remove__lead,
+  .steam-inv-transfer__lead,
+  .steam-inv-transfer__hint,
+  .steam-inv-transfer__label,
+  .friends-hub__compose-help,
+  .friends-hub__field-label {
+    color: #475467;
+  }
+
+  .friends-hub__compose-input,
+  .friends-hub__add-input {
+    background: #fff;
+    border-color: #d0d7de;
+    color: #101828;
+  }
+
+  .bot-social__state,
+  .bot-social__hint,
+  .bot-social__stat {
+    color: #475467;
+  }
+
+  /* Games / wishlist subviews still use some hardcoded dark ink */
+  .games-add__eyebrow,
+  .games-add__lead,
+  .games-add__price-was,
+  .games-add__price-muted,
+  .games-stats__stat-label,
+  .games-stats__metric-label,
+  .games-stats__filter,
+  .games-idle__lead,
+  .games-idle__meta,
+  .games-idle__appid,
+  .games-idle__empty-lead,
+  .games-idle__panel-sub,
+  .games-ach__appid,
+  .games-ach__progress,
+  .games-ach__desc,
+  .games-ach__note {
+    color: #475467;
+  }
+
+  .games-add__title,
+  .games-add__name,
+  .games-add__price,
+  .games-stats__stat-value,
+  .games-stats__name,
+  .games-stats__metric-value,
+  .games-idle__title,
+  .games-idle__name-text,
+  .games-idle__panel-title,
+  .games-idle__empty-title,
+  .games-idle__meter-value,
+  .games-ach__name,
+  .games-ach__title {
+    color: #101828;
+  }
+
+  .games-add__searchbox,
+  .games-stats__searchbox,
+  .games-idle__searchbox,
+  .games-add__list,
+  .games-stats__list,
+  .games-idle__panel,
+  .games-idle__workspace,
+  .games-ach__hero,
+  .games-ach__list {
+    background: #fff;
+    border-color: #d0d7de;
+    color: #101828;
+  }
+
+  .games-stats__row,
+  .games-idle__row,
+  .games-ach__row {
+    border-color: #e4e7ec;
+  }
+
+  .wishlist-hub__add-combo {
+    box-shadow: inset 0 0 0 1px rgba(16, 24, 40, 0.04);
+  }
+
+  .wishlist-hub__remove {
+    background: rgba(255, 255, 255, 0.95);
+    border-color: rgba(192, 57, 43, 0.45);
+    color: #c0392b;
+  }
+
+  .games-stats__sort {
+    color: #475467;
+
+    &.is-active {
+      color: #1570a8;
+    }
+  }
+
+  .games-add__add-btn:disabled {
+    background: #eef1f4;
+    border-color: #d0d7de;
+    color: #667085;
+  }
+
+  .games-stats__search-input,
+  .games-idle__search-input,
+  .games-add__input,
+  .wishlist-hub__add-input {
+    color: #101828;
+
+    &::placeholder {
+      color: #667085;
+    }
+  }
+
+  .steam-inv-transfer__title,
+  .friends-remove__title {
+    color: #101828;
+  }
+}

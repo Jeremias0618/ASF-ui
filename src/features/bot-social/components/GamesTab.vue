@@ -4,182 +4,81 @@
 
     <template v-else>
       <div class="bot-social-games__chrome">
-        <div class="bot-social-games__views" role="tablist" :aria-label="$t('bot-social-games-views')">
-          <button
-            type="button"
-            role="tab"
-            class="bot-social-games__view"
-            :class="{ 'is-active': panelMode === 'library' }"
-            :aria-selected="panelMode === 'library' ? 'true' : 'false'"
-            @click="setPanelMode('library')"
-          >
-            <FontAwesomeIcon icon="book-open" aria-hidden="true"></FontAwesomeIcon>
-            {{ $t('bot-social-games-view-library') }}
-          </button>
-          <button
-            type="button"
-            role="tab"
-            class="bot-social-games__view"
-            :class="{ 'is-active': panelMode === 'banner' }"
-            :aria-selected="panelMode === 'banner' ? 'true' : 'false'"
-            @click="setPanelMode('banner')"
-          >
-            <FontAwesomeIcon icon="gamepad" aria-hidden="true"></FontAwesomeIcon>
-            {{ $t('bot-social-games-view-banner') }}
-          </button>
-          <button
-            type="button"
-            role="tab"
-            class="bot-social-games__view"
-            :class="{ 'is-active': panelMode === 'stats' }"
-            :aria-selected="panelMode === 'stats' ? 'true' : 'false'"
-            @click="setPanelMode('stats')"
-          >
-            <FontAwesomeIcon icon="chart-bar" aria-hidden="true"></FontAwesomeIcon>
-            {{ $t('bot-social-games-view-stats') }}
-          </button>
-          <button
-            type="button"
-            role="tab"
-            class="bot-social-games__view"
-            :class="{ 'is-active': panelMode === 'idle' }"
-            :aria-selected="panelMode === 'idle' ? 'true' : 'false'"
-            @click="setPanelMode('idle')"
-          >
-            <FontAwesomeIcon icon="clock" aria-hidden="true"></FontAwesomeIcon>
-            {{ $t('bot-social-games-view-idle') }}
-          </button>
-          <button
-            type="button"
-            role="tab"
-            class="bot-social-games__view"
-            :class="{ 'is-active': panelMode === 'wishlist' }"
-            :aria-selected="panelMode === 'wishlist' ? 'true' : 'false'"
-            @click="setPanelMode('wishlist')"
-          >
-            <FontAwesomeIcon icon="heart" aria-hidden="true"></FontAwesomeIcon>
-            {{ $t('bot-social-games-view-wishlist') }}
-          </button>
-          <button
-            type="button"
-            role="tab"
-            class="bot-social-games__view"
-            :class="{ 'is-active': panelMode === 'add' }"
-            :aria-selected="panelMode === 'add' ? 'true' : 'false'"
-            @click="setPanelMode('add')"
-          >
-            <FontAwesomeIcon icon="plus" aria-hidden="true"></FontAwesomeIcon>
-            {{ $t('bot-social-games-view-add') }}
-          </button>
-        </div>
+        <GamesViewTabs
+          :value="panelMode"
+          :tabs="viewTabs"
+          :aria-label="$t('bot-social-games-views')"
+          @input="setPanelMode"
+        ></GamesViewTabs>
 
-        <div v-show="isBrowseMode" class="bot-social-games__chrome-bar">
-          <label class="bot-social-games__searchbox">
-            <FontAwesomeIcon class="bot-social-games__search-icon" icon="search" aria-hidden="true"></FontAwesomeIcon>
-            <input
-              v-model.trim="query"
-              class="bot-social-games__search-input"
-              type="search"
-              :placeholder="$t('bot-social-search')"
-              :aria-label="$t('bot-social-search')"
-            >
-          </label>
-
-          <div class="bot-social-games__chrome-actions">
-            <p class="bot-social-games__count">
-              {{ $t('bot-social-games-showing', { shown: visibleGames.length, total: games.length }) }}
-              <span v-if="isPaintingMore" class="bot-social-games__count-more">
-                · {{ $t('bot-social-games-painting') }}
-              </span>
-            </p>
-            <button
-              v-if="query"
-              type="button"
-              class="bot-social-games__clear"
-              @click="query = ''"
-            >
-              {{ $t('bot-social-games-clear-search') }}
-            </button>
-            <button
-              type="button"
-              class="bot-social-games__refresh"
-              :disabled="loading || refreshing"
-              @click="refresh"
-            >
-              <FontAwesomeIcon v-if="refreshing || loading" icon="spinner" spin></FontAwesomeIcon>
-              <span v-else>{{ $t('bot-social-refresh') }}</span>
-            </button>
-          </div>
-        </div>
-
-        <div
+        <GamesBrowseToolbar
           v-show="isBrowseMode"
-          class="bot-social-games__filterbar"
-          role="group"
-          :aria-label="$t('bot-social-games-filters')"
+          :query.sync="query"
+          :busy="refreshing || loading"
+          :refresh-disabled="loading || refreshing"
+          :has-active-filters="hasActiveFilters"
+          :filters-aria-label="$t('bot-social-games-filters')"
+          @refresh="refresh"
+          @clear-filters="clearFilters"
         >
-          <div class="bot-social-games__field">
-            <span id="games-filter-ownership-label" class="bot-social-games__field-label">
-              {{ $t('bot-social-games-filter-ownership') }}
+          <template #count>
+            {{ $t('bot-social-games-showing', { shown: visibleGames.length, total: games.length }) }}
+            <span v-if="isPaintingMore" class="bot-social-games__count-more">
+              · {{ $t('bot-social-games-painting') }}
             </span>
-            <AsfSelect
-              v-model="ownershipFilter"
-              compact
-              aria-labelledby="games-filter-ownership-label"
-              :options="ownershipOptions"
-              :search-placeholder="$t('bot-social-games-filter-search-options')"
-            ></AsfSelect>
-          </div>
-
-          <div class="bot-social-games__field">
-            <span id="games-filter-achievements-label" class="bot-social-games__field-label">
-              {{ $t('bot-social-games-filter-achievements') }}
-            </span>
-            <AsfSelect
-              v-model="achievementsFilter"
-              compact
-              aria-labelledby="games-filter-achievements-label"
-              :options="achievementsOptions"
-              :search-placeholder="$t('bot-social-games-filter-search-options')"
-            ></AsfSelect>
-          </div>
-
-          <div class="bot-social-games__field">
-            <span id="games-filter-cards-label" class="bot-social-games__field-label">
-              {{ $t('bot-social-games-filter-cards') }}
-            </span>
-            <AsfSelect
-              v-model="cardsFilter"
-              compact
-              aria-labelledby="games-filter-cards-label"
-              :options="cardsOptions"
-              :search-placeholder="$t('bot-social-games-filter-search-options')"
-            ></AsfSelect>
-          </div>
-
-          <div class="bot-social-games__field">
-            <span id="games-filter-type-label" class="bot-social-games__field-label">
-              {{ $t('bot-social-games-filter-type') }}
-            </span>
-            <AsfSelect
-              v-model="typeFilter"
-              compact
-              searchable
-              aria-labelledby="games-filter-type-label"
-              :options="typeOptions"
-              :search-placeholder="$t('bot-social-games-filter-search-options')"
-            ></AsfSelect>
-          </div>
-
-          <button
-            v-if="hasActiveFilters"
-            type="button"
-            class="bot-social-games__clear-filters"
-            @click="clearFilters"
-          >
-            {{ $t('bot-social-games-clear-filters') }}
-          </button>
-        </div>
+          </template>
+          <template #filters>
+            <div class="bot-social-games__field">
+              <span id="games-filter-ownership-label" class="bot-social-games__field-label">
+                {{ $t('bot-social-games-filter-ownership') }}
+              </span>
+              <AsfSelect
+                v-model="ownershipFilter"
+                compact
+                aria-labelledby="games-filter-ownership-label"
+                :options="ownershipOptions"
+                :search-placeholder="$t('bot-social-games-filter-search-options')"
+              ></AsfSelect>
+            </div>
+            <div class="bot-social-games__field">
+              <span id="games-filter-achievements-label" class="bot-social-games__field-label">
+                {{ $t('bot-social-games-filter-achievements') }}
+              </span>
+              <AsfSelect
+                v-model="achievementsFilter"
+                compact
+                aria-labelledby="games-filter-achievements-label"
+                :options="achievementsOptions"
+                :search-placeholder="$t('bot-social-games-filter-search-options')"
+              ></AsfSelect>
+            </div>
+            <div class="bot-social-games__field">
+              <span id="games-filter-cards-label" class="bot-social-games__field-label">
+                {{ $t('bot-social-games-filter-cards') }}
+              </span>
+              <AsfSelect
+                v-model="cardsFilter"
+                compact
+                aria-labelledby="games-filter-cards-label"
+                :options="cardsOptions"
+                :search-placeholder="$t('bot-social-games-filter-search-options')"
+              ></AsfSelect>
+            </div>
+            <div class="bot-social-games__field">
+              <span id="games-filter-type-label" class="bot-social-games__field-label">
+                {{ $t('bot-social-games-filter-type') }}
+              </span>
+              <AsfSelect
+                v-model="typeFilter"
+                compact
+                searchable
+                aria-labelledby="games-filter-type-label"
+                :options="typeOptions"
+                :search-placeholder="$t('bot-social-games-filter-search-options')"
+              ></AsfSelect>
+            </div>
+          </template>
+        </GamesBrowseToolbar>
       </div>
 
       <AddPanel
@@ -210,7 +109,6 @@
         @plugin-missing="$emit('plugin-missing')"
       ></IdlePanel>
 
-      <!-- Keep library/cover mounted so tab switches reuse cache + painted tiles. -->
       <div v-show="isBrowseMode" class="bot-social-games__browse">
         <div v-if="loading && !games.length" class="bot-social__state">
           <FontAwesomeIcon icon="spinner" spin></FontAwesomeIcon>
@@ -245,6 +143,10 @@
     </template>
   </div>
 </template>
+      </div>
+    </template>
+  </div>
+</template>
 
 <script>
   import { isPluginMissingError } from '../api/bot-social';
@@ -253,14 +155,18 @@
   import { resolveLocalData } from '../cache/load-policy';
   import { prime } from '../cache/query-cache';
   import AddPanel from './games/add-panel.vue';
+  import GamesBrowseToolbar from './games/browse-toolbar.vue';
   import CoverTile from './games/cover-tile.vue';
   import IdlePanel from './games/idle-panel.vue';
   import StatsPanel from './games/stats-panel.vue';
+  import GamesViewTabs from './games/view-tabs.vue';
   import WishlistPanel from './games/wishlist-panel.vue';
   import PluginMissing from './PluginMissing.vue';
+  import { normalizeQueryValue, replaceModalView } from '../../../utils/modal-view-query';
 
   const PANEL_STORAGE_KEY = 'asf-bot-social-games-panel';
   const PANEL_MODES = new Set(['library', 'banner', 'stats', 'idle', 'wishlist', 'add']);
+  const PANEL_VIEW_DEFAULT = 'library';
   const TYPE_ORDER = ['game', 'dlc', 'demo', 'application', 'tool', 'beta', 'video', 'music', 'other'];
   const TYPE_LABEL_KEYS = {
     game: 'bot-social-games-filter-type-game',
@@ -281,10 +187,16 @@
       const value = localStorage.getItem(PANEL_STORAGE_KEY);
       if (PANEL_MODES.has(value)) return value;
       const legacy = localStorage.getItem('asf-bot-social-games-view');
-      return PANEL_MODES.has(legacy) ? legacy : 'library';
+      return PANEL_MODES.has(legacy) ? legacy : PANEL_VIEW_DEFAULT;
     } catch {
-      return 'library';
+      return PANEL_VIEW_DEFAULT;
     }
+  }
+
+  function resolveInitialPanel(route) {
+    const fromRoute = normalizeQueryValue(route?.query?.view);
+    if (PANEL_MODES.has(fromRoute)) return fromRoute;
+    return readStoredPanel();
   }
 
   function isBrowse(mode) {
@@ -294,14 +206,21 @@
   export default {
     name: 'BotSocialGamesTab',
     components: {
-      AddPanel, CoverTile, IdlePanel, StatsPanel, WishlistPanel, PluginMissing,
+      AddPanel,
+      CoverTile,
+      IdlePanel,
+      StatsPanel,
+      WishlistPanel,
+      PluginMissing,
+      GamesViewTabs,
+      GamesBrowseToolbar,
     },
     props: {
       botName: { type: String, required: true },
       pluginMissing: { type: Boolean, default: false },
     },
     data() {
-      const panelMode = readStoredPanel();
+      const panelMode = resolveInitialPanel(this.$route);
       return {
         loading: false,
         refreshing: false,
@@ -324,6 +243,16 @@
     computed: {
       isBrowseMode() {
         return isBrowse(this.panelMode);
+      },
+      viewTabs() {
+        return [
+          { id: 'library', icon: 'book-open', label: this.$t('bot-social-games-view-library') },
+          { id: 'banner', icon: 'gamepad', label: this.$t('bot-social-games-view-banner') },
+          { id: 'stats', icon: 'chart-bar', label: this.$t('bot-social-games-view-stats') },
+          { id: 'idle', icon: 'clock', label: this.$t('bot-social-games-view-idle') },
+          { id: 'wishlist', icon: 'heart', label: this.$t('bot-social-games-view-wishlist') },
+          { id: 'add', icon: 'plus', label: this.$t('bot-social-games-view-add') },
+        ];
       },
       hasActiveFilters() {
         return this.ownershipFilter !== 'all'
@@ -403,6 +332,9 @@
           this.startProgressivePaint();
         },
       },
+      '$route.query.view'() {
+        this.syncPanelFromRoute();
+      },
     },
     beforeDestroy() {
       this.cancelProgressivePaint();
@@ -414,21 +346,36 @@
         this.cardsFilter = 'all';
         this.typeFilter = 'all';
       },
-      setPanelMode(mode) {
+      applyPanelMode(mode, { persist = true } = {}) {
         if (!PANEL_MODES.has(mode) || mode === this.panelMode) return;
         if (mode === 'stats') this.statsMounted = true;
         if (mode === 'idle') this.idleMounted = true;
         if (isBrowse(mode)) this.browseVariant = mode;
         this.panelMode = mode;
-        try {
-          localStorage.setItem(PANEL_STORAGE_KEY, mode);
-        } catch {
-          // ignore
+        if (persist) {
+          try {
+            localStorage.setItem(PANEL_STORAGE_KEY, mode);
+          } catch {
+            // ignore
+          }
+          replaceModalView(this.$router, this.$route, mode, PANEL_VIEW_DEFAULT);
         }
         // Idle picker and browse reuse the same library cache.
         if ((isBrowse(mode) || mode === 'idle') && !this.games.length && !this.loading) {
           this.bootstrap();
         }
+      },
+      syncPanelFromRoute() {
+        const raw = normalizeQueryValue(this.$route.query?.view);
+        if (PANEL_MODES.has(raw)) {
+          this.applyPanelMode(raw, { persist: false });
+          return;
+        }
+        // Query cleared (e.g. default tab) → default view; bare first load uses resolveInitialPanel + storage.
+        if (!raw) this.applyPanelMode(PANEL_VIEW_DEFAULT, { persist: false });
+      },
+      setPanelMode(mode) {
+        this.applyPanelMode(mode, { persist: true });
       },
       cancelProgressivePaint() {
         if (this.paintRaf) {

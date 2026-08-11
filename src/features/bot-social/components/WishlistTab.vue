@@ -4,106 +4,42 @@
 
     <template v-else>
       <div class="bot-social-games__chrome">
-        <div class="bot-social-games__views" role="tablist" :aria-label="$t('bot-social-wishlist-views')">
-          <button
-            type="button"
-            role="tab"
-            class="bot-social-games__view"
-            :class="{ 'is-active': panelMode === 'library' }"
-            :aria-selected="panelMode === 'library' ? 'true' : 'false'"
-            @click="setPanelMode('library')"
-          >
-            <FontAwesomeIcon icon="book-open" aria-hidden="true"></FontAwesomeIcon>
-            {{ $t('bot-social-games-view-library') }}
-          </button>
-          <button
-            type="button"
-            role="tab"
-            class="bot-social-games__view"
-            :class="{ 'is-active': panelMode === 'banner' }"
-            :aria-selected="panelMode === 'banner' ? 'true' : 'false'"
-            @click="setPanelMode('banner')"
-          >
-            <FontAwesomeIcon icon="gamepad" aria-hidden="true"></FontAwesomeIcon>
-            {{ $t('bot-social-games-view-banner') }}
-          </button>
-          <button
-            type="button"
-            role="tab"
-            class="bot-social-games__view"
-            :class="{ 'is-active': panelMode === 'add' }"
-            :aria-selected="panelMode === 'add' ? 'true' : 'false'"
-            @click="setPanelMode('add')"
-          >
-            <FontAwesomeIcon icon="plus" aria-hidden="true"></FontAwesomeIcon>
-            {{ $t('bot-social-games-view-add') }}
-          </button>
-        </div>
+        <GamesViewTabs
+          :value="panelMode"
+          :tabs="viewTabs"
+          :aria-label="$t('bot-social-wishlist-views')"
+          @input="setPanelMode"
+        ></GamesViewTabs>
 
-        <div v-show="isBrowseMode" class="bot-social-games__chrome-bar">
-          <label class="bot-social-games__searchbox">
-            <FontAwesomeIcon class="bot-social-games__search-icon" icon="search" aria-hidden="true"></FontAwesomeIcon>
-            <input
-              v-model.trim="query"
-              class="bot-social-games__search-input"
-              type="search"
-              :placeholder="$t('bot-social-search')"
-              :aria-label="$t('bot-social-search')"
-            >
-          </label>
-
-          <div class="bot-social-games__chrome-actions">
-            <p class="bot-social-games__count">
-              {{ $t('bot-social-wishlist-showing', { shown: filteredItems.length, total: items.length }) }}
-            </p>
-            <button
-              v-if="query"
-              type="button"
-              class="bot-social-games__clear"
-              @click="query = ''"
-            >
-              {{ $t('bot-social-games-clear-search') }}
-            </button>
-            <button
-              type="button"
-              class="bot-social-games__refresh"
-              :disabled="loading || refreshing || mutating"
-              @click="refresh"
-            >
-              <FontAwesomeIcon v-if="refreshing || loading" icon="spinner" spin></FontAwesomeIcon>
-              <span v-else>{{ $t('bot-social-refresh') }}</span>
-            </button>
-          </div>
-        </div>
-
-        <div
+        <GamesBrowseToolbar
           v-show="isBrowseMode"
-          class="bot-social-games__filterbar wishlist-hub__filterbar"
-          role="group"
-          :aria-label="$t('bot-social-wishlist-filters')"
+          :query.sync="query"
+          :busy="refreshing || loading"
+          :refresh-disabled="loading || refreshing || mutating"
+          :has-active-filters="hasActiveFilters"
+          :filters-aria-label="$t('bot-social-wishlist-filters')"
+          filterbar-class="wishlist-hub__filterbar"
+          @refresh="refresh"
+          @clear-filters="clearFilters"
         >
-          <div class="bot-social-games__field">
-            <span id="wishlist-filter-sort-label" class="bot-social-games__field-label">
-              {{ $t('bot-social-wishlist-filter-sort') }}
-            </span>
-            <AsfSelect
-              v-model="sortFilter"
-              compact
-              aria-labelledby="wishlist-filter-sort-label"
-              :options="sortOptions"
-              :search-placeholder="$t('bot-social-games-filter-search-options')"
-            ></AsfSelect>
-          </div>
-
-          <button
-            v-if="hasActiveFilters"
-            type="button"
-            class="bot-social-games__clear-filters"
-            @click="clearFilters"
-          >
-            {{ $t('bot-social-games-clear-filters') }}
-          </button>
-        </div>
+          <template #count>
+            {{ $t('bot-social-wishlist-showing', { shown: filteredItems.length, total: items.length }) }}
+          </template>
+          <template #filters>
+            <div class="bot-social-games__field">
+              <span id="wishlist-filter-sort-label" class="bot-social-games__field-label">
+                {{ $t('bot-social-wishlist-filter-sort') }}
+              </span>
+              <AsfSelect
+                v-model="sortFilter"
+                compact
+                aria-labelledby="wishlist-filter-sort-label"
+                :options="sortOptions"
+                :search-placeholder="$t('bot-social-games-filter-search-options')"
+              ></AsfSelect>
+            </div>
+          </template>
+        </GamesBrowseToolbar>
       </div>
 
       <form v-if="panelMode === 'add'" class="wishlist-hub__add" @submit.prevent="onAdd">
@@ -187,19 +123,29 @@
   import { resolveLocalData } from '../cache/load-policy';
   import { parseGameAppId } from '../utils/game-target';
   import CoverTile from './games/cover-tile.vue';
+  import GamesBrowseToolbar from './games/browse-toolbar.vue';
+  import GamesViewTabs from './games/view-tabs.vue';
   import PluginMissing from './PluginMissing.vue';
+  import { normalizeQueryValue, replaceModalView } from '../../../utils/modal-view-query';
 
   const PANEL_STORAGE_KEY = 'asf-bot-social-wishlist-panel';
   const PANEL_MODES = new Set(['library', 'banner', 'add']);
+  const PANEL_VIEW_DEFAULT = 'library';
   const DEFAULT_SORT = 'name-asc';
 
   function readStoredPanel() {
     try {
       const value = localStorage.getItem(PANEL_STORAGE_KEY);
-      return PANEL_MODES.has(value) ? value : 'library';
+      return PANEL_MODES.has(value) ? value : PANEL_VIEW_DEFAULT;
     } catch {
-      return 'library';
+      return PANEL_VIEW_DEFAULT;
     }
+  }
+
+  function resolveInitialPanel(route) {
+    const fromRoute = normalizeQueryValue(route?.query?.view);
+    if (PANEL_MODES.has(fromRoute)) return fromRoute;
+    return readStoredPanel();
   }
 
   function isBrowse(mode) {
@@ -208,13 +154,13 @@
 
   export default {
     name: 'BotSocialWishlistTab',
-    components: { CoverTile, PluginMissing },
+    components: { CoverTile, PluginMissing, GamesViewTabs, GamesBrowseToolbar },
     props: {
       botName: { type: String, required: true },
       pluginMissing: { type: Boolean, default: false },
     },
     data() {
-      const panelMode = readStoredPanel();
+      const panelMode = resolveInitialPanel(this.$route);
       return {
         loading: false,
         refreshing: false,
@@ -231,6 +177,13 @@
     computed: {
       isBrowseMode() {
         return isBrowse(this.panelMode);
+      },
+      viewTabs() {
+        return [
+          { id: 'library', icon: 'book-open', label: this.$t('bot-social-games-view-library') },
+          { id: 'banner', icon: 'gamepad', label: this.$t('bot-social-games-view-banner') },
+          { id: 'add', icon: 'plus', label: this.$t('bot-social-games-view-add') },
+        ];
       },
       hasActiveFilters() {
         return this.sortFilter !== DEFAULT_SORT;
@@ -291,17 +244,34 @@
       pluginMissing(value) {
         if (!value) this.bootstrap();
       },
+      '$route.query.view'() {
+        this.syncPanelFromRoute();
+      },
     },
     methods: {
-      setPanelMode(mode) {
+      applyPanelMode(mode, { persist = true } = {}) {
         if (!PANEL_MODES.has(mode) || mode === this.panelMode) return;
         this.panelMode = mode;
         if (isBrowse(mode)) this.browseVariant = mode;
-        try {
-          localStorage.setItem(PANEL_STORAGE_KEY, mode);
-        } catch {
-          // ignore
+        if (persist) {
+          try {
+            localStorage.setItem(PANEL_STORAGE_KEY, mode);
+          } catch {
+            // ignore
+          }
+          replaceModalView(this.$router, this.$route, mode, PANEL_VIEW_DEFAULT);
         }
+      },
+      syncPanelFromRoute() {
+        const raw = normalizeQueryValue(this.$route.query?.view);
+        if (PANEL_MODES.has(raw)) {
+          this.applyPanelMode(raw, { persist: false });
+          return;
+        }
+        if (!raw) this.applyPanelMode(PANEL_VIEW_DEFAULT, { persist: false });
+      },
+      setPanelMode(mode) {
+        this.applyPanelMode(mode, { persist: true });
       },
       clearFilters() {
         this.sortFilter = DEFAULT_SORT;

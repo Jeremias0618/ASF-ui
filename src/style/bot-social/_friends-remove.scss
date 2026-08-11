@@ -1,0 +1,53 @@
+/* Friends remove dialog */
+
+.friends-remove {
+  bottom: 0;
+  left: 0;
+  position: fixed;
+  right: 0;
+  top: 0;
+  z-index: 80;
+}
+
+.friends-remove__backdrop {
+  appearance: none;
+  background: rgba(0, 0, 0, 0.55);
+  border: 0;
+  cursor: default;
+  inset: 0;
+  position: absolute;
+}
+
+.friends-remove__panel {
+  background: var(--friends-panel-bg, #1b2838);
+  border: 1px solid var(--friends-compose-border, rgba(255, 255, 255, 0.1));
+  border-radius: 0.55rem;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+  color: var(--friends-ink, #c6d4df);
+  left: 50%;
+  max-width: 24rem;
+  padding: 1.1rem 1.15rem 1rem;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: calc(100% - 2rem);
+  z-index: 1;
+}
+
+.friends-remove__title {
+  font-size: 1.05rem;
+  margin: 0 0 0.4rem;
+}
+
+.friends-remove__lead {
+  color: var(--friends-muted, #8f98a0);
+  font-size: 0.86rem;
+  line-height: 1.45;
+  margin: 0 0 1rem;
+}
+
+.friends-remove__actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}

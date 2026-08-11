@@ -3,235 +3,55 @@
     <PluginMissing v-if="pluginMissing"></PluginMissing>
 
     <template v-else>
-      <div class="friends-hub__modes" role="tablist" :aria-label="$t('bot-social-friends-modes')">
-        <button
-          type="button"
-          role="tab"
-          class="friends-hub__mode"
-          :class="{ 'is-active': panelMode === 'friends' }"
-          :aria-selected="panelMode === 'friends' ? 'true' : 'false'"
-          @click="setPanelMode('friends')"
-        >
-          {{ $t('bot-social-friends-mode-friends') }}
-          <span class="friends-hub__mode-count">{{ friends.length }}</span>
-        </button>
-        <button
-          type="button"
-          role="tab"
-          class="friends-hub__mode"
-          :class="{ 'is-active': panelMode === 'sent' }"
-          :aria-selected="panelMode === 'sent' ? 'true' : 'false'"
-          @click="setPanelMode('sent')"
-        >
-          {{ $t('bot-social-friends-mode-sent') }}
-          <span class="friends-hub__mode-count">{{ sentRequests.length }}</span>
-        </button>
-        <button
-          type="button"
-          role="tab"
-          class="friends-hub__mode"
-          :class="{ 'is-active': panelMode === 'received' }"
-          :aria-selected="panelMode === 'received' ? 'true' : 'false'"
-          @click="setPanelMode('received')"
-        >
-          {{ $t('bot-social-friends-mode-received') }}
-          <span class="friends-hub__mode-count">{{ receivedRequests.length }}</span>
-        </button>
-        <button
-          type="button"
-          role="tab"
-          class="friends-hub__mode"
-          :class="{ 'is-active': panelMode === 'send' }"
-          :aria-selected="panelMode === 'send' ? 'true' : 'false'"
-          @click="setPanelMode('send')"
-        >
-          <FontAwesomeIcon icon="plus" aria-hidden="true"></FontAwesomeIcon>
-          {{ $t('bot-social-friends-mode-send') }}
-        </button>
-      </div>
+      <FriendsModeTabs
+        :value="panelMode"
+        :friends-count="friends.length"
+        :sent-count="sentRequests.length"
+        :received-count="receivedRequests.length"
+        @input="setPanelMode"
+      ></FriendsModeTabs>
 
-      <section
+      <FriendsComposePanel
         v-if="panelMode === 'send'"
-        class="friends-hub__compose"
-        :aria-label="$t('bot-social-friends-send-title')"
-      >
-        <div class="friends-hub__compose-panel">
-          <header class="friends-hub__compose-header">
-            <p class="friends-hub__compose-eyebrow">{{ $t('bot-social-friends-mode-send') }}</p>
-            <h3 class="friends-hub__compose-title">{{ $t('bot-social-friends-send-title') }}</h3>
-            <p class="friends-hub__compose-lead">{{ $t('bot-social-friends-send-lead') }}</p>
-          </header>
-
-          <form class="friends-hub__compose-form" @submit.prevent="onAdd">
-            <label class="friends-hub__field-label" for="friends-send-target">
-              {{ $t('bot-social-friends-send-target-label') }}
-            </label>
-            <div class="friends-hub__compose-combo">
-              <input
-                id="friends-send-target"
-                v-model.trim="addTarget"
-                class="friends-hub__compose-input"
-                type="text"
-                :placeholder="$t('bot-social-friends-send-placeholder')"
-                :disabled="mutating"
-                autocomplete="off"
-                spellcheck="false"
-              >
-              <button
-                type="submit"
-                class="friends-hub__compose-submit"
-                :disabled="!addTarget || mutating"
-              >
-                <FontAwesomeIcon v-if="mutating" icon="spinner" spin aria-hidden="true"></FontAwesomeIcon>
-                <span v-else>{{ $t('bot-social-friends-send-submit') }}</span>
-              </button>
-            </div>
-          </form>
-
-          <div class="friends-hub__compose-help" :aria-label="$t('bot-social-friends-send-formats')">
-            <p class="friends-hub__compose-help-title">{{ $t('bot-social-friends-send-formats') }}</p>
-            <ul class="friends-hub__compose-examples">
-              <li><code>{{ $t('bot-social-friends-send-example-steamid') }}</code></li>
-              <li><code>{{ $t('bot-social-friends-send-example-code') }}</code></li>
-              <li><code>{{ $t('bot-social-friends-send-example-vanity') }}</code></li>
-              <li><code>{{ $t('bot-social-friends-send-example-profiles') }}</code></li>
-            </ul>
-          </div>
-        </div>
-      </section>
+        :target.sync="addTarget"
+        :submitting="mutating"
+        @submit="onAdd"
+      ></FriendsComposePanel>
 
       <template v-else>
-        <section class="friends-hub__chrome" :aria-label="$t('bot-social-tab-friends')">
-          <div class="friends-hub__chrome-bar">
-            <div class="friends-hub__searchbox">
-              <FontAwesomeIcon icon="search" class="friends-hub__search-icon" aria-hidden="true"></FontAwesomeIcon>
-              <input
-                v-model.trim="query"
-                class="friends-hub__search-input"
-                type="search"
-                :placeholder="$t('bot-social-friends-search-placeholder')"
-                :aria-label="$t('bot-social-friends-search-label')"
-                autocomplete="off"
-              >
-            </div>
+        <FriendsSearchChrome
+          :query.sync="query"
+          :count-label="countLabel"
+          :has-active-filters="hasActiveFilters"
+          :refreshing="refreshing"
+          :refresh-disabled="loading || refreshing || mutating"
+          @clear="clearFilters"
+          @refresh="refresh"
+        ></FriendsSearchChrome>
 
-            <div class="friends-hub__chrome-actions">
-              <span class="friends-hub__count">{{ countLabel }}</span>
-              <button
-                v-if="hasActiveFilters"
-                type="button"
-                class="friends-hub__clear"
-                @click="clearFilters"
-              >
-                {{ $t('bot-social-friends-clear-filters') }}
-              </button>
-              <button
-                type="button"
-                class="friends-hub__refresh"
-                :disabled="loading || refreshing || mutating"
-                :title="$t('bot-social-refresh')"
-                @click="refresh"
-              >
-                <FontAwesomeIcon :icon="refreshing ? 'spinner' : 'redo-alt'" :spin="refreshing"></FontAwesomeIcon>
-                <span>{{ $t('bot-social-refresh') }}</span>
-              </button>
-            </div>
-          </div>
-        </section>
-
-        <div v-if="loading && !hasAnyData" class="friends-hub__skeleton" aria-busy="true" :aria-label="$t('bot-social-loading')">
-          <div v-for="n in 20" :key="n" class="friends-hub__skel-card"></div>
+        <FriendsSkeleton v-if="loading && !hasAnyData"></FriendsSkeleton>
+        <div v-else-if="error && !hasAnyData" class="bot-social__state bot-social__state--error">
+          {{ error }}
         </div>
-        <div v-else-if="error && !hasAnyData" class="bot-social__state bot-social__state--error">{{ error }}</div>
-        <template v-else>
-          <p v-if="error" class="bot-social__inline-error">{{ error }}</p>
-          <div v-if="!activeList.length" class="friends-hub__empty">
-            <p>{{ emptyLabel }}</p>
-          </div>
-          <div v-else-if="!filteredList.length" class="friends-hub__empty">
-            <p>{{ $t('bot-social-friends-search-empty') }}</p>
-            <button type="button" class="button button--link" @click="clearFilters">
-              {{ $t('bot-social-friends-clear-filters') }}
-            </button>
-          </div>
-          <ul v-else class="friends-hub__grid" :class="{ 'is-refreshing': refreshing }">
-            <li v-for="friend in pageList" :key="`${panelMode}-${friend.steamId}`" class="friends-hub__card-wrap">
-              <article
-                class="friends-hub__card"
-                :class="{ 'is-blocked': isBlocked(friend) }"
-              >
-              <a
-                class="friends-hub__avatar-link"
-                :href="profileUrl(friend.steamId)"
-                target="_blank"
-                rel="noreferrer noopener"
-                :aria-label="displayName(friend)"
-                @click="onProfileClick(friend, $event)"
-              >
-                <img
-                  v-if="friend.avatarUrl && !brokenAvatars[friend.steamId]"
-                  class="friends-hub__avatar"
-                  :src="friend.avatarUrl"
-                  alt=""
-                  width="40"
-                  height="40"
-                  loading="lazy"
-                  decoding="async"
-                  @error="onAvatarError(friend.steamId)"
-                >
-                <span v-else class="friends-hub__avatar friends-hub__avatar--fallback" aria-hidden="true">
-                  {{ initials(friend) }}
-                </span>
-              </a>
-              <div class="friends-hub__meta">
-                <a
-                  class="friends-hub__name"
-                  :href="profileUrl(friend.steamId)"
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  @click="onProfileClick(friend, $event)"
-                >{{ displayName(friend) }}</a>
-                <span v-if="isBlocked(friend)" class="friends-hub__badge friends-hub__badge--blocked">
-                  {{ $t('bot-social-friends-blocked') }}
-                </span>
-              </div>
-              <div class="friends-hub__actions">
-                <button
-                  v-if="panelMode === 'received'"
-                  type="button"
-                  class="friends-hub__icon-btn friends-hub__icon-btn--accept"
-                  :disabled="mutating"
-                  :aria-label="$t('bot-social-friends-accept-aria', { name: displayName(friend) })"
-                  :title="$t('bot-social-friends-accept')"
-                  @click="askAction(friend, 'accept')"
-                >
-                  <FontAwesomeIcon icon="check-circle" aria-hidden="true"></FontAwesomeIcon>
-                </button>
-                <button
-                  type="button"
-                  class="friends-hub__icon-btn friends-hub__icon-btn--danger"
-                  :disabled="mutating"
-                  :aria-label="actionAria(friend)"
-                  :title="actionLabel"
-                  @click="askAction(friend, dangerActionMode)"
-                >
-                  <FontAwesomeIcon icon="trash" aria-hidden="true"></FontAwesomeIcon>
-                </button>
-              </div>
-            </article>
-          </li>
-        </ul>
-
-          <div v-if="totalPages > 1" class="friends-hub__pager">
-            <button type="button" class="friends-hub__page-btn" :disabled="page <= 1" @click="page -= 1">
-              <FontAwesomeIcon icon="chevron-left"></FontAwesomeIcon>
-            </button>
-            <span>{{ $t('bot-social-inventory-page', { current: page, total: totalPages }) }}</span>
-            <button type="button" class="friends-hub__page-btn" :disabled="page >= totalPages" @click="page += 1">
-              <FontAwesomeIcon icon="chevron-right"></FontAwesomeIcon>
-            </button>
-          </div>
-        </template>
+        <FriendsListPanel
+          v-else
+          :panel-mode="panelMode"
+          :items="pageList"
+          :active-count="activeList.length"
+          :empty-label="emptyLabel"
+          :error="error"
+          :refreshing="refreshing"
+          :mutating="mutating"
+          :broken-avatars="brokenAvatars"
+          :page.sync="page"
+          :total-pages="totalPages"
+          :danger-title="actionLabel"
+          @clear-filters="clearFilters"
+          @profile-click="onProfileClick"
+          @avatar-error="onAvatarError"
+          @accept="friend => askAction(friend, 'accept')"
+          @danger="friend => askAction(friend, dangerActionMode)"
+        ></FriendsListPanel>
       </template>
     </template>
 
@@ -256,22 +76,42 @@
   import { invalidateFriends, loadFriends } from '../cache/bot-social-queries';
   import { resolveLocalData } from '../cache/load-policy';
   import { normalizeFriendTarget } from '../utils/friend-target';
+  import {
+    STEAM_ID64_RE,
+    friendDisplayName,
+    isValidSteamId64,
+  } from '../utils/friend-display';
+  import { readModalView, replaceModalView } from '../../../utils/modal-view-query';
   import PluginMissing from './PluginMissing.vue';
+  import FriendsComposePanel from './friends/compose-panel.vue';
+  import FriendsListPanel from './friends/list-panel.vue';
+  import FriendsModeTabs from './friends/mode-tabs.vue';
   import RemoveDialog from './friends/remove-dialog.vue';
+  import FriendsSearchChrome from './friends/search-chrome.vue';
+  import FriendsSkeleton from './friends/skeleton.vue';
 
   const PAGE_SIZE = 20;
-  const STEAM_ID64_RE = /^[0-9]{17}$/;
+  const FRIEND_VIEWS = new Set(['friends', 'sent', 'received', 'send']);
+  const FRIEND_VIEW_DEFAULT = 'friends';
 
   export default {
     name: 'BotSocialFriendsTab',
-    components: { PluginMissing, RemoveDialog },
+    components: {
+      PluginMissing,
+      RemoveDialog,
+      FriendsModeTabs,
+      FriendsComposePanel,
+      FriendsSearchChrome,
+      FriendsSkeleton,
+      FriendsListPanel,
+    },
     props: {
       botName: { type: String, required: true },
       pluginMissing: { type: Boolean, default: false },
     },
     data() {
       return {
-        panelMode: 'friends',
+        panelMode: readModalView(this.$route, FRIEND_VIEWS, FRIEND_VIEW_DEFAULT),
         loading: false,
         refreshing: false,
         mutating: false,
@@ -337,7 +177,7 @@
       },
       pendingActionName() {
         if (!this.pendingAction) return '';
-        return this.displayName(this.pendingAction.friend);
+        return friendDisplayName(this.pendingAction.friend);
       },
       pendingMode() {
         return this.pendingAction?.mode || this.panelMode;
@@ -386,14 +226,22 @@
       filteredList() {
         if (this.page > this.totalPages) this.page = this.totalPages;
       },
+      '$route.query.view'() {
+        this.syncPanelFromRoute();
+      },
     },
     methods: {
+      syncPanelFromRoute() {
+        const next = readModalView(this.$route, FRIEND_VIEWS, FRIEND_VIEW_DEFAULT);
+        if (next !== this.panelMode) this.panelMode = next;
+      },
       setPanelMode(mode) {
-        if (mode === this.panelMode) return;
+        if (!FRIEND_VIEWS.has(mode) || mode === this.panelMode) return;
         this.panelMode = mode;
+        replaceModalView(this.$router, this.$route, mode, FRIEND_VIEW_DEFAULT);
       },
       resetView() {
-        this.panelMode = 'friends';
+        this.syncPanelFromRoute();
         this.query = '';
         this.page = 1;
         this.pendingAction = null;
@@ -459,36 +307,14 @@
         if (this.loading || this.refreshing || this.mutating) return;
         this.load(true);
       },
-      isBlocked(friend) {
-        return String(friend.relationship || '').toLowerCase() === 'blocked';
-      },
-      displayName(friend) {
-        const name = String(friend.name || '').trim();
-        if (name && name !== friend.steamId) return name;
-        return friend.steamId || '?';
-      },
-      profileUrl(steamId) {
-        const id = String(steamId || '').trim();
-        if (!STEAM_ID64_RE.test(id)) return 'https://steamcommunity.com/';
-        return `https://steamcommunity.com/profiles/${id}`;
-      },
       onProfileClick(friend, event) {
-        if (!STEAM_ID64_RE.test(String(friend.steamId || ''))) {
+        if (!isValidSteamId64(friend.steamId)) {
           event.preventDefault();
           this.$error(this.$t('bot-social-friends-profile-invalid'));
         }
       },
-      initials(friend) {
-        return String(this.displayName(friend) || '?').trim().slice(0, 1).toUpperCase();
-      },
       onAvatarError(steamId) {
         this.$set(this.brokenAvatars, steamId, true);
-      },
-      actionAria(friend) {
-        const name = this.displayName(friend);
-        if (this.panelMode === 'sent') return this.$t('bot-social-friends-cancel-request-aria', { name });
-        if (this.panelMode === 'received') return this.$t('bot-social-friends-decline-aria', { name });
-        return this.$t('bot-social-friends-remove-aria', { name });
       },
       mutationSucceeded(entry) {
         if (!entry || typeof entry !== 'object') return false;
@@ -525,7 +351,7 @@
           this.addTarget = '';
           invalidateFriends(this.botName);
           await this.load(true);
-          this.panelMode = 'sent';
+          this.setPanelMode('sent');
         } catch (err) {
           if (isPluginMissingError(err)) this.$emit('plugin-missing');
           else this.$error(err.message || String(err));

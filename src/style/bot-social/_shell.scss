@@ -1,0 +1,245 @@
+/* Bot Social shell (header, body, shared chrome) */
+
+﻿.bot-social {
+  box-sizing: border-box;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0;
+  max-width: 100%;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0;
+  width: 100%;
+}
+
+// Beat `.main-container { padding: 1em; overflow: auto }` inside wide modals.
+.main-container.bot-social {
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0;
+  width: 100%;
+}
+
+.bot-social__header {
+  flex-shrink: 0;
+  padding: 1rem 1.25rem 0.75rem;
+}
+
+.bot-social__eyebrow {
+  color: var(--h2-muted, var(--color-text-disabled));
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  margin: 0 0 0.25rem;
+  text-transform: uppercase;
+}
+
+.bot-social__title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.bot-social__lead {
+  color: var(--h2-muted, var(--color-text-disabled));
+  font-size: 0.875rem;
+  line-height: 1.45;
+  margin: 0.35rem 0 0;
+}
+
+.bot-social__tabs {
+  border-bottom: 1px solid var(--h2-border, rgba(255, 255, 255, 0.08));
+  display: flex;
+  flex-shrink: 0;
+  gap: 0.15rem;
+  overflow-x: auto;
+  padding: 0 1rem;
+}
+
+.bot-social__tab {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  color: var(--h2-muted, var(--color-text-disabled));
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 0.875rem;
+  font-weight: 600;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0.7rem 0.75rem;
+  white-space: nowrap;
+
+  &.is-active {
+    border-bottom-color: var(--h2-brand, var(--color-theme));
+    color: var(--h2-ink, var(--color-text));
+  }
+
+  &:hover {
+    color: var(--h2-ink, var(--color-text));
+  }
+}
+
+.bot-social__tab-badge {
+  background: var(--h2-soft, rgba(148, 163, 184, 0.16));
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  min-width: 1.4rem;
+  padding: 0.1rem 0.4rem;
+  text-align: center;
+}
+
+.bot-social__body {
+  box-sizing: border-box;
+  flex: 1 1 auto;
+  min-height: 16rem;
+  min-width: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 1rem 1.15rem 1.25rem;
+  width: 100%;
+
+  &--inventory {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+    padding: 0.65rem 1rem 1rem;
+  }
+}
+
+.bot-social--inventory {
+  .bot-social__header {
+    align-items: baseline;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding: 1rem 1.15rem 0.55rem;
+  }
+
+  .bot-social__eyebrow {
+    margin: 0;
+  }
+
+  .bot-social__title {
+    font-size: 1.35rem;
+    margin: 0;
+  }
+
+  .bot-social__body--inventory {
+    padding-top: 0.35rem;
+  }
+}
+
+.bot-social-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.bot-social__toolbar {
+  align-items: flex-start;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  justify-content: space-between;
+}
+
+.bot-social__toolbar-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.bot-social__stat {
+  color: var(--h2-muted-2, var(--color-text));
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.bot-social__hint {
+  color: var(--h2-muted, var(--color-text-disabled));
+  font-size: 0.78rem;
+  line-height: 1.4;
+  margin: 0.2rem 0 0;
+}
+
+.bot-social__inline-error {
+  color: var(--color-button-cancel, #e11d48);
+  font-size: 0.8rem;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.bot-social-list.is-refreshing {
+  opacity: 0.72;
+  pointer-events: none;
+}
+
+.bot-social__search {
+  max-width: 14rem;
+  min-height: 2.2rem;
+}
+
+.bot-social__form {
+  display: grid;
+  gap: 0.55rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+
+  .button {
+    margin: 0;
+    min-height: 2.5rem;
+  }
+}
+
+.bot-social__state {
+  align-items: center;
+  color: var(--h2-muted, var(--color-text-disabled));
+  display: flex;
+  gap: 0.55rem;
+  justify-content: center;
+  min-height: 8rem;
+  text-align: center;
+
+  &--error {
+    color: var(--color-button-cancel, #e11d48);
+  }
+}
+
+.bot-social__missing {
+  background: var(--h2-soft, rgba(148, 163, 184, 0.1));
+  border: 1px solid var(--h2-border, rgba(255, 255, 255, 0.1));
+  border-radius: 0.75rem;
+  padding: 1.1rem 1.15rem;
+}
+
+.bot-social__missing-title {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0 0 0.4rem;
+}
+
+.bot-social__missing-text {
+  color: var(--h2-muted-2, var(--color-text));
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin: 0 0 0.65rem;
+}
+
+.bot-social__missing-path {
+  margin: 0;
+
+  code {
+    font-size: 0.8rem;
+  }
+}

@@ -1,0 +1,90 @@
+/* Inventory loading skeleton */
+
+.steam-inv__skeleton {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.steam-inv__skeleton-shell {
+  background: var(--steam-inv-panel);
+  border: 1px solid var(--steam-inv-border);
+  border-radius: 0 0 0.55rem 0.55rem;
+  border-top-color: var(--steam-inv-chrome-border);
+  box-shadow: inset 0 0 0 1px var(--steam-inv-inset);
+  display: grid;
+  flex: 1 1 auto;
+  gap: 0;
+  grid-template-columns: minmax(0, 1.35fr) minmax(14rem, 0.85fr);
+  min-height: 22rem;
+  overflow: hidden;
+
+  @media screen and (max-width: 720px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.steam-inv__skeleton-grid-pane {
+  border-right: 1px solid var(--steam-inv-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  min-height: 0;
+  min-width: 0;
+  padding: 0.65rem;
+
+  @media screen and (max-width: 720px) {
+    border-bottom: 1px solid var(--steam-inv-border);
+    border-right: 0;
+  }
+}
+
+.steam-inv__skeleton-grid {
+  display: grid;
+  flex: 1 1 auto;
+  gap: 0.35rem;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-rows: repeat(5, minmax(0, 1fr));
+  min-height: 18rem;
+
+  @media screen and (max-width: 520px) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-rows: none;
+  }
+}
+
+.steam-inv__skeleton-cell {
+  aspect-ratio: 1;
+  border-radius: 0.15rem !important;
+  min-height: 0;
+  width: 100%;
+}
+
+.steam-inv__skeleton-pager {
+  align-items: center;
+  display: flex;
+  gap: 0.65rem;
+  justify-content: center;
+  padding: 0.15rem 0 0.25rem;
+}
+
+.steam-inv__skeleton-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  min-width: 0;
+  padding: 0.85rem 0.9rem 1rem;
+}
+
+.steam-inv__skeleton-preview {
+  border-radius: 0.2rem !important;
+  width: 100%;
+}
+
+.steam-inv__skeleton-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.15rem 0 0.25rem;
+}

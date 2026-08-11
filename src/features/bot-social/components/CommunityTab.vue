@@ -175,6 +175,10 @@
   import ReviewsPanel from './community/reviews-panel.vue';
   import SharedPanel from './community/shared-panel.vue';
   import PluginMissing from './PluginMissing.vue';
+  import { readModalView, replaceModalView } from '../../../utils/modal-view-query';
+
+  const COMMUNITY_VIEWS = new Set(['account', 'groups', 'followers', 'curators', 'reviews', 'shared']);
+  const COMMUNITY_VIEW_DEFAULT = 'account';
 
   export default {
     name: 'BotSocialCommunityTab',
@@ -187,7 +191,7 @@
     },
     data() {
       return {
-        panelMode: 'account',
+        panelMode: readModalView(this.$route, COMMUNITY_VIEWS, COMMUNITY_VIEW_DEFAULT),
         loading: false,
         refreshing: false,
         hasLoaded: false,
@@ -268,7 +272,7 @@
       botName: {
         immediate: true,
         handler() {
-          this.panelMode = 'account';
+          this.syncPanelFromRoute();
           this.load(false);
         },
       },
@@ -278,11 +282,19 @@
           this.refreshing = false;
         }
       },
+      '$route.query.view'() {
+        this.syncPanelFromRoute();
+      },
     },
     methods: {
+      syncPanelFromRoute() {
+        const next = readModalView(this.$route, COMMUNITY_VIEWS, COMMUNITY_VIEW_DEFAULT);
+        if (next !== this.panelMode) this.panelMode = next;
+      },
       setPanelMode(mode) {
-        if (mode === this.panelMode) return;
+        if (!COMMUNITY_VIEWS.has(mode) || mode === this.panelMode) return;
         this.panelMode = mode;
+        replaceModalView(this.$router, this.$route, mode, COMMUNITY_VIEW_DEFAULT);
       },
       async refresh() {
         if (this.loading || this.refreshing || this.pluginMissing) return;

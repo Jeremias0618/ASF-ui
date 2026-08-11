@@ -242,7 +242,7 @@ export default [
       arrows: true,
       closeRoute: routes.bots,
       feature: 'inventory',
-      modalSize: 'workspace-fixed',
+      modalSize: 'workspace',
     },
   },
   {
@@ -257,6 +257,7 @@ export default [
       arrows: true,
       closeRoute: routes.bots,
       feature: 'friends',
+      modalSize: 'workspace',
     },
   },
   {
@@ -271,6 +272,7 @@ export default [
       arrows: true,
       closeRoute: routes.bots,
       feature: 'community',
+      modalSize: 'workspace',
     },
   },
   {
@@ -285,6 +287,7 @@ export default [
       arrows: true,
       closeRoute: routes.bots,
       feature: 'games',
+      modalSize: 'workspace',
     },
   },
   {
@@ -299,6 +302,7 @@ export default [
       arrows: true,
       closeRoute: routes.bots,
       feature: 'wishlist',
+      modalSize: 'workspace',
     },
   },
   {

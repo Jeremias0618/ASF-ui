@@ -1,0 +1,274 @@
+/* Friends grid, skeleton, cards, pager */
+
+.friends-hub__skeleton,
+.friends-hub__grid {
+  box-sizing: border-box;
+  display: grid;
+  gap: 0.45rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  list-style: none;
+  margin: 0;
+  max-width: 100%;
+  min-width: 0;
+  padding: 0;
+  width: 100%;
+}
+
+.friends-hub__card-wrap {
+  min-width: 0;
+}
+
+@media (max-width: 980px) {
+  .friends-hub__skeleton,
+  .friends-hub__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .friends-hub__skeleton,
+  .friends-hub__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .friends-hub__skeleton,
+  .friends-hub__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.friends-hub__skel-card {
+  align-items: center;
+  animation: friends-skel 1.2s ease-in-out infinite;
+  background: var(--friends-card-bg, rgba(0, 0, 0, 0.35));
+  border: 1px solid var(--friends-card-border, rgba(255, 255, 255, 0.05));
+  display: grid;
+  gap: 0.45rem;
+  grid-template-columns: auto minmax(4.5rem, 1fr) auto;
+  min-height: 3.1rem;
+  padding: 0.35rem 0.4rem;
+}
+
+.friends-hub__skel-avatar,
+.friends-hub__skel-line,
+.friends-hub__skel-action {
+  animation: friends-skel 1.2s ease-in-out infinite;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.04));
+  background-size: 200% 100%;
+}
+
+.friends-hub__skel-avatar {
+  height: 40px;
+  width: 40px;
+}
+
+.friends-hub__skel-meta {
+  border-left: 2px solid color-mix(in srgb, var(--friends-accent, #67c1f5) 35%, transparent);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  padding-left: 0.45rem;
+}
+
+.friends-hub__skel-line--name {
+  border-radius: 0.2rem;
+  display: block;
+  height: 0.72rem;
+  max-width: 7.5rem;
+  width: 72%;
+}
+
+.friends-hub__skel-action {
+  border-radius: 0.25rem;
+  height: 1.55rem;
+  justify-self: end;
+  width: 1.55rem;
+}
+
+.app:not(.app--dark-mode) {
+  .friends-hub__skel-avatar,
+  .friends-hub__skel-line,
+  .friends-hub__skel-action {
+    background: linear-gradient(90deg, rgba(16, 24, 40, 0.05), rgba(16, 24, 40, 0.1), rgba(16, 24, 40, 0.05));
+    background-size: 200% 100%;
+  }
+}
+
+@keyframes friends-skel {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .friends-hub__skel-card,
+  .friends-hub__skel-avatar,
+  .friends-hub__skel-line,
+  .friends-hub__skel-action {
+    animation: none;
+  }
+}
+
+.friends-hub__card {
+  align-items: center;
+  background: var(--friends-card-bg);
+  border: 1px solid var(--friends-card-border);
+  display: grid;
+  gap: 0.45rem;
+  grid-template-columns: auto minmax(4.5rem, 1fr) auto;
+  min-height: 3.1rem;
+  padding: 0.35rem 0.4rem;
+  transition: border-color 0.15s ease, background 0.15s ease;
+
+  &:hover {
+    background: var(--friends-card-bg-hover);
+    border-color: color-mix(in srgb, var(--friends-accent) 28%, transparent);
+  }
+
+  &.is-blocked {
+    border-color: rgba(231, 76, 60, 0.35);
+  }
+}
+
+.friends-hub__avatar-link {
+  display: block;
+  flex-shrink: 0;
+  line-height: 0;
+}
+
+.friends-hub__avatar {
+  background: var(--friends-avatar-bg);
+  display: block;
+  height: 40px;
+  object-fit: cover;
+  width: 40px;
+
+  &--fallback {
+    align-items: center;
+    color: var(--friends-accent);
+    display: flex;
+    font-size: 0.95rem;
+    font-weight: 700;
+    justify-content: center;
+  }
+}
+
+.friends-hub__meta {
+  border-left: 2px solid var(--friends-accent);
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  justify-content: center;
+  min-width: 4.5rem;
+  overflow: hidden;
+  padding-left: 0.45rem;
+}
+
+.friends-hub__name {
+  color: var(--friends-name);
+  font-size: 0.82rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.friends-hub__badge {
+  color: var(--friends-muted);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+
+  &--blocked {
+    color: #e74c3c;
+  }
+}
+
+.friends-hub__actions {
+  align-items: center;
+  display: flex;
+  flex-shrink: 0;
+  gap: 0.2rem;
+}
+
+.friends-hub__icon-btn {
+  appearance: none;
+  align-items: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 0.95rem;
+  justify-content: center;
+  line-height: 1;
+  min-height: 1.85rem;
+  min-width: 1.85rem;
+  padding: 0.28rem;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+
+  &--accept {
+    color: #67c1f5;
+
+    &:hover:not(:disabled) {
+      background: rgba(103, 193, 245, 0.16);
+      border-color: rgba(103, 193, 245, 0.35);
+    }
+  }
+
+  &--danger {
+    color: #ff7b72;
+
+    &:hover:not(:disabled) {
+      background: rgba(192, 57, 43, 0.18);
+      border-color: rgba(231, 76, 60, 0.4);
+    }
+  }
+}
+
+.friends-hub__empty {
+  color: var(--friends-muted);
+  padding: 2rem 0.5rem;
+  text-align: center;
+
+  p {
+    margin: 0 0 0.5rem;
+  }
+}
+
+.friends-hub__pager {
+  align-items: center;
+  color: var(--friends-muted);
+  display: flex;
+  font-size: 0.82rem;
+  gap: 0.65rem;
+  justify-content: center;
+  padding: 0.35rem 0 0.15rem;
+}
+
+.friends-hub__page-btn {
+  appearance: none;
+  background: color-mix(in srgb, var(--friends-ink) 6%, transparent);
+  border: 1px solid var(--friends-mode-border);
+  border-radius: 0.3rem;
+  color: var(--friends-ink);
+  cursor: pointer;
+  padding: 0.3rem 0.55rem;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
+  }
+}

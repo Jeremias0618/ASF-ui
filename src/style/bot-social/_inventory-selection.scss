@@ -1,0 +1,149 @@
+/* Inventory selection, thumbs, pager */
+
+.steam-inv__cell-bg {
+  align-items: center;
+  display: flex;
+  height: 100%;
+  justify-content: center;
+  width: 100%;
+}
+
+.steam-inv__check {
+  background: color-mix(in srgb, var(--steam-inv-panel-2) 85%, #000);
+  border: 1px solid color-mix(in srgb, var(--steam-inv-text) 35%, transparent);
+  border-radius: 0.2rem;
+  height: 0.9rem;
+  left: 0.28rem;
+  pointer-events: none;
+  position: absolute;
+  top: 0.28rem;
+  width: 0.9rem;
+  z-index: 2;
+
+  &.is-on {
+    background: var(--steam-inv-accent);
+    border-color: var(--steam-inv-accent);
+
+    &::after {
+      color: #0b1520;
+      content: '✓';
+      display: block;
+      font-size: 0.7rem;
+      font-weight: 800;
+      line-height: 0.9rem;
+      text-align: center;
+    }
+  }
+
+  &.is-disabled {
+    opacity: 0.35;
+  }
+}
+
+.steam-inv__selection-bar {
+  align-items: center;
+  background: var(--steam-inv-selection-bg);
+  border: 1px solid var(--steam-inv-selection-border);
+  border-radius: 0.4rem;
+  color: var(--steam-inv-text);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.8rem;
+  gap: 0.55rem 0.85rem;
+  justify-content: space-between;
+  margin-top: 0.55rem;
+  padding: 0.45rem 0.65rem;
+}
+
+.steam-inv__selection-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.steam-inv__detail-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-top: 0.75rem;
+}
+
+.steam-inv__transfer-one {
+  appearance: none;
+  background: var(--steam-inv-btn-bg);
+  border: 1px solid color-mix(in srgb, var(--steam-inv-accent) 35%, transparent);
+  border-radius: 0.35rem;
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.5rem 0.75rem;
+  text-align: center;
+  width: 100%;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+}
+
+.steam-inv__thumb {
+  display: block;
+  height: auto;
+  max-height: 88%;
+  max-width: 88%;
+  object-fit: contain;
+  // Prefer cached paint; avoid lazy-load delay on an already-visible 5Ã—5 grid.
+  pointer-events: none;
+  width: auto;
+}
+
+.steam-inv__thumb-fallback {
+  color: var(--steam-inv-muted);
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.steam-inv__qty {
+  background: rgba(0, 0, 0, 0.72);
+  bottom: 0.15rem;
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0.12rem 0.28rem;
+  position: absolute;
+  right: 0.15rem;
+}
+
+.steam-inv__pager {
+  align-items: center;
+  color: var(--steam-inv-muted);
+  display: flex;
+  flex-shrink: 0;
+  gap: 0.65rem;
+  justify-content: center;
+  padding-top: 0.55rem;
+}
+
+.steam-inv__page-btn {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: var(--steam-inv-name);
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+
+  &:disabled {
+    color: rgba(143, 152, 160, 0.35);
+    cursor: default;
+  }
+}
+
+.steam-inv__page-label {
+  font-size: 0.82rem;
+  min-width: 4.5rem;
+  text-align: center;
+}

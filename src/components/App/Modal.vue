@@ -234,12 +234,6 @@
       max-width: min(36rem, calc(100vw - 1.5rem));
       width: min(36rem, calc(100vw - 1.5rem));
     }
-
-    /* Reserved footprint so tab/empty swaps do not resize the chrome (CLS). */
-    &--fixed {
-      height: min(90dvh, 56rem);
-      max-height: min(90dvh, 56rem);
-    }
   }
 
   .modal__back,
