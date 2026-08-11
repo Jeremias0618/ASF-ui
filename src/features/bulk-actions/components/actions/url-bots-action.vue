@@ -71,6 +71,7 @@
 <script>
   import { isPluginMissingError } from '../../../bot-social/api/bot-social';
   import { flattenMutationResults, runUrlBotsApi } from '../../api/bulk-social';
+  import { summarizeMutationResults } from '../../utils/result-outcomes';
   import { createBulkRunner } from '../../composables/use-bulk-runner';
   import {
     bulkTargetErrorKey,
@@ -159,7 +160,8 @@
               }
             },
           }]);
-          this.completedOk = this.runner.results.some(row => row.ok);
+          const summary = summarizeMutationResults(this.runner.results);
+          this.completedOk = summary.ok > 0 || summary.skipped > 0;
         } finally {
           this.busy = false;
         }

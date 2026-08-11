@@ -78,13 +78,21 @@
           </div>
           <div class="bulk-run-modal__stat is-ok">
             <dt>{{ $t('bulk-actions-results-ok-label') }}</dt>
-            <dd>{{ okCount }}</dd>
+            <dd>{{ summary.ok }}</dd>
+          </div>
+          <div class="bulk-run-modal__stat is-skip">
+            <dt>{{ $t('bulk-actions-results-skipped-label') }}</dt>
+            <dd>{{ summary.skipped }}</dd>
           </div>
           <div class="bulk-run-modal__stat is-fail">
             <dt>{{ $t('bulk-actions-results-fail-label') }}</dt>
-            <dd>{{ failCount }}</dd>
+            <dd>{{ summary.fail }}</dd>
           </div>
         </dl>
+
+        <p v-if="summary.skipped" class="bulk-run-modal__skip-hint">
+          {{ $t('bulk-actions-results-skipped-hint') }}
+        </p>
 
         <footer class="bulk-run-modal__foot bulk-run-modal__foot--end">
           <button
@@ -102,6 +110,8 @@
 </template>
 
 <script>
+  import { summarizeMutationResults } from '../utils/result-outcomes';
+
   let progressSeq = 0;
 
   export default {
@@ -113,9 +123,7 @@
       total: { type: Number, default: 0 },
       label: { type: String, default: '' },
       results: { type: Array, default: () => [] },
-      /** Destination URL / profile / page / bot shown in summary. */
       summaryTarget: { type: String, default: '' },
-      /** Expected bot count when the runner uses a single batch for many bots. */
       botsTotal: { type: Number, default: 0 },
     },
     data() {
@@ -130,14 +138,11 @@
         if (!this.total) return 0;
         return Math.min(100, Math.round((this.current / this.total) * 100));
       },
-      okCount() {
-        return this.results.filter(r => r.ok).length;
-      },
-      failCount() {
-        return this.results.filter(r => !r.ok).length;
+      summary() {
+        return summarizeMutationResults(this.results);
       },
       botsInvolved() {
-        if (this.results.length) return this.results.length;
+        if (this.summary.total) return this.summary.total;
         if (this.botsTotal > 0) return this.botsTotal;
         return this.total || 0;
       },

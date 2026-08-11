@@ -174,6 +174,7 @@
     filterInventoryItems, gameKey, NO_GAME_ID, paginateItems,
   } from '../../../bot-social/utils/filter-inventory';
   import { createBulkRunner, groupInventoryTransferBatches } from '../../composables/use-bulk-runner';
+  import { summarizeMutationResults } from '../../utils/result-outcomes';
   import BulkConfirmDialog from '../confirm-dialog.vue';
   import BulkProgressModal from '../progress-modal.vue';
 
@@ -379,7 +380,8 @@
               }
             },
           })));
-          this.completedOk = this.runner.results.some(row => row.ok);
+          const summary = summarizeMutationResults(this.runner.results);
+          this.completedOk = summary.ok > 0 || summary.skipped > 0;
         } finally {
           this.busy = false;
         }

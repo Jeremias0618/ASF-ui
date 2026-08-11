@@ -1592,8 +1592,12 @@
 .bulk-run-modal__summary {
   display: grid;
   gap: 0.55rem;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   margin: 0;
+
+  @media (min-width: 420px) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 
 .bulk-run-modal__stat {
@@ -1627,9 +1631,20 @@
     color: #22c55e;
   }
 
+  &.is-skip dd {
+    color: #f5a524;
+  }
+
   &.is-fail dd {
     color: #f97066;
   }
+}
+
+.bulk-run-modal__skip-hint {
+  color: var(--lote-muted, var(--h2-muted, #667085));
+  font-size: 0.82rem;
+  line-height: 1.4;
+  margin: 0.15rem 0 0;
 }
 
 .bulk-run-modal__foot {
