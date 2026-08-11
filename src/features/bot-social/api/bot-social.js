@@ -135,6 +135,16 @@ export function removeWishlist(botName, appIds) {
   return post(`${socialBase(botName)}/Wishlist/Remove`, { AppIds: appIds });
 }
 
+/** Steam discovery queue status (daily explore). */
+export function fetchDiscoveryQueueStatus(botName) {
+  return get(`${socialBase(botName)}/DiscoveryQueue`);
+}
+
+/** Generate and clear discovery queue(s). queues = 1..3 */
+export function exploreDiscoveryQueue(botName, queues = 1) {
+  return post(`${socialBase(botName)}/DiscoveryQueue/Explore`, { Queues: queues });
+}
+
 /**
  * Transfer selected inventory assets to another ASF bot (trade offer via plugin).
  * @param {string} botName source bot

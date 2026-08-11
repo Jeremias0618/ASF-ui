@@ -93,6 +93,12 @@
         @plugin-missing="$emit('plugin-missing')"
       ></WishlistPanel>
 
+      <DiscoveryPanel
+        v-else-if="panelMode === 'discovery'"
+        :bot-name="botName"
+        @plugin-missing="$emit('plugin-missing')"
+      ></DiscoveryPanel>
+
       <StatsPanel
         v-show="panelMode === 'stats'"
         v-if="statsMounted"
@@ -142,10 +148,6 @@
     </template>
   </div>
 </template>
-      </div>
-    </template>
-  </div>
-</template>
 
 <script>
   import { isPluginMissingError } from '../api/bot-social';
@@ -156,6 +158,7 @@
   import AddPanel from './games/add-panel.vue';
   import GamesBrowseToolbar from './games/browse-toolbar.vue';
   import CoverTile from './games/cover-tile.vue';
+  import DiscoveryPanel from './games/discovery-panel.vue';
   import IdlePanel from './games/idle-panel.vue';
   import StatsPanel from './games/stats-panel.vue';
   import WishlistPanel from './games/wishlist-panel.vue';
@@ -163,7 +166,7 @@
   import { normalizeQueryValue, replaceModalView } from '../../../utils/modal-view-query';
 
   const PANEL_STORAGE_KEY = 'asf-bot-social-games-panel';
-  const PANEL_MODES = new Set(['library', 'banner', 'stats', 'idle', 'wishlist', 'add']);
+  const PANEL_MODES = new Set(['library', 'banner', 'stats', 'idle', 'wishlist', 'discovery', 'add']);
   const PANEL_VIEW_DEFAULT = 'library';
   const TYPE_ORDER = ['game', 'dlc', 'demo', 'application', 'tool', 'beta', 'video', 'music', 'other'];
   const TYPE_LABEL_KEYS = {
@@ -206,6 +209,7 @@
     components: {
       AddPanel,
       CoverTile,
+      DiscoveryPanel,
       IdlePanel,
       StatsPanel,
       WishlistPanel,
@@ -248,6 +252,7 @@
           { id: 'stats', icon: 'chart-bar', label: this.$t('bot-social-games-view-stats') },
           { id: 'idle', icon: 'clock', label: this.$t('bot-social-games-view-idle') },
           { id: 'wishlist', icon: 'heart', label: this.$t('bot-social-games-view-wishlist') },
+          { id: 'discovery', icon: 'compass', label: this.$t('bot-social-games-view-discovery') },
           { id: 'add', icon: 'plus', label: this.$t('bot-social-games-view-add') },
         ];
       },

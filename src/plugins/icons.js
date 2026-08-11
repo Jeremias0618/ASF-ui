@@ -10,7 +10,7 @@ import {
   faEyeSlash, faChevronLeft, faChevronRight, faExclamation, faExclamationTriangle, faComments, faBan, faSearch, faSun,
   faSave, faCopy, faDownload, faBoxes, faHeart, faChartBar, faGripVertical, faDice,
   faGlobe, faStar, faCoins, faThumbsUp, faThumbsDown, faSmile, faAngleDoubleUp,
-  faPaperPlane, faInbox, faExchangeAlt, faUserPlus, faLayerGroup, faCheck,
+  faPaperPlane, faInbox, faExchangeAlt, faUserPlus, faLayerGroup, faCheck, faCompass,
 } from '@fortawesome/free-solid-svg-icons';
 
 import { FontAwesomeIcon, FontAwesomeLayers } from '@fortawesome/vue-fontawesome';
@@ -90,6 +90,7 @@ library.add(
   faUserPlus,
   faLayerGroup,
   faCheck,
+  faCompass,
 );
 
 export default {
