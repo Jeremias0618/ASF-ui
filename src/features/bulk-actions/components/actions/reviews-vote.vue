@@ -6,12 +6,24 @@
         <input
           v-model.trim="target"
           class="bulk-actions-field__control"
+          :class="{ 'is-invalid': showTargetError }"
           type="text"
           autocomplete="off"
           spellcheck="false"
           :placeholder="$t(action.targetPlaceholderKey)"
           :disabled="busy"
+          :aria-invalid="showTargetError ? 'true' : 'false'"
+          :aria-describedby="showTargetError ? targetErrorId : null"
+          @blur="targetTouched = true"
         >
+        <p
+          v-if="showTargetError"
+          :id="targetErrorId"
+          class="bulk-actions-field__error"
+          role="alert"
+        >
+          {{ $t('bulk-actions-invalid-target-review') }}
+        </p>
       </label>
 
       <fieldset class="bulk-actions-choice">
@@ -41,7 +53,7 @@
         type="button"
         class="button button--confirm bulk-actions-setup-bar__cta"
         :disabled="!canSubmit || busy"
-        @click="openConfirm = true"
+        @click="requestConfirm"
       >
         {{ $t('bulk-actions-run') }}
         <FontAwesomeIcon icon="play" aria-hidden="true"></FontAwesomeIcon>
@@ -76,8 +88,11 @@
   import { isPluginMissingError } from '../../../bot-social/api/bot-social';
   import { flattenMutationResults, reviewsVote } from '../../api/bulk-social';
   import { createBulkRunner } from '../../composables/use-bulk-runner';
+  import { isValidBulkTarget } from '../../utils/validate-target';
   import BulkConfirmDialog from '../confirm-dialog.vue';
   import BulkProgressModal from '../progress-modal.vue';
+
+  let reviewTargetErrorSeq = 0;
 
   export default {
     name: 'BulkReviewsVoteAction',
@@ -87,8 +102,11 @@
       bots: { type: Array, default: () => [] },
     },
     data() {
+      reviewTargetErrorSeq += 1;
       return {
         target: '',
+        targetTouched: false,
+        targetErrorId: `bulk-review-target-error-${reviewTargetErrorSeq}`,
         vote: 'yes',
         openConfirm: false,
         progressOpen: false,
@@ -100,8 +118,14 @@
     computed: {
       title() { return this.$t(this.action.titleKey); },
       botNames() { return this.bots.map(b => b.name); },
+      targetValid() {
+        return isValidBulkTarget(this.action, this.target);
+      },
+      showTargetError() {
+        return this.targetTouched && Boolean(this.target.trim()) && !this.targetValid;
+      },
       canSubmit() {
-        return this.botNames.length > 0 && Boolean(this.target.trim()) && Boolean(this.vote);
+        return this.botNames.length > 0 && this.targetValid && Boolean(this.vote);
       },
       confirmLines() {
         return [
@@ -112,6 +136,11 @@
       },
     },
     methods: {
+      requestConfirm() {
+        this.targetTouched = true;
+        if (!this.canSubmit) return;
+        this.openConfirm = true;
+      },
       async onConfirm() {
         this.openConfirm = false;
         this.busy = true;

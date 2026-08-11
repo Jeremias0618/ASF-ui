@@ -33,3 +33,23 @@ export function normalizeFriendTarget(raw) {
 
   return value;
 }
+
+/**
+ * True when the paste looks like a usable Steam profile / friend target.
+ * URL-shaped input must be a real steamcommunity profile link.
+ * @param {string} raw
+ * @returns {boolean}
+ */
+export function isLikelyFriendTarget(raw) {
+  const value = String(raw || '').trim();
+  if (!value) return false;
+
+  const looksLikeUrl = /^https?:\/\//i.test(value) || /steamcommunity\.com/i.test(value);
+  if (looksLikeUrl) {
+    return /steamcommunity\.com\/(?:profiles\/\d{17}|id\/[^/?#\s]+)/i.test(value);
+  }
+
+  if (/^\d{17}$/.test(value)) return true;
+  // Steam vanity / friend code style identifiers (no spaces / URLs)
+  return /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/.test(value);
+}

@@ -901,11 +901,26 @@
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--lote-accent) 22%, transparent);
     outline: none;
   }
+
+  &.is-invalid {
+    border-color: #d92d20;
+
+    &:focus {
+      box-shadow: 0 0 0 3px color-mix(in srgb, #d92d20 22%, transparent);
+    }
+  }
 }
 
 .bulk-actions-field__hint {
   color: var(--lote-muted);
   font-size: 0.8rem;
+  margin: 0;
+}
+
+.bulk-actions-field__error {
+  color: #f97066;
+  font-size: 0.82rem;
+  line-height: 1.35;
   margin: 0;
 }
 
