@@ -1154,6 +1154,12 @@
   "bulk-action-games-add-lead": "Añade un paquete o juego gratuito a la biblioteca de cada bot.",
   "bulk-action-wishlist-add-title": "Solo lista de deseos",
   "bulk-action-wishlist-add-lead": "Añade un juego solo a la lista de deseos.",
+  "bulk-action-discovery-title": "Lista de descubrimiento",
+  "bulk-action-discovery-lead": "Pasa la cola diaria de Steam con varios bots. Elige cuántas colas correrá cada uno.",
+  "bulk-action-discovery-queues-label": "Colas a pasar",
+  "bulk-action-discovery-queues-hint": "La misma cantidad se aplicará a cada bot seleccionado (máx. 3 por bot).",
+  "bulk-action-discovery-summary-queues": "{n} cola(s) por bot",
+  "bulk-action-discovery-confirm-queues": "Colas por bot: {n}",
   "bulk-action-game-target-label": "URL del juego o AppID",
   "bulk-action-game-target-placeholder": "https://store.steampowered.com/app/… o AppID"
 }

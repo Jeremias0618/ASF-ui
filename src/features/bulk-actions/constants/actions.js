@@ -13,10 +13,11 @@ export const BULK_ACTION_IDS = Object.freeze({
   WISHLIST_FOLLOW_ADD: 'wishlist-follow-add',
   GAMES_ADD: 'games-add',
   WISHLIST_ADD: 'wishlist-add',
+  DISCOVERY_QUEUE: 'discovery-queue',
 });
 
 /**
- * @typedef {'inventory' | 'url-bots' | 'reviews-vote' | 'shared-act'} BulkActionKind
+ * @typedef {'inventory' | 'url-bots' | 'reviews-vote' | 'shared-act' | 'discovery-queue'} BulkActionKind
  * @typedef {'inventory' | 'community' | 'library'} BulkActionGroup
  * @typedef {{
  *   id: string,
@@ -155,6 +156,15 @@ export const BULK_ACTIONS = Object.freeze([
     targetLabelKey: 'bulk-action-game-target-label',
     targetPlaceholderKey: 'bulk-action-game-target-placeholder',
     api: 'wishlistAdd',
+  },
+  {
+    id: BULK_ACTION_IDS.DISCOVERY_QUEUE,
+    slug: 'discovery',
+    icon: 'compass',
+    kind: 'discovery-queue',
+    group: 'library',
+    titleKey: 'bulk-action-discovery-title',
+    leadKey: 'bulk-action-discovery-lead',
   },
 ]);
 

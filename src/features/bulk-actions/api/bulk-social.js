@@ -58,6 +58,32 @@ export function flattenMutationResults(payload) {
   return rows;
 }
 
+/**
+ * Flatten DiscoveryQueue/Explore dictionary into per-bot rows.
+ * @param {Record<string, any>} payload
+ * @returns {{ botName: string, ok: boolean, message: string }[]}
+ */
+export function flattenDiscoveryExploreResults(payload) {
+  if (!payload || typeof payload !== 'object') return [];
+  return Object.keys(payload).map(botName => {
+    const entry = payload[botName];
+    const ok = (entry?.Success ?? entry?.success) === true;
+    const message = String(entry?.Message ?? entry?.message ?? '');
+    const apps = entry?.AppsCleared ?? entry?.appsCleared;
+    const queuesDone = entry?.QueuesCompleted ?? entry?.queuesCompleted;
+    const detail = [
+      message,
+      apps != null ? `apps=${apps}` : '',
+      queuesDone != null ? `queues=${queuesDone}` : '',
+    ].filter(Boolean).join(' · ');
+    return {
+      botName,
+      ok,
+      message: detail || message,
+    };
+  });
+}
+
 export function friendsAdd(botNames, targets) {
   return post(`${socialBase(botNames)}/Friends/Add`, { Targets: targets });
 }
@@ -96,6 +122,11 @@ export function wishlistAdd(botNames, appIds) {
 
 export function gamesAdd(botNames, appIds) {
   return post(`${socialBase(botNames)}/Games/Add`, { AppIds: appIds });
+}
+
+/** Clear Steam discovery queue(s) for one or many bots (Queues 1–3). */
+export function exploreDiscoveryQueues(botNames, queues = 1) {
+  return post(`${socialBase(botNames)}/DiscoveryQueue/Explore`, { Queues: queues });
 }
 
 /**

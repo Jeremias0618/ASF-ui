@@ -165,7 +165,6 @@
   import PluginMissing from './PluginMissing.vue';
   import { normalizeQueryValue, replaceModalView } from '../../../utils/modal-view-query';
 
-  const PANEL_STORAGE_KEY = 'asf-bot-social-games-panel';
   const PANEL_MODES = new Set(['library', 'banner', 'stats', 'idle', 'wishlist', 'discovery', 'add']);
   const PANEL_VIEW_DEFAULT = 'library';
   const TYPE_ORDER = ['game', 'dlc', 'demo', 'application', 'tool', 'beta', 'video', 'music', 'other'];
@@ -183,21 +182,10 @@
   const INITIAL_RENDER = 72;
   const RENDER_CHUNK = 48;
 
-  function readStoredPanel() {
-    try {
-      const value = localStorage.getItem(PANEL_STORAGE_KEY);
-      if (PANEL_MODES.has(value)) return value;
-      const legacy = localStorage.getItem('asf-bot-social-games-view');
-      return PANEL_MODES.has(legacy) ? legacy : PANEL_VIEW_DEFAULT;
-    } catch {
-      return PANEL_VIEW_DEFAULT;
-    }
-  }
-
   function resolveInitialPanel(route) {
     const fromRoute = normalizeQueryValue(route?.query?.view);
     if (PANEL_MODES.has(fromRoute)) return fromRoute;
-    return readStoredPanel();
+    return PANEL_VIEW_DEFAULT;
   }
 
   function isBrowse(mode) {
@@ -338,6 +326,15 @@
         this.syncPanelFromRoute();
       },
     },
+    created() {
+      // Drop legacy panel persistence so reopening always starts at the default view.
+      try {
+        localStorage.removeItem('asf-bot-social-games-panel');
+        localStorage.removeItem('asf-bot-social-games-view');
+      } catch {
+        // ignore
+      }
+    },
     beforeDestroy() {
       this.cancelProgressivePaint();
     },
@@ -348,18 +345,13 @@
         this.cardsFilter = 'all';
         this.typeFilter = 'all';
       },
-      applyPanelMode(mode, { persist = true } = {}) {
+      applyPanelMode(mode, { syncRoute = true } = {}) {
         if (!PANEL_MODES.has(mode) || mode === this.panelMode) return;
         if (mode === 'stats') this.statsMounted = true;
         if (mode === 'idle') this.idleMounted = true;
         if (isBrowse(mode)) this.browseVariant = mode;
         this.panelMode = mode;
-        if (persist) {
-          try {
-            localStorage.setItem(PANEL_STORAGE_KEY, mode);
-          } catch {
-            // ignore
-          }
+        if (syncRoute) {
           replaceModalView(this.$router, this.$route, mode, PANEL_VIEW_DEFAULT);
         }
         // Idle picker and browse reuse the same library cache.
@@ -370,14 +362,13 @@
       syncPanelFromRoute() {
         const raw = normalizeQueryValue(this.$route.query?.view);
         if (PANEL_MODES.has(raw)) {
-          this.applyPanelMode(raw, { persist: false });
+          this.applyPanelMode(raw, { syncRoute: false });
           return;
         }
-        // Query cleared (e.g. default tab) → default view; bare first load uses resolveInitialPanel + storage.
-        if (!raw) this.applyPanelMode(PANEL_VIEW_DEFAULT, { persist: false });
+        if (!raw) this.applyPanelMode(PANEL_VIEW_DEFAULT, { syncRoute: false });
       },
       setPanelMode(mode) {
-        this.applyPanelMode(mode, { persist: true });
+        this.applyPanelMode(mode, { syncRoute: true });
       },
       cancelProgressivePaint() {
         if (this.paintRaf) {

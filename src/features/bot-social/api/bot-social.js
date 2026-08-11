@@ -140,9 +140,9 @@ export function fetchDiscoveryQueueStatus(botName) {
   return get(`${socialBase(botName)}/DiscoveryQueue`);
 }
 
-/** Generate and clear discovery queue(s). queues = 1..3 */
-export function exploreDiscoveryQueue(botName, queues = 1) {
-  return post(`${socialBase(botName)}/DiscoveryQueue/Explore`, { Queues: queues });
+/** Generate and clear discovery queue(s). queues = 1..3 — one or many bots. */
+export function exploreDiscoveryQueue(botNameOrNames, queues = 1) {
+  return post(`${socialBase(botNameOrNames)}/DiscoveryQueue/Explore`, { Queues: queues });
 }
 
 /**

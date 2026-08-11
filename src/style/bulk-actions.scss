@@ -951,6 +951,21 @@
   }
 }
 
+.bulk-actions-discovery-queues {
+  gap: 0.75rem;
+
+  .bulk-actions-field__label {
+    margin: 0;
+  }
+}
+
+.bulk-actions-discovery-queues__hint {
+  color: var(--lote-muted, var(--h2-muted, #667085));
+  font-size: 0.82rem;
+  line-height: 1.4;
+  margin: 0;
+}
+
 .bulk-actions-choice__row {
   display: flex;
   flex-wrap: wrap;

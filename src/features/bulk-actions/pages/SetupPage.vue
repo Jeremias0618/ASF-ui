@@ -103,6 +103,15 @@
             @plugin-missing="pluginMissing = true"
           ></BulkSharedActAction>
 
+          <BulkDiscoveryQueueAction
+            v-else-if="action.kind === 'discovery-queue'"
+            :action="action"
+            :bots="selectedBotModels"
+            @back="goSelectBots"
+            @finished="onFinished"
+            @plugin-missing="pluginMissing = true"
+          ></BulkDiscoveryQueueAction>
+
           <BulkUrlBotsAction
             v-else
             :action="action"
@@ -137,6 +146,7 @@
   import BulkUrlBotsAction from '../components/actions/url-bots-action.vue';
   import BulkReviewsVoteAction from '../components/actions/reviews-vote.vue';
   import BulkSharedActAction from '../components/actions/shared-act.vue';
+  import BulkDiscoveryQueueAction from '../components/actions/discovery-queue.vue';
   import BulkInventoryTransferAction from '../components/actions/inventory-transfer.vue';
 
   export default {
@@ -147,6 +157,7 @@
       BulkUrlBotsAction,
       BulkReviewsVoteAction,
       BulkSharedActAction,
+      BulkDiscoveryQueueAction,
       BulkInventoryTransferAction,
     },
     mixins: [leaveGuard],

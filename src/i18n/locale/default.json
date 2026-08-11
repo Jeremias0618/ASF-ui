@@ -1154,6 +1154,12 @@
   "bulk-action-games-add-lead": "Add a free package or game to each bot library.",
   "bulk-action-wishlist-add-title": "Add to wishlist",
   "bulk-action-wishlist-add-lead": "Add a game to the wishlist only.",
+  "bulk-action-discovery-title": "Discovery queue",
+  "bulk-action-discovery-lead": "Clear the Steam discovery queue with several bots. Choose how many queues each bot will run.",
+  "bulk-action-discovery-queues-label": "Queues to clear",
+  "bulk-action-discovery-queues-hint": "The same count applies to every selected bot (max 3 per bot).",
+  "bulk-action-discovery-summary-queues": "{n} queue(s) per bot",
+  "bulk-action-discovery-confirm-queues": "Queues per bot: {n}",
   "bulk-action-game-target-label": "Game URL or AppID",
   "bulk-action-game-target-placeholder": "https://store.steampowered.com/app/… or AppID"
 }

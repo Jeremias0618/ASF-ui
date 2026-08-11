@@ -130,23 +130,13 @@
   import PluginMissing from './PluginMissing.vue';
   import { normalizeQueryValue, replaceModalView } from '../../../utils/modal-view-query';
 
-  const PANEL_STORAGE_KEY = 'asf-bot-social-wishlist-panel';
   const PANEL_MODES = new Set(['library', 'banner', 'add']);
   const PANEL_VIEW_DEFAULT = 'library';
-
-  function readStoredPanel() {
-    try {
-      const value = localStorage.getItem(PANEL_STORAGE_KEY);
-      return PANEL_MODES.has(value) ? value : PANEL_VIEW_DEFAULT;
-    } catch {
-      return PANEL_VIEW_DEFAULT;
-    }
-  }
 
   function resolveInitialPanel(route) {
     const fromRoute = normalizeQueryValue(route?.query?.view);
     if (PANEL_MODES.has(fromRoute)) return fromRoute;
-    return readStoredPanel();
+    return PANEL_VIEW_DEFAULT;
   }
 
   function isBrowse(mode) {
@@ -226,30 +216,32 @@
         this.syncPanelFromRoute();
       },
     },
+    created() {
+      try {
+        localStorage.removeItem('asf-bot-social-wishlist-panel');
+      } catch {
+        // ignore
+      }
+    },
     methods: {
-      applyPanelMode(mode, { persist = true } = {}) {
+      applyPanelMode(mode, { syncRoute = true } = {}) {
         if (!PANEL_MODES.has(mode) || mode === this.panelMode) return;
         this.panelMode = mode;
         if (isBrowse(mode)) this.browseVariant = mode;
-        if (persist) {
-          try {
-            localStorage.setItem(PANEL_STORAGE_KEY, mode);
-          } catch {
-            // ignore
-          }
+        if (syncRoute) {
           replaceModalView(this.$router, this.$route, mode, PANEL_VIEW_DEFAULT);
         }
       },
       syncPanelFromRoute() {
         const raw = normalizeQueryValue(this.$route.query?.view);
         if (PANEL_MODES.has(raw)) {
-          this.applyPanelMode(raw, { persist: false });
+          this.applyPanelMode(raw, { syncRoute: false });
           return;
         }
-        if (!raw) this.applyPanelMode(PANEL_VIEW_DEFAULT, { persist: false });
+        if (!raw) this.applyPanelMode(PANEL_VIEW_DEFAULT, { syncRoute: false });
       },
       setPanelMode(mode) {
-        this.applyPanelMode(mode, { persist: true });
+        this.applyPanelMode(mode, { syncRoute: true });
       },
       bootstrap() {
         if (this.pluginMissing) return;
