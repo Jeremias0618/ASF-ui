@@ -82,18 +82,6 @@
     ></TransferDialog>
   </div>
 </template>
-    </template>
-
-    <TransferDialog
-      :open="transferOpen"
-      :source-bot-name="botName"
-      :asset-ids="transferAssetIds"
-      :submitting="transferring"
-      @cancel="closeTransferDialog"
-      @confirm="onTransferConfirm"
-    ></TransferDialog>
-  </div>
-</template>
 
 <script>
   import { isPluginMissingError, transferInventory } from '../api/bot-social';
@@ -111,10 +99,14 @@
     paginateItems,
   } from '../utils/filter-inventory';
   import { prefetchInventoryPageIcons } from '../utils/prefetch-images';
-  import TransferDialog from './transfer/dialog.vue';
-  import TradeOffersPanel from './inventory/trade-offers-panel.vue';
-  import InventorySkeleton from './inventory/skeleton.vue';
   import { readModalView, replaceModalView } from '../../../utils/modal-view-query';
+  import TransferDialog from './transfer/dialog.vue';
+  import InventoryChrome from './inventory/chrome.vue';
+  import InventoryItemDetail from './inventory/item-detail.vue';
+  import InventoryItemGrid from './inventory/item-grid.vue';
+  import InventoryModeTabs from './inventory/mode-tabs.vue';
+  import InventorySkeleton from './inventory/skeleton.vue';
+  import TradeOffersPanel from './inventory/trade-offers-panel.vue';
 
   const INVENTORY_VIEWS = new Set(['inventory', 'trades']);
   const INVENTORY_VIEW_DEFAULT = 'inventory';
