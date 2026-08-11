@@ -1,7 +1,7 @@
 <template>
-  <div class="bulk-actions__bots" role="group" :aria-label="ariaLabel || $t('bulk-actions-bots-label')">
-    <div class="bulk-actions__bots-toolbar">
-      <label class="bulk-actions__search bulk-actions__search--bots">
+  <div class="bulk-actions-bots" role="group" :aria-label="ariaLabel || $t('bulk-actions-bots-label')">
+    <div class="bulk-actions-bots__toolbar">
+      <label class="bulk-actions-bots__search">
         <FontAwesomeIcon icon="search" aria-hidden="true"></FontAwesomeIcon>
         <input
           v-model.trim="query"
@@ -10,44 +10,69 @@
           :aria-label="$t('bulk-actions-bots-filter')"
         >
       </label>
-      <div class="bulk-actions__bots-actions">
-        <button type="button" class="button button--link" @click="selectAll">
+      <div class="bulk-actions-bots__actions">
+        <button type="button" class="bulk-actions-bots__chip" @click="selectAll">
           {{ $t('bulk-actions-bots-select-all') }}
         </button>
-        <button type="button" class="button button--link" :disabled="!value.length" @click="clearAll">
+        <button
+          type="button"
+          class="bulk-actions-bots__chip"
+          :disabled="!value.length"
+          @click="clearAll"
+        >
           {{ $t('bulk-actions-bots-clear') }}
         </button>
       </div>
     </div>
 
-    <p class="bulk-actions__bots-count">
-      {{ $t('bulk-actions-bots-selected', { n: value.length, total: bots.length }) }}
-    </p>
+    <div class="bulk-actions-bots__meter" aria-live="polite">
+      <div class="bulk-actions-bots__meter-track" aria-hidden="true">
+        <span class="bulk-actions-bots__meter-fill" :style="{ width: `${selectedPercent}%` }"></span>
+      </div>
+      <p class="bulk-actions-bots__meter-label">
+        {{ $t('bulk-actions-bots-selected', { n: value.length, total: bots.length }) }}
+      </p>
+    </div>
 
     <p v-if="!filteredBots.length" class="bulk-actions__empty">
       {{ $t('bulk-actions-bots-filter-empty') }}
     </p>
 
-    <div v-else class="bulk-actions__bots-grid" role="listbox" :aria-multiselectable="true">
+    <div
+      v-else
+      class="bulk-actions-bots__grid"
+      role="listbox"
+      :aria-multiselectable="true"
+      :aria-label="$t('bulk-actions-bots-label')"
+    >
       <button
-        v-for="bot in filteredBots"
+        v-for="(bot, index) in filteredBots"
         :key="bot.name"
         type="button"
         role="option"
-        class="bulk-actions__bot-card"
+        class="bulk-actions-bots__card"
         :class="[`status--${bot.status}`, { 'is-selected': isSelected(bot.name) }]"
+        :style="{ '--tile-delay': `${index * 40}ms` }"
         :aria-selected="isSelected(bot.name) ? 'true' : 'false'"
         @click="toggle(bot.name)"
       >
-        <span class="bulk-actions__bot-check" :class="{ 'is-on': isSelected(bot.name) }" aria-hidden="true"></span>
-        <img
-          class="bulk-actions__bot-avatar"
-          :src="bot.avatarURL"
-          :alt="bot.viewableName || bot.name"
+        <span
+          class="bulk-actions-bots__check"
+          :class="{ 'is-on': isSelected(bot.name) }"
+          aria-hidden="true"
         >
-        <span class="bulk-actions__bot-copy">
-          <span class="bulk-actions__bot-name">{{ bot.viewableName || bot.name }}</span>
-          <span class="bulk-actions__bot-status">{{ bot.statusText || bot.status || '' }}</span>
+          <FontAwesomeIcon v-if="isSelected(bot.name)" icon="check"></FontAwesomeIcon>
+        </span>
+        <span class="bulk-actions-bots__avatar-wrap" aria-hidden="true">
+          <img
+            class="bulk-actions-bots__avatar"
+            :src="bot.avatarURL"
+            alt=""
+          >
+        </span>
+        <span class="bulk-actions-bots__copy">
+          <span class="bulk-actions-bots__name">{{ bot.viewableName || bot.name }}</span>
+          <span class="bulk-actions-bots__status">{{ bot.statusText || bot.status || '' }}</span>
         </span>
       </button>
     </div>
@@ -74,6 +99,10 @@
           const raw = String(bot.name || '').toLowerCase();
           return name.includes(q) || raw.includes(q);
         });
+      },
+      selectedPercent() {
+        if (!this.bots.length) return 0;
+        return Math.round((this.value.length / this.bots.length) * 100);
       },
     },
     methods: {

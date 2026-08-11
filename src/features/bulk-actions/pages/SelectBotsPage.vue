@@ -1,16 +1,35 @@
 <template>
-  <main class="bulk-actions-page home2-page-body">
-    <header class="home2-page-intro">
-      <p class="home2-page-eyebrow">{{ $t('bulk-actions') }}</p>
-      <h1 class="home2-page-title">{{ title }}</h1>
-      <p class="home2-page-lead">{{ $t('bulk-actions-bots-step-lead') }}</p>
+  <main class="bulk-actions-page bulk-actions-page--bots home2-page-body">
+    <header class="bulk-actions-hero">
+      <div class="bulk-actions-hero__copy">
+        <p class="bulk-actions-hero__eyebrow">{{ $t('bulk-actions') }}</p>
+        <h1 class="bulk-actions-hero__title">{{ title }}</h1>
+        <p class="bulk-actions-hero__lead">{{ $t('bulk-actions-bots-step-lead') }}</p>
+      </div>
+
+      <ol class="bulk-actions-pipeline" :aria-label="$t('bulk-actions-pipeline-label')">
+        <li class="bulk-actions-pipeline__step is-done">
+          <span class="bulk-actions-pipeline__index" aria-hidden="true">1</span>
+          <span class="bulk-actions-pipeline__text">{{ $t('bulk-actions-pipeline-pick') }}</span>
+        </li>
+        <li class="bulk-actions-pipeline__step is-current" aria-current="step">
+          <span class="bulk-actions-pipeline__index" aria-hidden="true">2</span>
+          <span class="bulk-actions-pipeline__text">{{ $t('bulk-actions-pipeline-bots') }}</span>
+        </li>
+        <li class="bulk-actions-pipeline__step">
+          <span class="bulk-actions-pipeline__index" aria-hidden="true">3</span>
+          <span class="bulk-actions-pipeline__text">{{ $t('bulk-actions-pipeline-run') }}</span>
+        </li>
+      </ol>
     </header>
 
-    <div class="home2-page-panel bulk-actions-page__panel">
-      <button type="button" class="button button--link bulk-actions__back" @click="requestBack">
-        <FontAwesomeIcon icon="chevron-left" aria-hidden="true"></FontAwesomeIcon>
-        {{ $t('back') }}
-      </button>
+    <section class="bulk-actions-deck bulk-actions-deck--bots" :aria-label="$t('bulk-actions-bots-step-title')">
+      <div class="bulk-actions-deck__nav">
+        <button type="button" class="bulk-actions-back" @click="requestBack">
+          <FontAwesomeIcon icon="chevron-left" aria-hidden="true"></FontAwesomeIcon>
+          {{ $t('back') }}
+        </button>
+      </div>
 
       <p v-if="!sortedBots.length" class="bulk-actions__empty">
         {{ $t('bulk-actions-no-bots') }}
@@ -26,18 +45,29 @@
           @input="onSelectionChange"
         ></BulkBotPicker>
 
-        <div class="bulk-actions__panel-footer">
+        <footer class="bulk-actions-bots-bar">
+          <div class="bulk-actions-bots-bar__copy">
+            <p class="bulk-actions-bots-bar__count">
+              {{ $t('bulk-actions-bots-selected', { n: selectedBots.length, total: sortedBots.length }) }}
+            </p>
+            <p class="bulk-actions-bots-bar__hint">
+              {{ selectedBots.length
+                ? $t('bulk-actions-bots-bar-ready')
+                : $t('bulk-actions-bots-bar-need') }}
+            </p>
+          </div>
           <button
             type="button"
-            class="button button--confirm"
+            class="button button--confirm bulk-actions-bots-bar__cta"
             :disabled="!selectedBots.length"
             @click="continueToSetup"
           >
             {{ $t('bulk-actions-proceed') }}
+            <FontAwesomeIcon icon="chevron-right" aria-hidden="true"></FontAwesomeIcon>
           </button>
-        </div>
+        </footer>
       </template>
-    </div>
+    </section>
 
     <BulkLeaveDialog
       :open="leaveDialogOpen"
