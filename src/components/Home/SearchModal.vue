@@ -43,7 +43,7 @@
             <ul class="home2-search-modal__list" role="listbox">
               <li
                 v-for="(item, index) in filtered"
-                :key="item.route"
+                :key="item.id || item.route"
                 role="option"
                 :aria-selected="index === activeIndex ? 'true' : 'false'"
               >
@@ -81,7 +81,7 @@
 <script>
   import ModalTransition from '../App/ModalTransition.vue';
   import { lockModalScroll, unlockModalScroll } from '../../utils/modal-transition';
-  import { SEARCH_PAGES } from './search-pages';
+  import SEARCH_PAGES from './search-pages';
 
   export default {
     name: 'HomeSearchModal',
@@ -100,10 +100,11 @@
         const q = this.query.trim().toLowerCase();
         if (!q) return SEARCH_PAGES;
 
-        return SEARCH_PAGES.filter((item) => {
+        return SEARCH_PAGES.filter(item => {
           const label = String(this.$t(item.labelKey)).toLowerCase();
           const desc = String(this.$t(item.descKey)).toLowerCase();
-          const haystack = `${label} ${desc} ${item.route} ${item.keywords}`.toLowerCase();
+          const action = item.params && item.params.action ? item.params.action : '';
+          const haystack = `${label} ${desc} ${item.route} ${action} ${item.keywords || ''}`.toLowerCase();
           return haystack.includes(q);
         });
       },
@@ -142,7 +143,10 @@
         if (item) this.go(item);
       },
       go(item) {
-        this.$router.push({ name: item.route }).catch(() => {});
+        const location = { name: item.route };
+        if (item.params) location.params = item.params;
+        if (item.query) location.query = item.query;
+        this.$router.push(location).catch(() => {});
         this.close();
       },
       onPanelKey() {
