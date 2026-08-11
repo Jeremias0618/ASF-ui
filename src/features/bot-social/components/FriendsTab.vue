@@ -3,13 +3,12 @@
     <PluginMissing v-if="pluginMissing"></PluginMissing>
 
     <template v-else>
-      <FriendsModeTabs
+      <AsfIconTabs
         :value="panelMode"
-        :friends-count="friends.length"
-        :sent-count="sentRequests.length"
-        :received-count="receivedRequests.length"
+        :tabs="modeTabs"
+        :aria-label="$t('bot-social-friends-modes')"
         @input="setPanelMode"
-      ></FriendsModeTabs>
+      ></AsfIconTabs>
 
       <FriendsComposePanel
         v-if="panelMode === 'send'"
@@ -85,7 +84,6 @@
   import PluginMissing from './PluginMissing.vue';
   import FriendsComposePanel from './friends/compose-panel.vue';
   import FriendsListPanel from './friends/list-panel.vue';
-  import FriendsModeTabs from './friends/mode-tabs.vue';
   import RemoveDialog from './friends/remove-dialog.vue';
   import FriendsSearchChrome from './friends/search-chrome.vue';
   import FriendsSkeleton from './friends/skeleton.vue';
@@ -99,7 +97,6 @@
     components: {
       PluginMissing,
       RemoveDialog,
-      FriendsModeTabs,
       FriendsComposePanel,
       FriendsSearchChrome,
       FriendsSkeleton,
@@ -127,6 +124,33 @@
       };
     },
     computed: {
+      modeTabs() {
+        return [
+          {
+            id: 'friends',
+            icon: 'users',
+            label: this.$t('bot-social-friends-mode-friends'),
+            count: this.friends.length,
+          },
+          {
+            id: 'sent',
+            icon: 'paper-plane',
+            label: this.$t('bot-social-friends-mode-sent'),
+            count: this.sentRequests.length,
+          },
+          {
+            id: 'received',
+            icon: 'inbox',
+            label: this.$t('bot-social-friends-mode-received'),
+            count: this.receivedRequests.length,
+          },
+          {
+            id: 'send',
+            icon: 'plus',
+            label: this.$t('bot-social-friends-mode-send'),
+          },
+        ];
+      },
       hasAnyData() {
         return this.friends.length > 0 || this.sentRequests.length > 0 || this.receivedRequests.length > 0;
       },

@@ -1,21 +1,21 @@
 <template>
-  <section class="friends-hub__compose" :aria-label="$t('bot-social-community-curators-title')">
-    <div class="friends-hub__compose-panel">
-      <header class="friends-hub__compose-header">
-        <p class="friends-hub__compose-eyebrow">{{ $t('bot-social-community-mode-curators') }}</p>
-        <h3 class="friends-hub__compose-title">{{ $t('bot-social-community-curators-title') }}</h3>
-        <p class="friends-hub__compose-lead">{{ $t('bot-social-community-curators-lead') }}</p>
+  <section class="community-hub__compose" :aria-label="$t('bot-social-community-curators-title')">
+    <div class="community-hub__compose-panel">
+      <header class="community-hub__compose-header">
+        <p class="community-hub__compose-eyebrow">{{ $t('bot-social-community-mode-curators') }}</p>
+        <h3 class="community-hub__compose-title">{{ $t('bot-social-community-curators-title') }}</h3>
+        <p class="community-hub__compose-lead">{{ $t('bot-social-community-curators-lead') }}</p>
       </header>
 
-      <form class="friends-hub__compose-form" @submit.prevent="onFollow">
-        <label class="friends-hub__field-label" for="community-curator-target">
+      <form class="community-hub__compose-form" @submit.prevent="onFollow">
+        <label class="community-hub__field-label" for="community-curator-target">
           {{ $t('bot-social-community-curators-target-label') }}
         </label>
-        <div class="friends-hub__compose-combo">
+        <div class="community-hub__compose-combo">
           <input
             id="community-curator-target"
             v-model.trim="curatorTarget"
-            class="friends-hub__compose-input"
+            class="community-hub__compose-input"
             type="text"
             :placeholder="$t('bot-social-community-curators-placeholder')"
             :disabled="mutating"
@@ -24,7 +24,7 @@
           >
           <button
             type="submit"
-            class="friends-hub__compose-submit"
+            class="community-hub__compose-submit"
             :disabled="!curatorTarget || mutating"
           >
             <FontAwesomeIcon v-if="mutating" icon="spinner" spin aria-hidden="true"></FontAwesomeIcon>
@@ -33,9 +33,9 @@
         </div>
       </form>
 
-      <div class="friends-hub__compose-help" :aria-label="$t('bot-social-community-curators-formats')">
-        <p class="friends-hub__compose-help-title">{{ $t('bot-social-community-curators-formats') }}</p>
-        <ul class="friends-hub__compose-examples">
+      <div class="community-hub__compose-help" :aria-label="$t('bot-social-community-curators-formats')">
+        <p class="community-hub__compose-help-title">{{ $t('bot-social-community-curators-formats') }}</p>
+        <ul class="community-hub__compose-examples">
           <li><code>{{ $t('bot-social-community-curators-example-url') }}</code></li>
           <li><code>{{ $t('bot-social-community-curators-example-id') }}</code></li>
         </ul>

@@ -1,21 +1,21 @@
 <template>
-  <section class="friends-hub__compose" :aria-label="$t('bot-social-friends-groups-title')">
-    <div class="friends-hub__compose-panel">
-      <header class="friends-hub__compose-header">
-        <p class="friends-hub__compose-eyebrow">{{ $t('bot-social-community-mode-groups') }}</p>
-        <h3 class="friends-hub__compose-title">{{ $t('bot-social-friends-groups-title') }}</h3>
-        <p class="friends-hub__compose-lead">{{ $t('bot-social-friends-groups-lead') }}</p>
+  <section class="community-hub__compose" :aria-label="$t('bot-social-friends-groups-title')">
+    <div class="community-hub__compose-panel">
+      <header class="community-hub__compose-header">
+        <p class="community-hub__compose-eyebrow">{{ $t('bot-social-community-mode-groups') }}</p>
+        <h3 class="community-hub__compose-title">{{ $t('bot-social-friends-groups-title') }}</h3>
+        <p class="community-hub__compose-lead">{{ $t('bot-social-friends-groups-lead') }}</p>
       </header>
 
-      <form class="friends-hub__compose-form" @submit.prevent="onJoinGroup">
-        <label class="friends-hub__field-label" for="community-group-target">
+      <form class="community-hub__compose-form" @submit.prevent="onJoinGroup">
+        <label class="community-hub__field-label" for="community-group-target">
           {{ $t('bot-social-friends-groups-target-label') }}
         </label>
-        <div class="friends-hub__compose-combo">
+        <div class="community-hub__compose-combo">
           <input
             id="community-group-target"
             v-model.trim="groupTarget"
-            class="friends-hub__compose-input"
+            class="community-hub__compose-input"
             type="text"
             :placeholder="$t('bot-social-friends-groups-placeholder')"
             :disabled="mutating"
@@ -24,7 +24,7 @@
           >
           <button
             type="submit"
-            class="friends-hub__compose-submit"
+            class="community-hub__compose-submit"
             :disabled="!groupTarget || mutating"
           >
             <FontAwesomeIcon v-if="mutating" icon="spinner" spin aria-hidden="true"></FontAwesomeIcon>
@@ -33,9 +33,9 @@
         </div>
       </form>
 
-      <div class="friends-hub__compose-help" :aria-label="$t('bot-social-friends-groups-formats')">
-        <p class="friends-hub__compose-help-title">{{ $t('bot-social-friends-groups-formats') }}</p>
-        <ul class="friends-hub__compose-examples">
+      <div class="community-hub__compose-help" :aria-label="$t('bot-social-friends-groups-formats')">
+        <p class="community-hub__compose-help-title">{{ $t('bot-social-friends-groups-formats') }}</p>
+        <ul class="community-hub__compose-examples">
           <li><code>{{ $t('bot-social-friends-groups-example-url') }}</code></li>
           <li><code>{{ $t('bot-social-friends-groups-example-vanity') }}</code></li>
           <li><code>{{ $t('bot-social-friends-groups-example-gid') }}</code></li>

@@ -3,74 +3,12 @@
     <PluginMissing v-if="pluginMissing"></PluginMissing>
 
     <template v-else>
-      <div class="friends-hub__modes" role="tablist" :aria-label="$t('bot-social-community-modes')">
-        <button
-          type="button"
-          role="tab"
-          class="friends-hub__mode"
-          :class="{ 'is-active': panelMode === 'account' }"
-          :aria-selected="panelMode === 'account' ? 'true' : 'false'"
-          @click="setPanelMode('account')"
-        >
-          <FontAwesomeIcon icon="user" aria-hidden="true"></FontAwesomeIcon>
-          {{ $t('bot-social-community-mode-account') }}
-        </button>
-        <button
-          type="button"
-          role="tab"
-          class="friends-hub__mode"
-          :class="{ 'is-active': panelMode === 'groups' }"
-          :aria-selected="panelMode === 'groups' ? 'true' : 'false'"
-          @click="setPanelMode('groups')"
-        >
-          <FontAwesomeIcon icon="users" aria-hidden="true"></FontAwesomeIcon>
-          {{ $t('bot-social-community-mode-groups') }}
-        </button>
-        <button
-          type="button"
-          role="tab"
-          class="friends-hub__mode"
-          :class="{ 'is-active': panelMode === 'followers' }"
-          :aria-selected="panelMode === 'followers' ? 'true' : 'false'"
-          @click="setPanelMode('followers')"
-        >
-          <FontAwesomeIcon icon="heart" aria-hidden="true"></FontAwesomeIcon>
-          {{ $t('bot-social-community-mode-followers') }}
-        </button>
-        <button
-          type="button"
-          role="tab"
-          class="friends-hub__mode"
-          :class="{ 'is-active': panelMode === 'curators' }"
-          :aria-selected="panelMode === 'curators' ? 'true' : 'false'"
-          @click="setPanelMode('curators')"
-        >
-          <FontAwesomeIcon icon="star" aria-hidden="true"></FontAwesomeIcon>
-          {{ $t('bot-social-community-mode-curators') }}
-        </button>
-        <button
-          type="button"
-          role="tab"
-          class="friends-hub__mode"
-          :class="{ 'is-active': panelMode === 'reviews' }"
-          :aria-selected="panelMode === 'reviews' ? 'true' : 'false'"
-          @click="setPanelMode('reviews')"
-        >
-          <FontAwesomeIcon icon="comments" aria-hidden="true"></FontAwesomeIcon>
-          {{ $t('bot-social-community-mode-reviews') }}
-        </button>
-        <button
-          type="button"
-          role="tab"
-          class="friends-hub__mode"
-          :class="{ 'is-active': panelMode === 'shared' }"
-          :aria-selected="panelMode === 'shared' ? 'true' : 'false'"
-          @click="setPanelMode('shared')"
-        >
-          <FontAwesomeIcon icon="clone" aria-hidden="true"></FontAwesomeIcon>
-          {{ $t('bot-social-community-mode-shared') }}
-        </button>
-      </div>
+      <AsfIconTabs
+        :value="panelMode"
+        :tabs="modeTabs"
+        :aria-label="$t('bot-social-community-modes')"
+        @input="setPanelMode"
+      ></AsfIconTabs>
 
       <GroupsPanel
         v-if="panelMode === 'groups'"
@@ -183,7 +121,12 @@
   export default {
     name: 'BotSocialCommunityTab',
     components: {
-      CuratorsPanel, FollowersPanel, GroupsPanel, ReviewsPanel, SharedPanel, PluginMissing,
+      CuratorsPanel,
+      FollowersPanel,
+      GroupsPanel,
+      ReviewsPanel,
+      SharedPanel,
+      PluginMissing,
     },
     props: {
       botName: { type: String, required: true },
@@ -200,6 +143,16 @@
       };
     },
     computed: {
+      modeTabs() {
+        return [
+          { id: 'account', icon: 'user', label: this.$t('bot-social-community-mode-account') },
+          { id: 'groups', icon: 'users', label: this.$t('bot-social-community-mode-groups') },
+          { id: 'followers', icon: 'heart', label: this.$t('bot-social-community-mode-followers') },
+          { id: 'curators', icon: 'star', label: this.$t('bot-social-community-mode-curators') },
+          { id: 'reviews', icon: 'comments', label: this.$t('bot-social-community-mode-reviews') },
+          { id: 'shared', icon: 'clone', label: this.$t('bot-social-community-mode-shared') },
+        ];
+      },
       bot() {
         return this.$store.getters['bots/bot'](this.botName);
       },

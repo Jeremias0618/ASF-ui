@@ -3,70 +3,73 @@
     <PluginMissing v-if="pluginMissing"></PluginMissing>
 
     <template v-else>
-      <div class="bot-social-games__chrome">
-        <GamesViewTabs
-          :value="panelMode"
-          :tabs="viewTabs"
-          :aria-label="$t('bot-social-wishlist-views')"
-          @input="setPanelMode"
-        ></GamesViewTabs>
+      <AsfIconTabs
+        :value="panelMode"
+        :tabs="viewTabs"
+        :aria-label="$t('bot-social-wishlist-views')"
+        @input="setPanelMode"
+      ></AsfIconTabs>
 
+      <div v-show="isBrowseMode" class="bot-social-games__chrome">
         <GamesBrowseToolbar
-          v-show="isBrowseMode"
           :query.sync="query"
           :busy="refreshing || loading"
           :refresh-disabled="loading || refreshing || mutating"
-          :has-active-filters="hasActiveFilters"
-          :filters-aria-label="$t('bot-social-wishlist-filters')"
-          filterbar-class="wishlist-hub__filterbar"
+          :show-filters="false"
           @refresh="refresh"
-          @clear-filters="clearFilters"
         >
           <template #count>
             {{ $t('bot-social-wishlist-showing', { shown: filteredItems.length, total: items.length }) }}
           </template>
-          <template #filters>
-            <div class="bot-social-games__field">
-              <span id="wishlist-filter-sort-label" class="bot-social-games__field-label">
-                {{ $t('bot-social-wishlist-filter-sort') }}
-              </span>
-              <AsfSelect
-                v-model="sortFilter"
-                compact
-                aria-labelledby="wishlist-filter-sort-label"
-                :options="sortOptions"
-                :search-placeholder="$t('bot-social-games-filter-search-options')"
-              ></AsfSelect>
-            </div>
-          </template>
         </GamesBrowseToolbar>
       </div>
 
-      <form v-if="panelMode === 'add'" class="wishlist-hub__add" @submit.prevent="onAdd">
-        <p class="wishlist-hub__add-lead">{{ $t('bot-social-wishlist-compose-lead') }}</p>
-        <label class="wishlist-hub__add-combo" for="wishlist-add-input">
-          <FontAwesomeIcon class="wishlist-hub__add-icon" icon="heart" aria-hidden="true"></FontAwesomeIcon>
-          <input
-            id="wishlist-add-input"
-            v-model.trim="appIdInput"
-            class="wishlist-hub__add-input"
-            type="text"
-            autocomplete="off"
-            spellcheck="false"
-            :placeholder="$t('bot-social-wishlist-add-placeholder')"
-            :aria-label="$t('bot-social-wishlist-compose-title')"
-            :disabled="mutating"
-          >
-          <button
-            type="submit"
-            class="wishlist-hub__add-submit"
-            :disabled="!parsedAppId || mutating"
-          >
-            <FontAwesomeIcon v-if="mutating" icon="spinner" spin aria-hidden="true"></FontAwesomeIcon>
-            <span v-else>{{ $t('bot-social-wishlist-add') }}</span>
-          </button>
-        </label>
-      </form>
+      <section
+        v-if="panelMode === 'add'"
+        class="bot-social-games__chrome games-wishlist"
+        :aria-label="$t('bot-social-wishlist-compose-title')"
+      >
+        <header class="games-wishlist__header">
+          <p class="games-wishlist__eyebrow">{{ $t('bot-social-games-view-wishlist') }}</p>
+          <h3 class="games-wishlist__title">{{ $t('bot-social-wishlist-compose-title') }}</h3>
+          <p class="games-wishlist__lead">{{ $t('bot-social-wishlist-compose-lead') }}</p>
+        </header>
+
+        <form class="games-wishlist__form" @submit.prevent="onAdd">
+          <label class="games-wishlist__label" for="wishlist-add-input">
+            {{ $t('bot-social-games-wishlist-url-label') }}
+          </label>
+          <div class="games-wishlist__combo">
+            <input
+              id="wishlist-add-input"
+              v-model.trim="appIdInput"
+              class="games-wishlist__input"
+              type="text"
+              autocomplete="off"
+              spellcheck="false"
+              :placeholder="$t('bot-social-games-wishlist-placeholder')"
+              :aria-label="$t('bot-social-wishlist-compose-title')"
+              :disabled="mutating"
+            >
+            <button
+              type="submit"
+              class="games-wishlist__submit"
+              :disabled="!parsedAppId || mutating"
+            >
+              <FontAwesomeIcon v-if="mutating" icon="spinner" spin aria-hidden="true"></FontAwesomeIcon>
+              <span v-else>{{ $t('bot-social-wishlist-add') }}</span>
+            </button>
+          </div>
+        </form>
+
+        <div class="games-wishlist__help" :aria-label="$t('bot-social-games-wishlist-formats')">
+          <p class="games-wishlist__help-title">{{ $t('bot-social-games-wishlist-formats') }}</p>
+          <ul class="games-wishlist__examples">
+            <li><code>{{ $t('bot-social-games-wishlist-example-url') }}</code></li>
+            <li><code>{{ $t('bot-social-games-wishlist-example-id') }}</code></li>
+          </ul>
+        </div>
+      </section>
 
       <div v-show="isBrowseMode" class="bot-social-games__browse">
         <div v-if="loading && !items.length" class="bot-social__state">
@@ -124,14 +127,12 @@
   import { parseGameAppId } from '../utils/game-target';
   import CoverTile from './games/cover-tile.vue';
   import GamesBrowseToolbar from './games/browse-toolbar.vue';
-  import GamesViewTabs from './games/view-tabs.vue';
   import PluginMissing from './PluginMissing.vue';
   import { normalizeQueryValue, replaceModalView } from '../../../utils/modal-view-query';
 
   const PANEL_STORAGE_KEY = 'asf-bot-social-wishlist-panel';
   const PANEL_MODES = new Set(['library', 'banner', 'add']);
   const PANEL_VIEW_DEFAULT = 'library';
-  const DEFAULT_SORT = 'name-asc';
 
   function readStoredPanel() {
     try {
@@ -154,7 +155,7 @@
 
   export default {
     name: 'BotSocialWishlistTab',
-    components: { CoverTile, PluginMissing, GamesViewTabs, GamesBrowseToolbar },
+    components: { CoverTile, PluginMissing, GamesBrowseToolbar },
     props: {
       botName: { type: String, required: true },
       pluginMissing: { type: Boolean, default: false },
@@ -169,7 +170,6 @@
         items: [],
         appIdInput: '',
         query: '',
-        sortFilter: DEFAULT_SORT,
         panelMode,
         browseVariant: isBrowse(panelMode) ? panelMode : 'library',
       };
@@ -185,19 +185,8 @@
           { id: 'add', icon: 'plus', label: this.$t('bot-social-games-view-add') },
         ];
       },
-      hasActiveFilters() {
-        return this.sortFilter !== DEFAULT_SORT;
-      },
       parsedAppId() {
         return parseGameAppId(this.appIdInput) || 0;
-      },
-      sortOptions() {
-        return [
-          { value: 'name-asc', label: this.$t('bot-social-wishlist-sort-name-asc') },
-          { value: 'name-desc', label: this.$t('bot-social-wishlist-sort-name-desc') },
-          { value: 'appid-asc', label: this.$t('bot-social-wishlist-sort-appid-asc') },
-          { value: 'appid-desc', label: this.$t('bot-social-wishlist-sort-appid-desc') },
-        ];
       },
       filteredItems() {
         const q = this.query.trim().toLowerCase();
@@ -216,17 +205,7 @@
           const nameB = String(b.name || '').toLowerCase();
           const idA = Number(a.appId) || 0;
           const idB = Number(b.appId) || 0;
-          switch (this.sortFilter) {
-            case 'name-desc':
-              return nameB.localeCompare(nameA) || idA - idB;
-            case 'appid-asc':
-              return idA - idB || nameA.localeCompare(nameB);
-            case 'appid-desc':
-              return idB - idA || nameA.localeCompare(nameB);
-            case 'name-asc':
-            default:
-              return nameA.localeCompare(nameB) || idA - idB;
-          }
+          return nameA.localeCompare(nameB) || idA - idB;
         });
         return sorted;
       },
@@ -237,7 +216,6 @@
         handler() {
           this.query = '';
           this.appIdInput = '';
-          this.sortFilter = DEFAULT_SORT;
           this.bootstrap();
         },
       },
@@ -272,9 +250,6 @@
       },
       setPanelMode(mode) {
         this.applyPanelMode(mode, { persist: true });
-      },
-      clearFilters() {
-        this.sortFilter = DEFAULT_SORT;
       },
       bootstrap() {
         if (this.pluginMissing) return;

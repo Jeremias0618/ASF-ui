@@ -1,45 +1,43 @@
 <template>
-  <section class="friends-hub__compose" :aria-label="$t('bot-social-games-wishlist-title')">
-    <div class="friends-hub__compose-panel">
-      <header class="friends-hub__compose-header">
-        <p class="friends-hub__compose-eyebrow">{{ $t('bot-social-games-view-wishlist') }}</p>
-        <h3 class="friends-hub__compose-title">{{ $t('bot-social-games-wishlist-title') }}</h3>
-        <p class="friends-hub__compose-lead">{{ $t('bot-social-games-wishlist-lead') }}</p>
-      </header>
+  <section class="bot-social-games__chrome games-wishlist" :aria-label="$t('bot-social-games-wishlist-title')">
+    <header class="games-wishlist__header">
+      <p class="games-wishlist__eyebrow">{{ $t('bot-social-games-view-wishlist') }}</p>
+      <h3 class="games-wishlist__title">{{ $t('bot-social-games-wishlist-title') }}</h3>
+      <p class="games-wishlist__lead">{{ $t('bot-social-games-wishlist-lead') }}</p>
+    </header>
 
-      <form class="friends-hub__compose-form" @submit.prevent="onSubmit">
-        <label class="friends-hub__field-label" for="games-wishlist-url">
-          {{ $t('bot-social-games-wishlist-url-label') }}
-        </label>
-        <div class="friends-hub__compose-combo">
-          <input
-            id="games-wishlist-url"
-            v-model.trim="storeUrl"
-            class="friends-hub__compose-input"
-            type="text"
-            :placeholder="$t('bot-social-games-wishlist-placeholder')"
-            :disabled="mutating"
-            autocomplete="off"
-            spellcheck="false"
-          >
-          <button
-            type="submit"
-            class="friends-hub__compose-submit"
-            :disabled="!canSubmit || mutating"
-          >
-            <FontAwesomeIcon v-if="mutating" icon="spinner" spin aria-hidden="true"></FontAwesomeIcon>
-            <span v-else>{{ $t('bot-social-games-wishlist-submit') }}</span>
-          </button>
-        </div>
-      </form>
-
-      <div class="friends-hub__compose-help" :aria-label="$t('bot-social-games-wishlist-formats')">
-        <p class="friends-hub__compose-help-title">{{ $t('bot-social-games-wishlist-formats') }}</p>
-        <ul class="friends-hub__compose-examples">
-          <li><code>{{ $t('bot-social-games-wishlist-example-url') }}</code></li>
-          <li><code>{{ $t('bot-social-games-wishlist-example-id') }}</code></li>
-        </ul>
+    <form class="games-wishlist__form" @submit.prevent="onSubmit">
+      <label class="games-wishlist__label" for="games-wishlist-url">
+        {{ $t('bot-social-games-wishlist-url-label') }}
+      </label>
+      <div class="games-wishlist__combo">
+        <input
+          id="games-wishlist-url"
+          v-model.trim="storeUrl"
+          class="games-wishlist__input"
+          type="text"
+          :placeholder="$t('bot-social-games-wishlist-placeholder')"
+          :disabled="mutating"
+          autocomplete="off"
+          spellcheck="false"
+        >
+        <button
+          type="submit"
+          class="games-wishlist__submit"
+          :disabled="!canSubmit || mutating"
+        >
+          <FontAwesomeIcon v-if="mutating" icon="spinner" spin aria-hidden="true"></FontAwesomeIcon>
+          <span v-else>{{ $t('bot-social-games-wishlist-submit') }}</span>
+        </button>
       </div>
+    </form>
+
+    <div class="games-wishlist__help" :aria-label="$t('bot-social-games-wishlist-formats')">
+      <p class="games-wishlist__help-title">{{ $t('bot-social-games-wishlist-formats') }}</p>
+      <ul class="games-wishlist__examples">
+        <li><code>{{ $t('bot-social-games-wishlist-example-url') }}</code></li>
+        <li><code>{{ $t('bot-social-games-wishlist-example-id') }}</code></li>
+      </ul>
     </div>
   </section>
 </template>

@@ -39,6 +39,7 @@
         </div>
       </div>
 
+      <div class="bot-social-games__chrome">
       <div class="games-stats__toolbar">
         <label class="games-stats__searchbox">
           <FontAwesomeIcon class="games-stats__search-icon" icon="search" aria-hidden="true"></FontAwesomeIcon>
@@ -136,6 +137,7 @@
         >
           {{ $t('bot-social-games-filter-cards-no') }}
         </button>
+      </div>
       </div>
 
       <div v-if="!filteredGames.length" class="bot-social__state">{{ $t('bot-social-games-empty') }}</div>

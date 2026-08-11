@@ -39,48 +39,6 @@
   width: 100%;
 }
 
-.bot-social-games__views {
-  background: var(--games-mode-track);
-  border: 1px solid var(--games-mode-border);
-  border-radius: 0.4rem;
-  box-sizing: border-box;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
-  max-width: 100%;
-  padding: 0.2rem;
-  width: 100%;
-}
-
-.bot-social-games__view {
-  appearance: none;
-  align-items: center;
-  background: transparent;
-  border: 0;
-  border-radius: 0.3rem;
-  color: var(--games-mode-idle);
-  cursor: pointer;
-  display: inline-flex;
-  flex: 1 1 auto;
-  font: inherit;
-  font-size: 0.82rem;
-  font-weight: 700;
-  gap: 0.4rem;
-  justify-content: center;
-  min-width: 6.5rem;
-  padding: 0.4rem 0.8rem;
-
-  &.is-active {
-    background: var(--games-btn-bg);
-    color: #fff;
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--games-accent);
-    outline-offset: 1px;
-  }
-}
-
 .bot-social-games__chrome-bar {
   align-items: center;
   display: flex;

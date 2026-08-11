@@ -1,21 +1,21 @@
 <template>
-  <section class="friends-hub__compose" :aria-label="$t('bot-social-community-reviews-title')">
-    <div class="friends-hub__compose-panel">
-      <header class="friends-hub__compose-header">
-        <p class="friends-hub__compose-eyebrow">{{ $t('bot-social-community-mode-reviews') }}</p>
-        <h3 class="friends-hub__compose-title">{{ $t('bot-social-community-reviews-title') }}</h3>
-        <p class="friends-hub__compose-lead">{{ $t('bot-social-community-reviews-lead') }}</p>
+  <section class="community-hub__compose" :aria-label="$t('bot-social-community-reviews-title')">
+    <div class="community-hub__compose-panel">
+      <header class="community-hub__compose-header">
+        <p class="community-hub__compose-eyebrow">{{ $t('bot-social-community-mode-reviews') }}</p>
+        <h3 class="community-hub__compose-title">{{ $t('bot-social-community-reviews-title') }}</h3>
+        <p class="community-hub__compose-lead">{{ $t('bot-social-community-reviews-lead') }}</p>
       </header>
 
-      <form class="friends-hub__compose-form" @submit.prevent="onSubmit">
-        <label class="friends-hub__field-label" for="community-review-url">
+      <form class="community-hub__compose-form" @submit.prevent="onSubmit">
+        <label class="community-hub__field-label" for="community-review-url">
           {{ $t('bot-social-community-reviews-url-label') }}
         </label>
-        <div class="friends-hub__compose-combo">
+        <div class="community-hub__compose-combo">
           <input
             id="community-review-url"
             v-model.trim="reviewUrl"
-            class="friends-hub__compose-input"
+            class="community-hub__compose-input"
             type="text"
             :placeholder="$t('bot-social-community-reviews-placeholder')"
             :disabled="mutating"
@@ -24,7 +24,7 @@
           >
           <button
             type="submit"
-            class="friends-hub__compose-submit"
+            class="community-hub__compose-submit"
             :disabled="!canSubmit || mutating"
           >
             <FontAwesomeIcon v-if="mutating" icon="spinner" spin aria-hidden="true"></FontAwesomeIcon>
@@ -32,7 +32,7 @@
           </button>
         </div>
 
-        <p class="friends-hub__field-label" id="community-review-vote-label">
+        <p class="community-hub__field-label" id="community-review-vote-label">
           {{ $t('bot-social-community-reviews-vote-label') }}
         </p>
         <div
@@ -62,9 +62,9 @@
         </div>
       </form>
 
-      <div class="friends-hub__compose-help" :aria-label="$t('bot-social-community-reviews-formats')">
-        <p class="friends-hub__compose-help-title">{{ $t('bot-social-community-reviews-formats') }}</p>
-        <ul class="friends-hub__compose-examples">
+      <div class="community-hub__compose-help" :aria-label="$t('bot-social-community-reviews-formats')">
+        <p class="community-hub__compose-help-title">{{ $t('bot-social-community-reviews-formats') }}</p>
+        <ul class="community-hub__compose-examples">
           <li><code>{{ $t('bot-social-community-reviews-example') }}</code></li>
         </ul>
       </div>

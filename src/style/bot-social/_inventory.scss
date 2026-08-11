@@ -44,6 +44,11 @@
   &.is-refreshing {
     opacity: 0.85;
   }
+
+  > .asf-icon-tabs {
+    flex-shrink: 0;
+    margin-bottom: 0.65rem;
+  }
 }
 
 .steam-inv__sr-only {

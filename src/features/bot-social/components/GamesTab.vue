@@ -3,16 +3,15 @@
     <PluginMissing v-if="pluginMissing"></PluginMissing>
 
     <template v-else>
-      <div class="bot-social-games__chrome">
-        <GamesViewTabs
-          :value="panelMode"
-          :tabs="viewTabs"
-          :aria-label="$t('bot-social-games-views')"
-          @input="setPanelMode"
-        ></GamesViewTabs>
+      <AsfIconTabs
+        :value="panelMode"
+        :tabs="viewTabs"
+        :aria-label="$t('bot-social-games-views')"
+        @input="setPanelMode"
+      ></AsfIconTabs>
 
+      <div v-show="isBrowseMode" class="bot-social-games__chrome">
         <GamesBrowseToolbar
-          v-show="isBrowseMode"
           :query.sync="query"
           :busy="refreshing || loading"
           :refresh-disabled="loading || refreshing"
@@ -159,7 +158,6 @@
   import CoverTile from './games/cover-tile.vue';
   import IdlePanel from './games/idle-panel.vue';
   import StatsPanel from './games/stats-panel.vue';
-  import GamesViewTabs from './games/view-tabs.vue';
   import WishlistPanel from './games/wishlist-panel.vue';
   import PluginMissing from './PluginMissing.vue';
   import { normalizeQueryValue, replaceModalView } from '../../../utils/modal-view-query';
@@ -212,7 +210,6 @@
       StatsPanel,
       WishlistPanel,
       PluginMissing,
-      GamesViewTabs,
       GamesBrowseToolbar,
     },
     props: {

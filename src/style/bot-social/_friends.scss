@@ -42,55 +42,6 @@
   transition: opacity 0.2s ease;
 }
 
-.friends-hub__modes {
-  background: var(--friends-mode-track);
-  border: 1px solid var(--friends-mode-border);
-  border-radius: 0.4rem;
-  box-sizing: border-box;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
-  padding: 0.2rem;
-  width: 100%;
-}
-
-.friends-hub__mode {
-  appearance: none;
-  align-items: center;
-  background: transparent;
-  border: 0;
-  border-radius: 0.3rem;
-  color: var(--friends-mode-idle);
-  cursor: pointer;
-  display: inline-flex;
-  font: inherit;
-  font-size: 0.82rem;
-  font-weight: 700;
-  gap: 0.4rem;
-  padding: 0.4rem 0.75rem;
-
-  &.is-active {
-    background: var(--friends-btn-bg);
-    color: #fff;
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--friends-accent);
-    outline-offset: 1px;
-  }
-}
-
-.friends-hub__mode-count {
-  background: color-mix(in srgb, #000 28%, transparent);
-  border-radius: 999px;
-  color: inherit;
-  font-size: 0.7rem;
-  font-weight: 700;
-  min-width: 1.25rem;
-  padding: 0.05rem 0.4rem;
-  text-align: center;
-}
-
 .friends-hub__chrome {
   background: var(--friends-chrome-bg);
   border: 1px solid var(--friends-chrome-border);

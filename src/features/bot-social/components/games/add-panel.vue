@@ -1,5 +1,6 @@
 <template>
   <section class="games-add" :aria-label="$t('bot-social-games-add-title')">
+    <div class="bot-social-games__chrome">
     <header class="games-add__header">
       <p class="games-add__eyebrow">{{ $t('bot-social-games-view-add') }}</p>
       <h3 class="games-add__title">{{ $t('bot-social-games-add-title') }}</h3>
@@ -27,6 +28,7 @@
         <span class="games-add__submit-label">{{ $t('bot-social-games-add-search') }}</span>
       </button>
     </form>
+    </div>
 
     <p v-if="error" class="bot-social__inline-error">{{ error }}</p>
 

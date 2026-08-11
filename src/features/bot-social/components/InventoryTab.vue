@@ -1,6 +1,11 @@
 <template>
   <div class="steam-inv" :class="{ 'is-refreshing': refreshing && panelMode === 'inventory' }">
-    <InventoryModeTabs :value="panelMode" @input="setPanelMode"></InventoryModeTabs>
+    <AsfIconTabs
+      :value="panelMode"
+      :tabs="modeTabs"
+      :aria-label="$t('bot-social-inventory-modes')"
+      @input="setPanelMode"
+    ></AsfIconTabs>
 
     <TradeOffersPanel
       v-if="panelMode === 'trades'"
@@ -104,7 +109,6 @@
   import InventoryChrome from './inventory/chrome.vue';
   import InventoryItemDetail from './inventory/item-detail.vue';
   import InventoryItemGrid from './inventory/item-grid.vue';
-  import InventoryModeTabs from './inventory/mode-tabs.vue';
   import InventorySkeleton from './inventory/skeleton.vue';
   import TradeOffersPanel from './inventory/trade-offers-panel.vue';
 
@@ -117,7 +121,6 @@
       TransferDialog,
       TradeOffersPanel,
       InventorySkeleton,
-      InventoryModeTabs,
       InventoryChrome,
       InventoryItemGrid,
       InventoryItemDetail,
@@ -150,6 +153,12 @@
       };
     },
     computed: {
+      modeTabs() {
+        return [
+          { id: 'inventory', icon: 'boxes', label: this.$t('bot-social-tab-inventory') },
+          { id: 'trades', icon: 'exchange-alt', label: this.$t('bot-social-tab-trades') },
+        ];
+      },
       viewFilters() {
         return {
           query: this.query,

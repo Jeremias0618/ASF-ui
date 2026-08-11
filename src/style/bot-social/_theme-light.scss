@@ -87,10 +87,6 @@
     --friends-combo-border: #d0d7de;
     --friends-help-border: #e4e7ec;
 
-    .friends-hub__mode-count {
-      background: rgba(16, 24, 40, 0.08);
-    }
-
     .friends-hub__icon-btn--accept {
       color: #1570a8;
     }
@@ -131,6 +127,19 @@
     --community-icon-bg: rgba(21, 112, 168, 0.1);
     --community-refresh-bg: rgba(21, 112, 168, 0.08);
     --community-refresh-border: rgba(21, 112, 168, 0.28);
+    --community-compose-bg: linear-gradient(165deg, #f5f7fa 0%, #eef1f4 55%, #e8eef4 100%);
+    --community-compose-border: #d0d7de;
+    --community-combo-bg: #ffffff;
+    --community-combo-border: #d0d7de;
+    --community-example-bg: #ffffff;
+    --community-example-border: #d0d7de;
+    --community-example-ink: #344054;
+    --community-help-border: #e4e7ec;
+    --community-btn-bg: linear-gradient(180deg, #2f80b5 0%, #1f6a99 100%);
+  }
+
+  .community-hub__compose-combo {
+    box-shadow: inset 0 0 0 1px rgba(16, 24, 40, 0.04);
   }
 
   .games-idle {
@@ -230,10 +239,6 @@
     border-color: #e4e7ec;
   }
 
-  .wishlist-hub__add-combo {
-    box-shadow: inset 0 0 0 1px rgba(16, 24, 40, 0.04);
-  }
-
   .wishlist-hub__remove {
     background: rgba(255, 255, 255, 0.95);
     border-color: rgba(192, 57, 43, 0.45);
@@ -256,8 +261,7 @@
 
   .games-stats__search-input,
   .games-idle__search-input,
-  .games-add__input,
-  .wishlist-hub__add-input {
+  .games-add__input {
     color: #101828;
 
     &::placeholder {
