@@ -1,5 +1,5 @@
 <template>
-  <div v-if="open" class="bulk-actions__dialog" role="presentation" @click.self="$emit('stay')">
+  <div v-if="open" class="bulk-actions__dialog" role="presentation">
     <div
       ref="panel"
       class="bulk-actions__dialog-panel"
