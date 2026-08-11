@@ -2,55 +2,100 @@
   <div v-if="open" class="bulk-actions__dialog" role="presentation">
     <div
       ref="panel"
-      class="bulk-actions__dialog-panel bulk-actions__dialog-panel--progress"
+      class="bulk-run-modal"
+      :class="{ 'is-running': running, 'is-done': !running }"
       role="dialog"
       aria-modal="true"
       :aria-labelledby="titleId"
       :aria-busy="running ? 'true' : 'false'"
       tabindex="-1"
     >
-      <h2 :id="titleId" class="bulk-actions__dialog-title">
-        {{ running ? $t('bulk-actions-progress-title') : $t('bulk-actions-results-title') }}
-      </h2>
-
       <template v-if="running">
-        <p class="bulk-actions__progress-label">
-          {{ $t('bulk-actions-progress-status', { current, total, label }) }}
-        </p>
+        <header class="bulk-run-modal__head">
+          <h2 :id="titleId" class="bulk-run-modal__title">
+            {{ $t('bulk-actions-progress-title') }}
+          </h2>
+
+          <p
+            v-if="!isIndeterminate"
+            class="bulk-run-modal__fraction"
+            aria-live="polite"
+          >
+            <span class="bulk-run-modal__fraction-current">{{ current }}</span>
+            <span class="bulk-run-modal__fraction-sep">/</span>
+            <span class="bulk-run-modal__fraction-total">{{ total }}</span>
+          </p>
+          <p
+            v-else
+            class="bulk-run-modal__fraction bulk-run-modal__fraction--busy"
+            aria-live="polite"
+          >
+            <FontAwesomeIcon icon="spinner" spin aria-hidden="true"></FontAwesomeIcon>
+            <span>{{ $t('bulk-actions-progress-bots', { n: botsTotal || total || 0 }) }}</span>
+          </p>
+
+          <p v-if="summaryTarget" class="bulk-run-modal__target" :title="summaryTarget">
+            {{ summaryTarget }}
+          </p>
+        </header>
+
         <div
-          class="bulk-actions__progress-track"
+          class="bulk-run-modal__track"
+          :class="{ 'is-indeterminate': isIndeterminate }"
           role="progressbar"
-          :aria-valuenow="current"
+          :aria-valuenow="isIndeterminate ? null : current"
           :aria-valuemin="0"
-          :aria-valuemax="total"
+          :aria-valuemax="isIndeterminate ? null : total"
+          :aria-label="$t('bulk-actions-progress-title')"
         >
-          <span class="bulk-actions__progress-fill" :style="{ width: `${percent}%` }"></span>
+          <span
+            class="bulk-run-modal__fill"
+            :style="isIndeterminate ? null : { width: `${percent}%` }"
+          ></span>
         </div>
-        <button type="button" class="button" @click="$emit('cancel')">
-          {{ $t('bulk-actions-progress-cancel') }}
-        </button>
+
+        <footer class="bulk-run-modal__foot">
+          <button type="button" class="button bulk-run-modal__stop" @click="$emit('cancel')">
+            {{ $t('bulk-actions-progress-cancel') }}
+          </button>
+        </footer>
       </template>
 
       <template v-else>
-        <p class="bulk-actions__dialog-lead">
-          {{ $t('bulk-actions-results-summary', { ok: okCount, fail: failCount }) }}
-        </p>
-        <ul v-if="results.length" class="bulk-actions__results">
-          <li
-            v-for="(row, index) in results"
-            :key="`${row.botName}-${index}`"
-            class="bulk-actions__results-row"
-            :class="{ 'is-ok': row.ok, 'is-fail': !row.ok }"
+        <header class="bulk-run-modal__head">
+          <h2 :id="titleId" class="bulk-run-modal__title">
+            {{ $t('bulk-actions-results-title') }}
+          </h2>
+          <p v-if="summaryTarget" class="bulk-run-modal__target bulk-run-modal__target--result" :title="summaryTarget">
+            {{ $t('bulk-actions-results-target', { target: summaryTarget }) }}
+          </p>
+        </header>
+
+        <dl class="bulk-run-modal__summary">
+          <div class="bulk-run-modal__stat">
+            <dt>{{ $t('bulk-actions-results-bots-label') }}</dt>
+            <dd>{{ botsInvolved }}</dd>
+          </div>
+          <div class="bulk-run-modal__stat is-ok">
+            <dt>{{ $t('bulk-actions-results-ok-label') }}</dt>
+            <dd>{{ okCount }}</dd>
+          </div>
+          <div class="bulk-run-modal__stat is-fail">
+            <dt>{{ $t('bulk-actions-results-fail-label') }}</dt>
+            <dd>{{ failCount }}</dd>
+          </div>
+        </dl>
+
+        <footer class="bulk-run-modal__foot bulk-run-modal__foot--end">
+          <button
+            ref="doneBtn"
+            type="button"
+            class="button button--confirm bulk-run-modal__done"
+            @click="$emit('close')"
           >
-            <strong>{{ row.botName }}</strong>
-            <span>{{ row.message || (row.ok ? $t('bulk-actions-result-ok') : $t('bulk-actions-result-fail')) }}</span>
-          </li>
-        </ul>
-        <div class="bulk-actions__dialog-actions">
-          <button ref="doneBtn" type="button" class="button button--confirm" @click="$emit('close')">
             {{ $t('bulk-actions-done') }}
           </button>
-        </div>
+        </footer>
       </template>
     </div>
   </div>
@@ -68,12 +113,19 @@
       total: { type: Number, default: 0 },
       label: { type: String, default: '' },
       results: { type: Array, default: () => [] },
+      /** Destination URL / profile / page / bot shown in summary. */
+      summaryTarget: { type: String, default: '' },
+      /** Expected bot count when the runner uses a single batch for many bots. */
+      botsTotal: { type: Number, default: 0 },
     },
     data() {
       progressSeq += 1;
       return { titleId: `bulk-progress-title-${progressSeq}` };
     },
     computed: {
+      isIndeterminate() {
+        return this.total <= 1 && this.botsTotal > 1;
+      },
       percent() {
         if (!this.total) return 0;
         return Math.min(100, Math.round((this.current / this.total) * 100));
@@ -83,6 +135,11 @@
       },
       failCount() {
         return this.results.filter(r => !r.ok).length;
+      },
+      botsInvolved() {
+        if (this.results.length) return this.results.length;
+        if (this.botsTotal > 0) return this.botsTotal;
+        return this.total || 0;
       },
     },
     watch: {

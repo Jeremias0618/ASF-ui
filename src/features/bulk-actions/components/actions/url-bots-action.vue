@@ -60,6 +60,8 @@
       :total="runner.total"
       :label="runner.label"
       :results="runner.results"
+      :summary-target="progressTarget"
+      :bots-total="botNames.length"
       @cancel="runner.cancel()"
       @close="onProgressClose"
     ></BulkProgressModal>
@@ -118,6 +120,9 @@
       canSubmit() {
         return this.botNames.length > 0 && this.targetValid;
       },
+      progressTarget() {
+        return this.target.trim();
+      },
       confirmLines() {
         return [
           this.$t('bulk-actions-confirm-bots', { n: this.botNames.length }),
@@ -140,7 +145,7 @@
         const target = normalizeBulkTarget(this.action, this.target);
         try {
           await this.runner.runSteps([{
-            label: botNames.join(', '),
+            label: target,
             run: async () => {
               try {
                 const payload = await runUrlBotsApi(this.action.api, botNames, { target });

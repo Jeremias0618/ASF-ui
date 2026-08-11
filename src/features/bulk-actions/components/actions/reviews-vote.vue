@@ -78,6 +78,8 @@
       :total="runner.total"
       :label="runner.label"
       :results="runner.results"
+      :summary-target="target.trim()"
+      :bots-total="botNames.length"
       @cancel="runner.cancel()"
       @close="onProgressClose"
     ></BulkProgressModal>
@@ -151,7 +153,7 @@
         const { vote } = this;
         try {
           await this.runner.runSteps([{
-            label: botNames.join(', '),
+            label: url,
             run: async () => {
               try {
                 const payload = await reviewsVote(botNames, { url, vote });

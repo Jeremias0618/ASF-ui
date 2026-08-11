@@ -158,6 +158,8 @@
       :total="runner.total"
       :label="runner.label"
       :results="runner.results"
+      :summary-target="destinationBot"
+      :bots-total="selectedSourceBots.length"
       @cancel="runner.cancel()"
       @close="onProgressClose"
     ></BulkProgressModal>
