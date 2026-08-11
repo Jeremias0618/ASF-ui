@@ -1,56 +1,57 @@
 <template>
-  <section class="bulk-actions__panel" :aria-label="title">
-    <header class="bulk-actions__panel-header">
-      <button type="button" class="button button--link bulk-actions__back" @click="$emit('back')">
-        <FontAwesomeIcon icon="chevron-left" aria-hidden="true"></FontAwesomeIcon>
-        {{ $t('bulk-actions-bots-change') }}
-      </button>
-    </header>
-
-    <label class="bulk-actions__field">
-      <span class="bulk-actions__field-label">{{ $t(action.targetLabelKey) }}</span>
-      <input
-        v-model.trim="target"
-        class="bulk-actions__input"
-        type="text"
-        autocomplete="off"
-        spellcheck="false"
-        :placeholder="$t(action.targetPlaceholderKey)"
-        :disabled="busy"
-      >
-    </label>
-
-    <fieldset class="bulk-actions__fieldset">
-      <legend class="bulk-actions__field-label">{{ $t('bulk-action-shared-vote-label') }}</legend>
-      <label class="bulk-actions__radio">
-        <input v-model="vote" type="radio" value="like">
-        {{ $t('bulk-action-shared-vote-like') }}
+  <section class="bulk-actions-setup-panel" :aria-label="title">
+    <div class="bulk-actions-setup-panel__body">
+      <label class="bulk-actions-field">
+        <span class="bulk-actions-field__label">{{ $t(action.targetLabelKey) }}</span>
+        <input
+          v-model.trim="target"
+          class="bulk-actions-field__control"
+          type="text"
+          autocomplete="off"
+          spellcheck="false"
+          :placeholder="$t(action.targetPlaceholderKey)"
+          :disabled="busy"
+        >
       </label>
-      <label class="bulk-actions__radio">
-        <input v-model="vote" type="radio" value="dislike">
-        {{ $t('bulk-action-shared-vote-dislike') }}
-      </label>
-      <label class="bulk-actions__radio">
-        <input v-model="vote" type="radio" value="">
-        {{ $t('bulk-action-shared-vote-none') }}
-      </label>
-    </fieldset>
 
-    <label class="bulk-actions__check">
-      <input v-model="favorite" type="checkbox">
-      {{ $t('bulk-action-shared-favorite') }}
-    </label>
+      <fieldset class="bulk-actions-choice">
+        <legend class="bulk-actions-field__label">{{ $t('bulk-action-shared-vote-label') }}</legend>
+        <div class="bulk-actions-choice__row">
+          <label class="bulk-actions-choice__option" :class="{ 'is-on': vote === 'like' }">
+            <input v-model="vote" type="radio" value="like">
+            {{ $t('bulk-action-shared-vote-like') }}
+          </label>
+          <label class="bulk-actions-choice__option" :class="{ 'is-on': vote === 'dislike' }">
+            <input v-model="vote" type="radio" value="dislike">
+            {{ $t('bulk-action-shared-vote-dislike') }}
+          </label>
+          <label class="bulk-actions-choice__option" :class="{ 'is-on': vote === '' }">
+            <input v-model="vote" type="radio" value="">
+            {{ $t('bulk-action-shared-vote-none') }}
+          </label>
+        </div>
+      </fieldset>
 
-    <div class="bulk-actions__panel-footer">
+      <label class="bulk-actions-toggle" :class="{ 'is-on': favorite }">
+        <input v-model="favorite" type="checkbox">
+        <span>{{ $t('bulk-action-shared-favorite') }}</span>
+      </label>
+    </div>
+
+    <footer class="bulk-actions-setup-bar">
+      <div class="bulk-actions-setup-bar__copy">
+        <p class="bulk-actions-setup-bar__hint">{{ $t('bulk-actions-setup-hint') }}</p>
+      </div>
       <button
         type="button"
-        class="button button--confirm"
+        class="button button--confirm bulk-actions-setup-bar__cta"
         :disabled="!canSubmit || busy"
         @click="openConfirm = true"
       >
-        {{ $t('bulk-actions-proceed') }}
+        {{ $t('bulk-actions-run') }}
+        <FontAwesomeIcon icon="play" aria-hidden="true"></FontAwesomeIcon>
       </button>
-    </div>
+    </footer>
 
     <BulkConfirmDialog
       :open="openConfirm"
@@ -58,6 +59,7 @@
       :lead="$t('bulk-actions-confirm-lead')"
       :lines="confirmLines"
       :warning="$t('bulk-actions-confirm-warning')"
+      :confirmLabel="$t('bulk-actions-run')"
       @cancel="openConfirm = false"
       @confirm="onConfirm"
     ></BulkConfirmDialog>

@@ -1,51 +1,52 @@
 <template>
-  <section class="bulk-actions__panel" :aria-label="title">
-    <header class="bulk-actions__panel-header">
-      <button type="button" class="button button--link bulk-actions__back" @click="$emit('back')">
-        <FontAwesomeIcon icon="chevron-left" aria-hidden="true"></FontAwesomeIcon>
-        {{ $t('bulk-actions-bots-change') }}
-      </button>
-    </header>
-
-    <label class="bulk-actions__field">
-      <span class="bulk-actions__field-label">{{ $t(action.targetLabelKey) }}</span>
-      <input
-        v-model.trim="target"
-        class="bulk-actions__input"
-        type="text"
-        autocomplete="off"
-        spellcheck="false"
-        :placeholder="$t(action.targetPlaceholderKey)"
-        :disabled="busy"
-      >
-    </label>
-
-    <fieldset class="bulk-actions__fieldset">
-      <legend class="bulk-actions__field-label">{{ $t('bulk-action-reviews-vote-label') }}</legend>
-      <label class="bulk-actions__radio">
-        <input v-model="vote" type="radio" value="yes">
-        {{ $t('bulk-action-reviews-vote-yes') }}
+  <section class="bulk-actions-setup-panel" :aria-label="title">
+    <div class="bulk-actions-setup-panel__body">
+      <label class="bulk-actions-field">
+        <span class="bulk-actions-field__label">{{ $t(action.targetLabelKey) }}</span>
+        <input
+          v-model.trim="target"
+          class="bulk-actions-field__control"
+          type="text"
+          autocomplete="off"
+          spellcheck="false"
+          :placeholder="$t(action.targetPlaceholderKey)"
+          :disabled="busy"
+        >
       </label>
-      <label class="bulk-actions__radio">
-        <input v-model="vote" type="radio" value="no">
-        {{ $t('bulk-action-reviews-vote-no') }}
-      </label>
-      <label class="bulk-actions__radio">
-        <input v-model="vote" type="radio" value="funny">
-        {{ $t('bulk-action-reviews-vote-funny') }}
-      </label>
-    </fieldset>
 
-    <div class="bulk-actions__panel-footer">
+      <fieldset class="bulk-actions-choice">
+        <legend class="bulk-actions-field__label">{{ $t('bulk-action-reviews-vote-label') }}</legend>
+        <div class="bulk-actions-choice__row">
+          <label class="bulk-actions-choice__option" :class="{ 'is-on': vote === 'yes' }">
+            <input v-model="vote" type="radio" value="yes">
+            {{ $t('bulk-action-reviews-vote-yes') }}
+          </label>
+          <label class="bulk-actions-choice__option" :class="{ 'is-on': vote === 'no' }">
+            <input v-model="vote" type="radio" value="no">
+            {{ $t('bulk-action-reviews-vote-no') }}
+          </label>
+          <label class="bulk-actions-choice__option" :class="{ 'is-on': vote === 'funny' }">
+            <input v-model="vote" type="radio" value="funny">
+            {{ $t('bulk-action-reviews-vote-funny') }}
+          </label>
+        </div>
+      </fieldset>
+    </div>
+
+    <footer class="bulk-actions-setup-bar">
+      <div class="bulk-actions-setup-bar__copy">
+        <p class="bulk-actions-setup-bar__hint">{{ $t('bulk-actions-setup-hint') }}</p>
+      </div>
       <button
         type="button"
-        class="button button--confirm"
+        class="button button--confirm bulk-actions-setup-bar__cta"
         :disabled="!canSubmit || busy"
         @click="openConfirm = true"
       >
-        {{ $t('bulk-actions-proceed') }}
+        {{ $t('bulk-actions-run') }}
+        <FontAwesomeIcon icon="play" aria-hidden="true"></FontAwesomeIcon>
       </button>
-    </div>
+    </footer>
 
     <BulkConfirmDialog
       :open="openConfirm"
@@ -53,6 +54,7 @@
       :lead="$t('bulk-actions-confirm-lead')"
       :lines="confirmLines"
       :warning="$t('bulk-actions-confirm-warning')"
+      :confirmLabel="$t('bulk-actions-run')"
       @cancel="openConfirm = false"
       @confirm="onConfirm"
     ></BulkConfirmDialog>

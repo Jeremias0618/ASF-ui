@@ -1,35 +1,34 @@
 <template>
-  <section class="bulk-actions__panel" :aria-label="title">
-    <header class="bulk-actions__panel-header">
-      <button type="button" class="button button--link bulk-actions__back" @click="$emit('back')">
-        <FontAwesomeIcon icon="chevron-left" aria-hidden="true"></FontAwesomeIcon>
-        {{ $t('bulk-actions-bots-change') }}
-      </button>
-    </header>
+  <section class="bulk-actions-setup-panel" :aria-label="title">
+    <div class="bulk-actions-setup-panel__body">
+      <label class="bulk-actions-field">
+        <span class="bulk-actions-field__label">{{ targetLabel }}</span>
+        <input
+          v-model.trim="target"
+          class="bulk-actions-field__control"
+          type="text"
+          autocomplete="off"
+          spellcheck="false"
+          :placeholder="targetPlaceholder"
+          :disabled="busy"
+        >
+      </label>
+    </div>
 
-    <label class="bulk-actions__field">
-      <span class="bulk-actions__field-label">{{ targetLabel }}</span>
-      <input
-        v-model.trim="target"
-        class="bulk-actions__input"
-        type="text"
-        autocomplete="off"
-        spellcheck="false"
-        :placeholder="targetPlaceholder"
-        :disabled="busy"
-      >
-    </label>
-
-    <div class="bulk-actions__panel-footer">
+    <footer class="bulk-actions-setup-bar">
+      <div class="bulk-actions-setup-bar__copy">
+        <p class="bulk-actions-setup-bar__hint">{{ $t('bulk-actions-setup-hint') }}</p>
+      </div>
       <button
         type="button"
-        class="button button--confirm"
+        class="button button--confirm bulk-actions-setup-bar__cta"
         :disabled="!canSubmit || busy"
         @click="openConfirm = true"
       >
-        {{ $t('bulk-actions-proceed') }}
+        {{ $t('bulk-actions-run') }}
+        <FontAwesomeIcon icon="play" aria-hidden="true"></FontAwesomeIcon>
       </button>
-    </div>
+    </footer>
 
     <BulkConfirmDialog
       :open="openConfirm"
@@ -37,6 +36,7 @@
       :lead="$t('bulk-actions-confirm-lead')"
       :lines="confirmLines"
       :warning="$t('bulk-actions-confirm-warning')"
+      :confirmLabel="$t('bulk-actions-run')"
       @cancel="openConfirm = false"
       @confirm="onConfirm"
     ></BulkConfirmDialog>

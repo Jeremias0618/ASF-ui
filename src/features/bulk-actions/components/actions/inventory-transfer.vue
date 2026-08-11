@@ -1,133 +1,139 @@
-<template>
-  <section class="bulk-actions__panel bulk-actions__panel--inventory" :aria-label="title">
-    <header class="bulk-actions__panel-header">
-      <button type="button" class="button button--link bulk-actions__back" @click="$emit('back')">
-        <FontAwesomeIcon icon="chevron-left" aria-hidden="true"></FontAwesomeIcon>
-        {{ $t('bulk-actions-bots-change') }}
-      </button>
-    </header>
-
-    <div class="bulk-actions__inv-toolbar">
-      <label class="bulk-actions__search">
-        <FontAwesomeIcon icon="search" aria-hidden="true"></FontAwesomeIcon>
-        <input
-          v-model.trim="query"
-          type="search"
-          :placeholder="$t('bulk-action-inventory-search')"
-          :aria-label="$t('bulk-action-inventory-search')"
+﻿<template>
+  <section class="bulk-actions-setup-panel bulk-actions-setup-panel--inventory" :aria-label="title">
+    <div class="bulk-actions-setup-panel__body">
+      <div class="bulk-actions__inv-toolbar">
+        <label class="bulk-actions-bots__search">
+          <FontAwesomeIcon icon="search" aria-hidden="true"></FontAwesomeIcon>
+          <input
+            v-model.trim="query"
+            type="search"
+            :placeholder="$t('bulk-action-inventory-search')"
+            :aria-label="$t('bulk-action-inventory-search')"
+          >
+        </label>
+        <button
+          type="button"
+          class="bulk-actions-bots__chip"
+          :disabled="loading"
+          @click="loadAll(true)"
         >
-      </label>
-      <button
-        type="button"
-        class="button button--link"
-        :disabled="loading"
-        @click="loadAll(true)"
-      >
-        <FontAwesomeIcon :icon="loading ? 'spinner' : 'redo-alt'" :spin="loading"></FontAwesomeIcon>
-        {{ $t('bot-social-refresh') }}
-      </button>
-    </div>
+          <FontAwesomeIcon :icon="loading ? 'spinner' : 'redo-alt'" :spin="loading"></FontAwesomeIcon>
+          {{ $t('bot-social-refresh') }}
+        </button>
+      </div>
 
-    <div class="bulk-actions__inv-filters" role="group" :aria-label="$t('bulk-action-inventory-filters')">
-      <label class="bulk-actions__field bulk-actions__field--compact">
-        <span class="bulk-actions__field-label">{{ $t('bulk-action-inventory-filter-bot') }}</span>
-        <select v-model="botFilter" class="bulk-actions__select">
-          <option value="">{{ $t('bulk-action-inventory-filter-bot-all') }}</option>
-          <option v-for="name in botNamesWithItems" :key="name" :value="name">{{ name }}</option>
-        </select>
-      </label>
-      <label class="bulk-actions__field bulk-actions__field--compact">
-        <span class="bulk-actions__field-label">{{ $t('bulk-action-inventory-filter-kind') }}</span>
-        <select v-model="kindFilter" class="bulk-actions__select">
-          <option value="all">{{ $t('bot-social-inventory-filter-all') }}</option>
-          <option v-for="kind in kindOptions" :key="kind" :value="kind">
-            {{ kindLabel(kind) }}
+      <div class="bulk-actions__inv-filters" role="group" :aria-label="$t('bulk-action-inventory-filters')">
+        <label class="bulk-actions-field bulk-actions-field--compact">
+          <span class="bulk-actions-field__label">{{ $t('bulk-action-inventory-filter-bot') }}</span>
+          <select v-model="botFilter" class="bulk-actions-field__control">
+            <option value="">{{ $t('bulk-action-inventory-filter-bot-all') }}</option>
+            <option v-for="name in botNamesWithItems" :key="name" :value="name">{{ name }}</option>
+          </select>
+        </label>
+        <label class="bulk-actions-field bulk-actions-field--compact">
+          <span class="bulk-actions-field__label">{{ $t('bulk-action-inventory-filter-kind') }}</span>
+          <select v-model="kindFilter" class="bulk-actions-field__control">
+            <option value="all">{{ $t('bot-social-inventory-filter-all') }}</option>
+            <option v-for="kind in kindOptions" :key="kind" :value="kind">
+              {{ kindLabel(kind) }}
+            </option>
+          </select>
+        </label>
+        <label class="bulk-actions-field bulk-actions-field--compact">
+          <span class="bulk-actions-field__label">{{ $t('bulk-action-inventory-filter-game') }}</span>
+          <select v-model="gameFilter" class="bulk-actions-field__control">
+            <option value="">{{ $t('bulk-action-inventory-filter-game-all') }}</option>
+            <option v-for="game in gameOptions" :key="game.value" :value="game.value">{{ game.label }}</option>
+          </select>
+        </label>
+        <label class="bulk-actions-field bulk-actions-field--compact">
+          <span class="bulk-actions-field__label">{{ $t('bulk-action-inventory-filter-status') }}</span>
+          <select v-model="statusFilter" class="bulk-actions-field__control">
+            <option value="tradable">{{ $t('bot-social-inventory-tradable') }}</option>
+            <option value="all">{{ $t('bot-social-inventory-filter-status-all') }}</option>
+            <option value="marketable">{{ $t('bot-social-inventory-marketable') }}</option>
+          </select>
+        </label>
+      </div>
+
+      <p v-if="loadError" class="bot-social__inline-error">{{ loadError }}</p>
+      <p class="bulk-actions__inv-count">
+        {{ $t('bulk-action-inventory-showing', { shown: filteredItems.length, selected: selectedIds.length }) }}
+      </p>
+
+      <div v-if="loading && !allItems.length" class="bulk-actions__inv-loading" role="status">
+        <FontAwesomeIcon icon="spinner" spin></FontAwesomeIcon>
+        {{ $t('bot-social-loading') }}
+      </div>
+
+      <div v-else-if="!filteredItems.length" class="bulk-actions__empty">
+        {{ $t('bulk-action-inventory-empty') }}
+      </div>
+
+      <ul v-else class="bulk-actions__inv-grid" role="listbox" :aria-label="$t('bulk-action-inventory-grid')">
+        <li v-for="item in pageItems" :key="item.botName + ':' + item.id">
+          <button
+            type="button"
+            class="bulk-actions__inv-cell"
+            :class="{ 'is-checked': isSelected(item), 'is-locked': !item.tradable }"
+            :disabled="!item.tradable"
+            :aria-pressed="isSelected(item) ? 'true' : 'false'"
+            :title="item.name + ' · ' + item.botName"
+            @click="toggleItem(item)"
+          >
+            <span class="bulk-actions__inv-check" :class="{ 'is-on': isSelected(item) }" aria-hidden="true"></span>
+            <img v-if="item.iconUrl" class="bulk-actions__inv-thumb" :src="item.iconUrl" :alt="item.name">
+            <span class="bulk-actions__inv-meta">{{ item.botName }}</span>
+          </button>
+        </li>
+      </ul>
+
+      <div v-if="totalPages > 1" class="bulk-actions__pager">
+        <button type="button" class="button button--link" :disabled="page <= 1" @click="page -= 1">&lsaquo;</button>
+        <span>{{ page }} / {{ totalPages }}</span>
+        <button type="button" class="button button--link" :disabled="page >= totalPages" @click="page += 1">&rsaquo;</button>
+      </div>
+
+      <label class="bulk-actions-field">
+        <span class="bulk-actions-field__label">{{ $t('bulk-action-inventory-destination') }}</span>
+        <select v-model="destinationBot" class="bulk-actions-field__control" :disabled="busy">
+          <option value="">{{ $t('bulk-action-inventory-destination-placeholder') }}</option>
+          <option
+            v-for="bot in destinationBots"
+            :key="bot.name"
+            :value="bot.name"
+            :disabled="selectedSourceBots.includes(bot.name)"
+          >
+            {{ bot.viewableName || bot.name }}
           </option>
         </select>
       </label>
-      <label class="bulk-actions__field bulk-actions__field--compact">
-        <span class="bulk-actions__field-label">{{ $t('bulk-action-inventory-filter-game') }}</span>
-        <select v-model="gameFilter" class="bulk-actions__select">
-          <option value="">{{ $t('bulk-action-inventory-filter-game-all') }}</option>
-          <option v-for="game in gameOptions" :key="game.value" :value="game.value">{{ game.label }}</option>
-        </select>
-      </label>
-      <label class="bulk-actions__field bulk-actions__field--compact">
-        <span class="bulk-actions__field-label">{{ $t('bulk-action-inventory-filter-status') }}</span>
-        <select v-model="statusFilter" class="bulk-actions__select">
-          <option value="tradable">{{ $t('bot-social-inventory-tradable') }}</option>
-          <option value="all">{{ $t('bot-social-inventory-filter-status-all') }}</option>
-          <option value="marketable">{{ $t('bot-social-inventory-marketable') }}</option>
-        </select>
-      </label>
     </div>
 
-    <p v-if="loadError" class="bot-social__inline-error">{{ loadError }}</p>
-    <p class="bulk-actions__inv-count">
-      {{ $t('bulk-action-inventory-showing', { shown: filteredItems.length, selected: selectedIds.length }) }}
-    </p>
-
-    <div v-if="loading && !allItems.length" class="bulk-actions__inv-loading" role="status">
-      <FontAwesomeIcon icon="spinner" spin></FontAwesomeIcon>
-      {{ $t('bot-social-loading') }}
-    </div>
-
-    <div v-else-if="!filteredItems.length" class="bulk-actions__empty">
-      {{ $t('bulk-action-inventory-empty') }}
-    </div>
-
-    <ul v-else class="bulk-actions__inv-grid" role="listbox" :aria-label="$t('bulk-action-inventory-grid')">
-      <li v-for="item in pageItems" :key="item.botName + ':' + item.id">
+    <footer class="bulk-actions-setup-bar">
+      <div class="bulk-actions-setup-bar__copy">
+        <p class="bulk-actions-setup-bar__hint">{{ $t('bulk-actions-setup-hint') }}</p>
+      </div>
+      <div class="bulk-actions-setup-bar__actions">
         <button
           type="button"
-          class="bulk-actions__inv-cell"
-          :class="{ 'is-checked': isSelected(item), 'is-locked': !item.tradable }"
-          :disabled="!item.tradable"
-          :aria-pressed="isSelected(item) ? 'true' : 'false'"
-          :title="item.name + ' · ' + item.botName"
-          @click="toggleItem(item)"
+          class="bulk-actions-bots__chip"
+          :disabled="!selectedIds.length"
+          @click="clearSelection"
         >
-          <span class="bulk-actions__inv-check" :class="{ 'is-on': isSelected(item) }" aria-hidden="true"></span>
-          <img v-if="item.iconUrl" class="bulk-actions__inv-thumb" :src="item.iconUrl" :alt="item.name">
-          <span class="bulk-actions__inv-meta">{{ item.botName }}</span>
+          {{ $t('bulk-action-inventory-clear-selection') }}
         </button>
-      </li>
-    </ul>
-
-    <div v-if="totalPages > 1" class="bulk-actions__pager">
-      <button type="button" class="button button--link" :disabled="page <= 1" @click="page -= 1">&lsaquo;</button>
-      <span>{{ page }} / {{ totalPages }}</span>
-      <button type="button" class="button button--link" :disabled="page >= totalPages" @click="page += 1">&rsaquo;</button>
-    </div>
-
-    <label class="bulk-actions__field">
-      <span class="bulk-actions__field-label">{{ $t('bulk-action-inventory-destination') }}</span>
-      <select v-model="destinationBot" class="bulk-actions__select" :disabled="busy">
-        <option value="">{{ $t('bulk-action-inventory-destination-placeholder') }}</option>
-        <option
-          v-for="bot in destinationBots"
-          :key="bot.name"
-          :value="bot.name"
-          :disabled="selectedSourceBots.includes(bot.name)"
+        <button
+          type="button"
+          class="button button--confirm bulk-actions-setup-bar__cta"
+          :disabled="!canSubmit || busy"
+          @click="openConfirm = true"
         >
-          {{ bot.viewableName || bot.name }}
-        </option>
-      </select>
-    </label>
-
-    <div class="bulk-actions__panel-footer">
-      <button type="button" class="button button--link" :disabled="!selectedIds.length" @click="clearSelection">
-        {{ $t('bulk-action-inventory-clear-selection') }}
-      </button>
-      <button
-        type="button"
-        class="button button--confirm"
-        :disabled="!canSubmit || busy"
-        @click="openConfirm = true"
-      >
-        {{ $t('bulk-actions-proceed') }}
-      </button>
-    </div>
+          {{ $t('bulk-actions-run') }}
+          <FontAwesomeIcon icon="play" aria-hidden="true"></FontAwesomeIcon>
+        </button>
+      </div>
+    </footer>
 
     <BulkConfirmDialog
       :open="openConfirm"
@@ -135,6 +141,7 @@
       :lead="$t('bulk-actions-confirm-lead')"
       :lines="confirmLines"
       :warning="$t('bulk-actions-confirm-warning')"
+      :confirmLabel="$t('bulk-actions-run')"
       @cancel="openConfirm = false"
       @confirm="onConfirm"
     ></BulkConfirmDialog>

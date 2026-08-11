@@ -1,12 +1,36 @@
 <template>
-  <main class="bulk-actions-page home2-page-body">
-    <header class="home2-page-intro">
-      <p class="home2-page-eyebrow">{{ $t('bulk-actions') }}</p>
-      <h1 class="home2-page-title">{{ title }}</h1>
-      <p class="home2-page-lead">{{ lead }}</p>
+  <main class="bulk-actions-page bulk-actions-page--setup home2-page-body">
+    <header class="bulk-actions-hero">
+      <div class="bulk-actions-hero__copy">
+        <p class="bulk-actions-hero__eyebrow">{{ $t('bulk-actions') }}</p>
+        <h1 class="bulk-actions-hero__title">{{ title }}</h1>
+        <p class="bulk-actions-hero__lead">{{ lead }}</p>
+      </div>
+
+      <ol class="bulk-actions-pipeline" :aria-label="$t('bulk-actions-pipeline-label')">
+        <li class="bulk-actions-pipeline__step is-done">
+          <span class="bulk-actions-pipeline__index" aria-hidden="true">1</span>
+          <span class="bulk-actions-pipeline__text">{{ $t('bulk-actions-pipeline-pick') }}</span>
+        </li>
+        <li class="bulk-actions-pipeline__step is-done">
+          <span class="bulk-actions-pipeline__index" aria-hidden="true">2</span>
+          <span class="bulk-actions-pipeline__text">{{ $t('bulk-actions-pipeline-bots') }}</span>
+        </li>
+        <li class="bulk-actions-pipeline__step is-current" aria-current="step">
+          <span class="bulk-actions-pipeline__index" aria-hidden="true">3</span>
+          <span class="bulk-actions-pipeline__text">{{ $t('bulk-actions-pipeline-run') }}</span>
+        </li>
+      </ol>
     </header>
 
-    <div class="home2-page-panel bulk-actions-page__panel">
+    <section class="bulk-actions-deck bulk-actions-deck--setup" :aria-label="title">
+      <div class="bulk-actions-deck__nav">
+        <button type="button" class="bulk-actions-back" @click="goSelectBots">
+          <FontAwesomeIcon icon="chevron-left" aria-hidden="true"></FontAwesomeIcon>
+          {{ $t('bulk-actions-bots-change') }}
+        </button>
+      </div>
+
       <div v-if="pluginMissing" class="bulk-actions__banner" role="alert">
         <strong>{{ $t('bot-social-plugin-missing-title') }}</strong>
         <p>{{ $t('bot-social-plugin-missing-body') }}</p>
@@ -20,51 +44,51 @@
       </p>
 
       <template v-else>
-        <p class="bulk-actions__bots-summary">
-          {{ $t('bulk-actions-bots-selected', { n: selectedBotModels.length, total: selectedBotModels.length }) }}
-          <button type="button" class="button button--link" @click="goSelectBots">
-            {{ $t('bulk-actions-bots-change') }}
-          </button>
-        </p>
-
-        <BulkInventoryTransferAction
-          v-if="action.kind === 'inventory'"
-          :action="action"
+        <BulkSelectedCrew
           :bots="selectedBotModels"
-          :allBots="sortedBots"
-          @back="goSelectBots"
-          @finished="onFinished"
-          @plugin-missing="pluginMissing = true"
-        ></BulkInventoryTransferAction>
+          @change="goSelectBots"
+        ></BulkSelectedCrew>
 
-        <BulkReviewsVoteAction
-          v-else-if="action.kind === 'reviews-vote'"
-          :action="action"
-          :bots="selectedBotModels"
-          @back="goSelectBots"
-          @finished="onFinished"
-          @plugin-missing="pluginMissing = true"
-        ></BulkReviewsVoteAction>
+        <div class="bulk-actions-setup">
+          <BulkInventoryTransferAction
+            v-if="action.kind === 'inventory'"
+            :action="action"
+            :bots="selectedBotModels"
+            :allBots="sortedBots"
+            @back="goSelectBots"
+            @finished="onFinished"
+            @plugin-missing="pluginMissing = true"
+          ></BulkInventoryTransferAction>
 
-        <BulkSharedActAction
-          v-else-if="action.kind === 'shared-act'"
-          :action="action"
-          :bots="selectedBotModels"
-          @back="goSelectBots"
-          @finished="onFinished"
-          @plugin-missing="pluginMissing = true"
-        ></BulkSharedActAction>
+          <BulkReviewsVoteAction
+            v-else-if="action.kind === 'reviews-vote'"
+            :action="action"
+            :bots="selectedBotModels"
+            @back="goSelectBots"
+            @finished="onFinished"
+            @plugin-missing="pluginMissing = true"
+          ></BulkReviewsVoteAction>
 
-        <BulkUrlBotsAction
-          v-else
-          :action="action"
-          :bots="selectedBotModels"
-          @back="goSelectBots"
-          @finished="onFinished"
-          @plugin-missing="pluginMissing = true"
-        ></BulkUrlBotsAction>
+          <BulkSharedActAction
+            v-else-if="action.kind === 'shared-act'"
+            :action="action"
+            :bots="selectedBotModels"
+            @back="goSelectBots"
+            @finished="onFinished"
+            @plugin-missing="pluginMissing = true"
+          ></BulkSharedActAction>
+
+          <BulkUrlBotsAction
+            v-else
+            :action="action"
+            :bots="selectedBotModels"
+            @back="goSelectBots"
+            @finished="onFinished"
+            @plugin-missing="pluginMissing = true"
+          ></BulkUrlBotsAction>
+        </div>
       </template>
-    </div>
+    </section>
 
     <BulkLeaveDialog
       :open="leaveDialogOpen"
@@ -84,6 +108,7 @@
   } from '../utils/action-session';
   import leaveGuard from '../mixins/leave-guard';
   import BulkLeaveDialog from '../components/leave-dialog.vue';
+  import BulkSelectedCrew from '../components/selected-crew.vue';
   import BulkUrlBotsAction from '../components/actions/url-bots-action.vue';
   import BulkReviewsVoteAction from '../components/actions/reviews-vote.vue';
   import BulkSharedActAction from '../components/actions/shared-act.vue';
@@ -93,6 +118,7 @@
     name: 'MultiActionSetupPage',
     components: {
       BulkLeaveDialog,
+      BulkSelectedCrew,
       BulkUrlBotsAction,
       BulkReviewsVoteAction,
       BulkSharedActAction,
