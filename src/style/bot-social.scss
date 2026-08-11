@@ -1112,12 +1112,12 @@
 }
 
 .steam-inv-transfer__panel {
-  background: #1b2838;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--steam-inv-panel, #1b2838);
+  border: 1px solid var(--steam-inv-border, rgba(255, 255, 255, 0.1));
   border-radius: 0.55rem;
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
   box-sizing: border-box;
-  color: #c6d4df;
+  color: var(--steam-inv-text, #c6d4df);
   left: 50%;
   max-width: 26rem;
   padding: 1.1rem 1.15rem 1rem;
@@ -1136,7 +1136,7 @@
 .steam-inv-transfer__lead,
 .steam-inv-transfer__hint,
 .steam-inv-transfer__warn {
-  color: #8f98a0;
+  color: var(--steam-inv-muted, #8f98a0);
   font-size: 0.82rem;
   line-height: 1.4;
   margin: 0 0 0.75rem;
@@ -1168,8 +1168,34 @@
   margin-top: 0.35rem;
 }
 
-/* â€”â€” Friends hub (Steam-inspired grid) â€”â€” */
+/* —— Friends hub (Steam-inspired grid) —— */
 .friends-hub {
+  --friends-ink: #c6d4df;
+  --friends-muted: #8f98a0;
+  --friends-accent: #67c1f5;
+  --friends-name: #67c1f5;
+  --friends-mode-track: rgba(0, 0, 0, 0.28);
+  --friends-mode-border: rgba(255, 255, 255, 0.08);
+  --friends-mode-idle: #8f98a0;
+  --friends-btn-bg: linear-gradient(180deg, #3d6c8d 0%, #2a475e 100%);
+  --friends-chrome-bg: linear-gradient(180deg, rgba(42, 71, 94, 0.45) 0%, rgba(27, 40, 56, 0.92) 100%);
+  --friends-chrome-border: rgba(103, 140, 177, 0.28);
+  --friends-search-bg: #0e1621;
+  --friends-search-border: #000;
+  --friends-search-shadow: inset 0 0 0 1px rgba(103, 140, 177, 0.22), inset 0 1px 2px rgba(0, 0, 0, 0.45);
+  --friends-card-bg: rgba(0, 0, 0, 0.35);
+  --friends-card-bg-hover: rgba(0, 0, 0, 0.48);
+  --friends-card-border: rgba(255, 255, 255, 0.05);
+  --friends-avatar-bg: #1b2838;
+  --friends-compose-bg: linear-gradient(165deg, rgba(42, 71, 94, 0.55) 0%, rgba(23, 35, 48, 0.96) 55%, rgba(16, 24, 34, 0.98) 100%);
+  --friends-compose-border: rgba(103, 140, 177, 0.32);
+  --friends-panel-bg: rgba(15, 21, 30, 0.92);
+  --friends-example-bg: rgba(0, 0, 0, 0.28);
+  --friends-example-border: rgba(103, 140, 177, 0.16);
+  --friends-example-ink: #9fb3c4;
+  --friends-combo-bg: #0e1621;
+  --friends-combo-border: rgba(0, 0, 0, 0.85);
+  --friends-help-border: rgba(255, 255, 255, 0.06);
   box-sizing: border-box;
   display: flex;
   flex: 1 1 auto;
@@ -1186,8 +1212,8 @@
 }
 
 .friends-hub__modes {
-  background: rgba(0, 0, 0, 0.28);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--friends-mode-track);
+  border: 1px solid var(--friends-mode-border);
   border-radius: 0.4rem;
   box-sizing: border-box;
   display: flex;
@@ -1203,7 +1229,7 @@
   background: transparent;
   border: 0;
   border-radius: 0.3rem;
-  color: #8f98a0;
+  color: var(--friends-mode-idle);
   cursor: pointer;
   display: inline-flex;
   font: inherit;
@@ -1213,18 +1239,18 @@
   padding: 0.4rem 0.75rem;
 
   &.is-active {
-    background: linear-gradient(180deg, #3d6c8d 0%, #2a475e 100%);
+    background: var(--friends-btn-bg);
     color: #fff;
   }
 
   &:focus-visible {
-    outline: 2px solid #66c0f4;
+    outline: 2px solid var(--friends-accent);
     outline-offset: 1px;
   }
 }
 
 .friends-hub__mode-count {
-  background: rgba(0, 0, 0, 0.28);
+  background: color-mix(in srgb, #000 28%, transparent);
   border-radius: 999px;
   color: inherit;
   font-size: 0.7rem;
@@ -1235,9 +1261,8 @@
 }
 
 .friends-hub__chrome {
-  background:
-    linear-gradient(180deg, rgba(42, 71, 94, 0.45) 0%, rgba(27, 40, 56, 0.92) 100%);
-  border: 1px solid rgba(103, 140, 177, 0.28);
+  background: var(--friends-chrome-bg);
+  border: 1px solid var(--friends-chrome-border);
   border-radius: 0.55rem;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
   box-sizing: border-box;
@@ -1259,11 +1284,9 @@
 
 .friends-hub__searchbox {
   align-items: center;
-  background: #0e1621;
-  border: 1px solid #000;
-  box-shadow:
-    inset 0 0 0 1px rgba(103, 140, 177, 0.22),
-    inset 0 1px 2px rgba(0, 0, 0, 0.45);
+  background: var(--friends-search-bg);
+  border: 1px solid var(--friends-search-border);
+  box-shadow: var(--friends-search-shadow);
   display: flex;
   flex: 1 1 16rem;
   gap: 0.55rem;
@@ -1272,7 +1295,7 @@
 }
 
 .friends-hub__search-icon {
-  color: #66c0f4;
+  color: var(--friends-accent);
   flex-shrink: 0;
   font-size: 0.85rem;
   opacity: 0.85;
@@ -1282,7 +1305,7 @@
   appearance: none;
   background: transparent;
   border: 0;
-  color: #c6d4df;
+  color: var(--friends-ink);
   flex: 1 1 auto;
   font: inherit;
   font-size: 0.88rem;
@@ -1291,7 +1314,7 @@
   padding: 0.55rem 0;
 
   &::placeholder {
-    color: #6b7785;
+    color: var(--friends-muted);
   }
 }
 
@@ -1304,7 +1327,7 @@
 }
 
 .friends-hub__count {
-  color: #8f98a0;
+  color: var(--friends-muted);
   font-size: 0.75rem;
   letter-spacing: 0.01em;
   white-space: nowrap;
@@ -1314,7 +1337,7 @@
   appearance: none;
   background: transparent;
   border: 0;
-  color: #67c1f5;
+  color: var(--friends-accent);
   cursor: pointer;
   font: inherit;
   font-size: 0.8rem;
@@ -1325,8 +1348,8 @@
 .friends-hub__refresh {
   appearance: none;
   align-items: center;
-  background: linear-gradient(180deg, #3d6c8d 0%, #2a475e 100%);
-  border: 1px solid rgba(103, 193, 245, 0.3);
+  background: var(--friends-btn-bg);
+  border: 1px solid color-mix(in srgb, var(--friends-accent) 30%, transparent);
   border-radius: 0.3rem;
   color: #fff;
   cursor: pointer;
@@ -1353,9 +1376,8 @@
 }
 
 .friends-hub__compose-panel {
-  background:
-    linear-gradient(165deg, rgba(42, 71, 94, 0.55) 0%, rgba(23, 35, 48, 0.96) 55%, rgba(16, 24, 34, 0.98) 100%);
-  border: 1px solid rgba(103, 140, 177, 0.32);
+  background: var(--friends-compose-bg);
+  border: 1px solid var(--friends-compose-border);
   border-radius: 0.45rem;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
   box-sizing: border-box;
@@ -1376,7 +1398,7 @@
 }
 
 .friends-hub__compose-eyebrow {
-  color: #67c1f5;
+  color: var(--friends-accent);
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -1385,7 +1407,7 @@
 }
 
 .friends-hub__compose-title {
-  color: #e9f1f7;
+  color: var(--friends-ink);
   font-size: 1.35rem;
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -1394,7 +1416,7 @@
 }
 
 .friends-hub__compose-lead {
-  color: #8f98a0;
+  color: var(--friends-muted);
   font-size: 0.86rem;
   line-height: 1.45;
   margin: 0.1rem 0 0;
@@ -1407,8 +1429,8 @@
 }
 
 .friends-hub__compose-combo {
-  background: #0a1018;
-  border: 1px solid rgba(0, 0, 0, 0.85);
+  background: var(--friends-combo-bg, #0a1018);
+  border: 1px solid var(--friends-combo-border, rgba(0, 0, 0, 0.85));
   border-radius: 0.3rem;
   box-shadow:
     inset 0 0 0 1px rgba(103, 140, 177, 0.22),
@@ -1420,10 +1442,10 @@
   width: 100%;
 
   &:focus-within {
-    border-color: rgba(103, 193, 245, 0.45);
+    border-color: color-mix(in srgb, var(--friends-accent) 45%, transparent);
     box-shadow:
-      inset 0 0 0 1px rgba(103, 193, 245, 0.28),
-      0 0 0 2px rgba(103, 193, 245, 0.12);
+      inset 0 0 0 1px color-mix(in srgb, var(--friends-accent) 28%, transparent),
+      0 0 0 2px color-mix(in srgb, var(--friends-accent) 12%, transparent);
   }
 }
 
@@ -1431,7 +1453,7 @@
   appearance: none;
   background: transparent;
   border: 0;
-  color: #c6d4df;
+  color: var(--friends-ink);
   flex: 1 1 auto;
   font: inherit;
   font-size: 0.9rem;
@@ -1439,7 +1461,7 @@
   padding: 0.65rem 0.85rem;
 
   &::placeholder {
-    color: #5f6b78;
+    color: var(--friends-muted);
   }
 
   &:focus {
@@ -1480,7 +1502,7 @@
 }
 
 .friends-hub__compose-help {
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid var(--friends-help-border);
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
@@ -1488,7 +1510,7 @@
 }
 
 .friends-hub__compose-help-title {
-  color: #6b7785;
+  color: var(--friends-muted);
   font-size: 0.65rem;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -1513,10 +1535,10 @@
   }
 
   code {
-    background: rgba(0, 0, 0, 0.28);
-    border: 1px solid rgba(103, 140, 177, 0.16);
+    background: var(--friends-example-bg);
+    border: 1px solid var(--friends-example-border);
     border-radius: 0.2rem;
-    color: #9fb3c4;
+    color: var(--friends-example-ink);
     display: block;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     font-size: 0.72rem;
@@ -1561,7 +1583,7 @@
 }
 
 .friends-hub__field-label {
-  color: #8f98a0;
+  color: var(--friends-muted);
   font-size: 0.65rem;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -1570,12 +1592,10 @@
 
 .friends-hub__add-input {
   appearance: none;
-  background: #0e1621;
-  border: 1px solid #000;
-  box-shadow:
-    inset 0 0 0 1px rgba(103, 140, 177, 0.22),
-    inset 0 1px 2px rgba(0, 0, 0, 0.45);
-  color: #c6d4df;
+  background: var(--friends-search-bg);
+  border: 1px solid var(--friends-search-border);
+  box-shadow: var(--friends-search-shadow);
+  color: var(--friends-ink);
   font: inherit;
   font-size: 0.88rem;
   min-width: 0;
@@ -1665,8 +1685,8 @@
 
 .friends-hub__card {
   align-items: center;
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--friends-card-bg);
+  border: 1px solid var(--friends-card-border);
   display: grid;
   gap: 0.45rem;
   grid-template-columns: auto minmax(4.5rem, 1fr) auto;
@@ -1675,8 +1695,8 @@
   transition: border-color 0.15s ease, background 0.15s ease;
 
   &:hover {
-    background: rgba(0, 0, 0, 0.48);
-    border-color: rgba(103, 193, 245, 0.28);
+    background: var(--friends-card-bg-hover);
+    border-color: color-mix(in srgb, var(--friends-accent) 28%, transparent);
   }
 
   &.is-blocked {
@@ -1691,7 +1711,7 @@
 }
 
 .friends-hub__avatar {
-  background: #1b2838;
+  background: var(--friends-avatar-bg);
   display: block;
   height: 40px;
   object-fit: cover;
@@ -1699,7 +1719,7 @@
 
   &--fallback {
     align-items: center;
-    color: #67c1f5;
+    color: var(--friends-accent);
     display: flex;
     font-size: 0.95rem;
     font-weight: 700;
@@ -1708,7 +1728,7 @@
 }
 
 .friends-hub__meta {
-  border-left: 2px solid #67c1f5;
+  border-left: 2px solid var(--friends-accent);
   display: flex;
   flex-direction: column;
   gap: 0.1rem;
@@ -1719,7 +1739,7 @@
 }
 
 .friends-hub__name {
-  color: #67c1f5;
+  color: var(--friends-name);
   font-size: 0.82rem;
   font-weight: 600;
   overflow: hidden;
@@ -1733,7 +1753,7 @@
 }
 
 .friends-hub__badge {
-  color: #8f98a0;
+  color: var(--friends-muted);
   font-size: 0.6rem;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -1791,7 +1811,7 @@
 }
 
 .friends-hub__empty {
-  color: #8f98a0;
+  color: var(--friends-muted);
   padding: 2rem 0.5rem;
   text-align: center;
 
@@ -1802,7 +1822,7 @@
 
 .friends-hub__pager {
   align-items: center;
-  color: #8f98a0;
+  color: var(--friends-muted);
   display: flex;
   font-size: 0.82rem;
   gap: 0.65rem;
@@ -1812,10 +1832,10 @@
 
 .friends-hub__page-btn {
   appearance: none;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: color-mix(in srgb, var(--friends-ink) 6%, transparent);
+  border: 1px solid var(--friends-mode-border);
   border-radius: 0.3rem;
-  color: #c6d4df;
+  color: var(--friends-ink);
   cursor: pointer;
   padding: 0.3rem 0.55rem;
 
@@ -1844,11 +1864,11 @@
 }
 
 .friends-remove__panel {
-  background: #1b2838;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--friends-panel-bg, #1b2838);
+  border: 1px solid var(--friends-compose-border, rgba(255, 255, 255, 0.1));
   border-radius: 0.55rem;
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
-  color: #c6d4df;
+  color: var(--friends-ink, #c6d4df);
   left: 50%;
   max-width: 24rem;
   padding: 1.1rem 1.15rem 1rem;
@@ -1865,7 +1885,7 @@
 }
 
 .friends-remove__lead {
-  color: #8f98a0;
+  color: var(--friends-muted, #8f98a0);
   font-size: 0.86rem;
   line-height: 1.45;
   margin: 0 0 1rem;
@@ -2261,22 +2281,246 @@
   }
 }
 
-// Games library â€” Steam portrait shelf + landscape cover view
+/* Friends / Games / Wishlist / Community — light theme */
+.app:not(.app--dark-mode) {
+  .friends-hub {
+    --friends-ink: #101828;
+    --friends-muted: #475467;
+    --friends-accent: #1a7bb8;
+    --friends-name: #1570a8;
+    --friends-mode-track: #e4e7ec;
+    --friends-mode-border: #d0d7de;
+    --friends-mode-idle: #344054;
+    --friends-btn-bg: linear-gradient(180deg, #2f80b5 0%, #1f6a99 100%);
+    --friends-chrome-bg: linear-gradient(180deg, #e8eef4 0%, #f5f7fa 100%);
+    --friends-chrome-border: #d0d7de;
+    --friends-search-bg: #ffffff;
+    --friends-search-border: #d0d7de;
+    --friends-search-shadow: inset 0 0 0 1px rgba(16, 24, 40, 0.04);
+    --friends-card-bg: #ffffff;
+    --friends-card-bg-hover: #f8fafc;
+    --friends-card-border: #d0d7de;
+    --friends-avatar-bg: #eef1f4;
+    --friends-compose-bg: linear-gradient(165deg, #f5f7fa 0%, #eef1f4 55%, #e8eef4 100%);
+    --friends-compose-border: #d0d7de;
+    --friends-panel-bg: #ffffff;
+    --friends-example-bg: #ffffff;
+    --friends-example-border: #d0d7de;
+    --friends-example-ink: #344054;
+    --friends-combo-bg: #ffffff;
+    --friends-combo-border: #d0d7de;
+    --friends-help-border: #e4e7ec;
+
+    .friends-hub__mode-count {
+      background: rgba(16, 24, 40, 0.08);
+    }
+
+    .friends-hub__icon-btn--accept {
+      color: #1570a8;
+    }
+
+    .friends-hub__compose-combo {
+      box-shadow: inset 0 0 0 1px rgba(16, 24, 40, 0.04);
+    }
+  }
+
+  .bot-social-tab--games,
+  .bot-social-tab--wishlist {
+    --games-ink: #101828;
+    --games-muted: #475467;
+    --games-accent: #1570a8;
+    --games-shelf: #f4f6f8;
+    --games-panel: #ffffff;
+    --games-chrome-bg: linear-gradient(180deg, #e8eef4 0%, #f5f7fa 100%);
+    --games-chrome-border: #d0d7de;
+    --games-mode-track: #e4e7ec;
+    --games-mode-border: #d0d7de;
+    --games-mode-idle: #344054;
+    --games-btn-bg: linear-gradient(180deg, #2f80b5 0%, #1f6a99 100%);
+    --games-search-bg: #ffffff;
+    --games-search-border: #d0d7de;
+    --games-search-shadow: inset 0 0 0 1px rgba(16, 24, 40, 0.04);
+    --games-card-bg: #ffffff;
+    --games-card-border: #d0d7de;
+    --wish-accent: #1570a8;
+    --wish-ink: #101828;
+  }
+
+  .community-hub {
+    --community-ink: #101828;
+    --community-muted: #475467;
+    --community-accent: #1570a8;
+    --community-card-bg: #ffffff;
+    --community-card-border: #d0d7de;
+    --community-icon-bg: rgba(21, 112, 168, 0.1);
+    --community-refresh-bg: rgba(21, 112, 168, 0.08);
+    --community-refresh-border: rgba(21, 112, 168, 0.28);
+  }
+
+  .games-idle {
+    --idle-ink: #101828;
+    --idle-muted: #475467;
+    --idle-line: #d0d7de;
+    --idle-panel: #ffffff;
+    --idle-accent: #1570a8;
+  }
+
+  .games-idle__toolbar {
+    background: linear-gradient(180deg, rgba(21, 112, 168, 0.06), transparent 70%), #f5f7fa;
+  }
+
+  .friends-remove__panel,
+  .steam-inv-transfer__panel {
+    background: #fff;
+    border-color: #d0d7de;
+    color: #101828;
+  }
+
+  .friends-remove__lead,
+  .steam-inv-transfer__lead,
+  .steam-inv-transfer__hint,
+  .steam-inv-transfer__label,
+  .friends-hub__compose-help,
+  .friends-hub__field-label {
+    color: #475467;
+  }
+
+  .friends-hub__compose-input,
+  .friends-hub__add-input {
+    background: #fff;
+    border-color: #d0d7de;
+    color: #101828;
+  }
+
+  .bot-social__state,
+  .bot-social__hint,
+  .bot-social__stat {
+    color: #475467;
+  }
+
+  /* Games / wishlist subviews still use some hardcoded dark ink */
+  .games-add__eyebrow,
+  .games-add__lead,
+  .games-add__price-was,
+  .games-add__price-muted,
+  .games-stats__stat-label,
+  .games-stats__metric-label,
+  .games-stats__filter,
+  .games-idle__lead,
+  .games-idle__meta,
+  .games-idle__appid,
+  .games-idle__empty-lead,
+  .games-idle__panel-sub,
+  .games-ach__appid,
+  .games-ach__progress,
+  .games-ach__desc,
+  .games-ach__note {
+    color: #475467;
+  }
+
+  .games-add__title,
+  .games-add__name,
+  .games-add__price,
+  .games-stats__stat-value,
+  .games-stats__name,
+  .games-stats__metric-value,
+  .games-idle__title,
+  .games-idle__name-text,
+  .games-idle__panel-title,
+  .games-idle__empty-title,
+  .games-idle__meter-value,
+  .games-ach__name,
+  .games-ach__title {
+    color: #101828;
+  }
+
+  .games-add__searchbox,
+  .games-stats__searchbox,
+  .games-idle__searchbox,
+  .games-add__list,
+  .games-stats__list,
+  .games-idle__panel,
+  .games-idle__workspace,
+  .games-ach__hero,
+  .games-ach__list {
+    background: #fff;
+    border-color: #d0d7de;
+    color: #101828;
+  }
+
+  .games-stats__row,
+  .games-idle__row,
+  .games-ach__row {
+    border-color: #e4e7ec;
+  }
+
+  .wishlist-hub__add-combo {
+    box-shadow: inset 0 0 0 1px rgba(16, 24, 40, 0.04);
+  }
+
+  .wishlist-hub__remove {
+    background: rgba(255, 255, 255, 0.95);
+    border-color: rgba(192, 57, 43, 0.45);
+    color: #c0392b;
+  }
+
+  .games-stats__sort {
+    color: #475467;
+
+    &.is-active {
+      color: #1570a8;
+    }
+  }
+
+  .games-add__add-btn:disabled {
+    background: #eef1f4;
+    border-color: #d0d7de;
+    color: #667085;
+  }
+
+  .games-stats__search-input,
+  .games-idle__search-input,
+  .games-add__input,
+  .wishlist-hub__add-input {
+    color: #101828;
+
+    &::placeholder {
+      color: #667085;
+    }
+  }
+
+  .steam-inv-transfer__title,
+  .friends-remove__title {
+    color: #101828;
+  }
+}
+
+// Games library — Steam portrait shelf + landscape cover view
 .bot-social-tab--games {
   --games-ink: #c7d5e0;
   --games-muted: #8f98a0;
   --games-accent: #66c0f4;
   --games-shelf: #0e141b;
   --games-panel: #1b2838;
+  --games-chrome-bg: linear-gradient(180deg, rgba(42, 71, 94, 0.45) 0%, rgba(27, 40, 56, 0.92) 100%);
+  --games-chrome-border: rgba(103, 140, 177, 0.28);
+  --games-mode-track: rgba(0, 0, 0, 0.28);
+  --games-mode-border: rgba(255, 255, 255, 0.08);
+  --games-mode-idle: #8f98a0;
+  --games-btn-bg: linear-gradient(180deg, #3d6c8d 0%, #2a475e 100%);
+  --games-search-bg: #0e1621;
+  --games-search-border: #000;
+  --games-search-shadow: inset 0 0 0 1px rgba(103, 140, 177, 0.22), inset 0 1px 2px rgba(0, 0, 0, 0.45);
+  --games-card-bg: rgba(15, 24, 34, 0.92);
+  --games-card-border: rgba(102, 192, 244, 0.14);
   flex: 1 1 auto;
   gap: 0.75rem;
   min-height: 0;
 }
 
 .bot-social-games__chrome {
-  background:
-    linear-gradient(180deg, rgba(42, 71, 94, 0.45) 0%, rgba(27, 40, 56, 0.92) 100%);
-  border: 1px solid rgba(103, 140, 177, 0.28);
+  background: var(--games-chrome-bg);
+  border: 1px solid var(--games-chrome-border);
   border-radius: 0.55rem;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
   box-sizing: border-box;
@@ -2291,8 +2535,8 @@
 }
 
 .bot-social-games__views {
-  background: rgba(0, 0, 0, 0.28);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--games-mode-track);
+  border: 1px solid var(--games-mode-border);
   border-radius: 0.4rem;
   box-sizing: border-box;
   display: flex;
@@ -2309,7 +2553,7 @@
   background: transparent;
   border: 0;
   border-radius: 0.3rem;
-  color: #8f98a0;
+  color: var(--games-mode-idle);
   cursor: pointer;
   display: inline-flex;
   flex: 1 1 auto;
@@ -2322,12 +2566,12 @@
   padding: 0.4rem 0.8rem;
 
   &.is-active {
-    background: linear-gradient(180deg, #3d6c8d 0%, #2a475e 100%);
+    background: var(--games-btn-bg);
     color: #fff;
   }
 
   &:focus-visible {
-    outline: 2px solid #66c0f4;
+    outline: 2px solid var(--games-accent);
     outline-offset: 1px;
   }
 }
@@ -2363,7 +2607,7 @@
 }
 
 .bot-social-games__field-label {
-  color: #8f98a0;
+  color: var(--games-muted);
   font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -2375,7 +2619,7 @@
   align-self: end;
   background: transparent;
   border: 0;
-  color: #67c1f5;
+  color: var(--games-accent);
   cursor: pointer;
   font: inherit;
   font-size: 0.78rem;
@@ -2384,18 +2628,16 @@
   white-space: nowrap;
 
   &:focus-visible {
-    outline: 2px solid #66c0f4;
+    outline: 2px solid var(--games-accent);
     outline-offset: 2px;
   }
 }
 
 .bot-social-games__searchbox {
   align-items: center;
-  background: #0e1621;
-  border: 1px solid #000;
-  box-shadow:
-    inset 0 0 0 1px rgba(103, 140, 177, 0.22),
-    inset 0 1px 2px rgba(0, 0, 0, 0.45);
+  background: var(--games-search-bg);
+  border: 1px solid var(--games-search-border);
+  box-shadow: var(--games-search-shadow);
   display: flex;
   flex: 1 1 16rem;
   gap: 0.55rem;
@@ -2404,7 +2646,7 @@
 }
 
 .bot-social-games__search-icon {
-  color: #66c0f4;
+  color: var(--games-accent);
   flex-shrink: 0;
   font-size: 0.85rem;
   opacity: 0.85;
@@ -2414,7 +2656,7 @@
   appearance: none;
   background: transparent;
   border: 0;
-  color: #c7d5e0;
+  color: var(--games-ink);
   flex: 1 1 auto;
   font: inherit;
   font-size: 0.9rem;
@@ -2424,7 +2666,7 @@
   padding: 0;
 
   &::placeholder {
-    color: #6b7785;
+    color: var(--games-muted);
   }
 }
 
@@ -2438,7 +2680,7 @@
 }
 
 .bot-social-games__count {
-  color: #8f98a0;
+  color: var(--games-muted);
   font-size: 0.78rem;
   letter-spacing: 0.01em;
   margin: 0;
@@ -2446,7 +2688,7 @@
 }
 
 .bot-social-games__count-more {
-  color: #66c0f4;
+  color: var(--games-accent);
   font-weight: 600;
 }
 
@@ -2474,7 +2716,7 @@
   appearance: none;
   background: transparent;
   border: 0;
-  color: #67c1f5;
+  color: var(--games-accent);
   cursor: pointer;
   font: inherit;
   font-size: 0.82rem;
@@ -2487,7 +2729,7 @@
   }
 
   &:focus-visible {
-    outline: 2px solid #66c0f4;
+    outline: 2px solid var(--games-accent);
     outline-offset: 2px;
   }
 }
@@ -2735,6 +2977,17 @@
   --games-accent: #66c0f4;
   --games-shelf: #0e141b;
   --games-panel: #1b2838;
+  --games-chrome-bg: linear-gradient(180deg, rgba(42, 71, 94, 0.45) 0%, rgba(27, 40, 56, 0.92) 100%);
+  --games-chrome-border: rgba(103, 140, 177, 0.28);
+  --games-mode-track: rgba(0, 0, 0, 0.28);
+  --games-mode-border: rgba(255, 255, 255, 0.08);
+  --games-mode-idle: #8f98a0;
+  --games-btn-bg: linear-gradient(180deg, #3d6c8d 0%, #2a475e 100%);
+  --games-search-bg: #0e1621;
+  --games-search-border: #000;
+  --games-search-shadow: inset 0 0 0 1px rgba(103, 140, 177, 0.22), inset 0 1px 2px rgba(0, 0, 0, 0.45);
+  --games-card-bg: rgba(15, 24, 34, 0.92);
+  --games-card-border: rgba(102, 192, 244, 0.14);
   --wish-accent: #66c0f4;
   --wish-ink: #c7d5e0;
   flex: 1 1 auto;
@@ -2811,7 +3064,7 @@
 }
 
 .wishlist-hub__add-lead {
-  color: #8f98a0;
+  color: var(--games-muted);
   font-size: 0.82rem;
   line-height: 1.45;
   margin: 0;
@@ -2819,8 +3072,8 @@
 
 .wishlist-hub__add-combo {
   align-items: stretch;
-  background: #0e1621;
-  border: 1px solid #000;
+  background: var(--games-search-bg);
+  border: 1px solid var(--games-search-border);
   border-radius: 0.2rem;
   box-shadow:
     inset 0 0 0 1px rgba(103, 140, 177, 0.22),
@@ -2936,7 +3189,7 @@
 }
 
 .games-add__eyebrow {
-  color: #8f98a0;
+  color: var(--games-muted);
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -2945,14 +3198,14 @@
 }
 
 .games-add__title {
-  color: #c7d5e0;
+  color: var(--games-ink);
   font-size: 1.05rem;
   font-weight: 700;
   margin: 0;
 }
 
 .games-add__lead {
-  color: #8f98a0;
+  color: var(--games-muted);
   font-size: 0.82rem;
   line-height: 1.45;
   margin: 0.15rem 0 0;
@@ -2966,11 +3219,9 @@
 
 .games-add__searchbox {
   align-items: center;
-  background: #0e1621;
-  border: 1px solid #000;
-  box-shadow:
-    inset 0 0 0 1px rgba(103, 140, 177, 0.22),
-    inset 0 1px 2px rgba(0, 0, 0, 0.45);
+  background: var(--games-search-bg);
+  border: 1px solid var(--games-search-border);
+  box-shadow: var(--games-search-shadow);
   display: flex;
   flex: 1 1 16rem;
   gap: 0.55rem;
@@ -2979,7 +3230,7 @@
 }
 
 .games-add__search-icon {
-  color: #66c0f4;
+  color: var(--games-accent);
   flex-shrink: 0;
   opacity: 0.85;
 }
@@ -2988,7 +3239,7 @@
   appearance: none;
   background: transparent;
   border: 0;
-  color: #c7d5e0;
+  color: var(--games-ink);
   flex: 1 1 auto;
   font: inherit;
   font-size: 0.92rem;
@@ -2997,15 +3248,15 @@
   outline: none;
 
   &::placeholder {
-    color: #6b7785;
+    color: var(--games-muted);
   }
 }
 
 .games-add__submit {
   align-items: center;
   appearance: none;
-  background: linear-gradient(180deg, #3d6c8d 0%, #2a475e 100%);
-  border: 1px solid rgba(102, 192, 244, 0.35);
+  background: var(--games-btn-bg);
+  border: 1px solid color-mix(in srgb, var(--games-accent) 35%, transparent);
   border-radius: 0.2rem;
   color: #fff;
   cursor: pointer;
@@ -3080,7 +3331,7 @@
 
 .games-add__name {
   align-items: center;
-  color: #fff;
+  color: var(--games-ink);
   display: flex;
   flex-wrap: wrap;
   font-size: 0.9rem;
@@ -3121,13 +3372,13 @@
 }
 
 .games-add__price-was {
-  color: #8f98a0;
+  color: var(--games-muted);
   font-size: 0.75rem;
   text-decoration: line-through;
 }
 
 .games-add__price {
-  color: #c7d5e0;
+  color: var(--games-ink);
   font-size: 0.8rem;
   font-weight: 600;
 }
@@ -3196,7 +3447,7 @@
 }
 
 .games-stats__stat-label {
-  color: #8f98a0;
+  color: var(--games-muted);
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -3204,7 +3455,7 @@
 }
 
 .games-stats__stat-value {
-  color: #c7d5e0;
+  color: var(--games-ink);
   font-size: 1.05rem;
   font-weight: 700;
 }
@@ -3225,10 +3476,10 @@
 
 .games-stats__filter {
   appearance: none;
-  background: rgba(0, 0, 0, 0.28);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--games-mode-track);
+  border: 1px solid var(--games-mode-border);
   border-radius: 0.3rem;
-  color: #8f98a0;
+  color: var(--games-mode-idle);
   cursor: pointer;
   font: inherit;
   font-size: 0.74rem;
@@ -3236,24 +3487,22 @@
   padding: 0.3rem 0.55rem;
 
   &.is-active {
-    background: linear-gradient(180deg, #3d6c8d 0%, #2a475e 100%);
-    border-color: rgba(102, 192, 244, 0.35);
+    background: var(--games-btn-bg);
+    border-color: color-mix(in srgb, var(--games-accent) 35%, transparent);
     color: #fff;
   }
 
   &:focus-visible {
-    outline: 2px solid #66c0f4;
+    outline: 2px solid var(--games-accent);
     outline-offset: 1px;
   }
 }
 
 .games-stats__searchbox {
   align-items: center;
-  background: #0e1621;
-  border: 1px solid #000;
-  box-shadow:
-    inset 0 0 0 1px rgba(103, 140, 177, 0.22),
-    inset 0 1px 2px rgba(0, 0, 0, 0.45);
+  background: var(--games-search-bg);
+  border: 1px solid var(--games-search-border);
+  box-shadow: var(--games-search-shadow);
   display: flex;
   flex: 1 1 14rem;
   gap: 0.5rem;
@@ -3262,7 +3511,7 @@
 }
 
 .games-stats__search-icon {
-  color: #66c0f4;
+  color: var(--games-accent);
   opacity: 0.85;
 }
 
@@ -3270,7 +3519,7 @@
   appearance: none;
   background: transparent;
   border: 0;
-  color: #c7d5e0;
+  color: var(--games-ink);
   flex: 1 1 auto;
   font: inherit;
   font-size: 0.88rem;
@@ -3279,7 +3528,7 @@
   outline: none;
 
   &::placeholder {
-    color: #6b7785;
+    color: var(--games-muted);
   }
 }
 
@@ -3386,7 +3635,7 @@
 
 .games-stats__name {
   align-items: center;
-  color: #fff;
+  color: var(--games-ink);
   display: flex;
   font-size: 1rem;
   font-weight: 700;
@@ -3430,7 +3679,7 @@
 }
 
 .games-stats__metric-label {
-  color: #8f98a0;
+  color: var(--games-muted);
   font-size: 0.65rem;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -3438,7 +3687,7 @@
 }
 
 .games-stats__metric-value {
-  color: #c7d5e0;
+  color: var(--games-ink);
   font-size: 0.84rem;
   font-weight: 600;
 }
@@ -4168,6 +4417,14 @@
 }
 
 .community-hub {
+  --community-ink: #fff;
+  --community-muted: #8f98a0;
+  --community-accent: #66c0f4;
+  --community-card-bg: rgba(15, 24, 34, 0.92);
+  --community-card-border: rgba(102, 192, 244, 0.14);
+  --community-icon-bg: rgba(102, 192, 244, 0.1);
+  --community-refresh-bg: rgba(102, 192, 244, 0.08);
+  --community-refresh-border: rgba(102, 192, 244, 0.28);
   display: flex;
   flex-direction: column;
   gap: 1.1rem;
@@ -4183,7 +4440,7 @@
 }
 
 .community-hub__hint {
-  color: #8f98a0;
+  color: var(--community-muted);
   flex: 1 1 14rem;
   font-size: 0.85rem;
   line-height: 1.4;
@@ -4192,10 +4449,10 @@
 
 .community-hub__refresh {
   appearance: none;
-  background: rgba(102, 192, 244, 0.08);
-  border: 1px solid rgba(102, 192, 244, 0.28);
+  background: var(--community-refresh-bg);
+  border: 1px solid var(--community-refresh-border);
   border-radius: 0.25rem;
-  color: #66c0f4;
+  color: var(--community-accent);
   cursor: pointer;
   display: inline-flex;
   gap: 0.4rem;
@@ -4217,7 +4474,7 @@
 }
 
 .community-hub__section-title {
-  color: #66c0f4;
+  color: var(--community-accent);
   font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: 0.06em;
@@ -4241,8 +4498,8 @@
 
 .community-hub__card {
   align-items: flex-start;
-  background: rgba(15, 24, 34, 0.92);
-  border: 1px solid rgba(102, 192, 244, 0.14);
+  background: var(--community-card-bg);
+  border: 1px solid var(--community-card-border);
   border-radius: 0.35rem;
   display: flex;
   gap: 0.7rem;
@@ -4251,9 +4508,9 @@
 
 .community-hub__card-icon {
   align-items: center;
-  background: rgba(102, 192, 244, 0.1);
+  background: var(--community-icon-bg);
   border-radius: 0.25rem;
-  color: #66c0f4;
+  color: var(--community-accent);
   display: inline-flex;
   flex-shrink: 0;
   font-size: 0.9rem;
@@ -4271,7 +4528,7 @@
 }
 
 .community-hub__card-label {
-  color: #8f98a0;
+  color: var(--community-muted);
   font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -4280,7 +4537,7 @@
 }
 
 .community-hub__card-value {
-  color: #fff;
+  color: var(--community-ink);
   font-size: 0.92rem;
   font-weight: 650;
   line-height: 1.3;
@@ -4291,7 +4548,7 @@
 }
 
 .community-hub__link {
-  color: #66c0f4;
+  color: var(--community-accent);
   text-decoration: none;
 
   &:hover,
@@ -4302,15 +4559,15 @@
 
 .community-hub__skel-card {
   animation: friends-skel 1.2s ease-in-out infinite;
-  background: rgba(15, 24, 34, 0.92);
+  background: var(--community-card-bg);
   border-radius: 0.35rem;
   height: 4.1rem;
 }
 
 .community-hub__followers-stat {
   align-items: center;
-  background: rgba(15, 24, 34, 0.92);
-  border: 1px solid rgba(102, 192, 244, 0.14);
+  background: var(--community-card-bg);
+  border: 1px solid var(--community-card-border);
   border-radius: 0.35rem;
   display: flex;
   flex-wrap: wrap;
@@ -4320,7 +4577,7 @@
 }
 
 .community-hub__followers-stat-label {
-  color: #8f98a0;
+  color: var(--community-muted);
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -4328,7 +4585,7 @@
 }
 
 .community-hub__followers-stat-value {
-  color: #fff;
+  color: var(--community-ink);
   flex: 1 1 auto;
   font-size: 1.35rem;
   font-weight: 750;
