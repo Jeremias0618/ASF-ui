@@ -1,9 +1,14 @@
 /** Persist selected bots for an in-progress multi-action flow. */
 
 const PREFIX = 'asf-multi-action:';
+const DESTINATION_SUFFIX = ':destination';
 
 function key(actionSlug) {
   return `${PREFIX}${String(actionSlug || '').toLowerCase()}`;
+}
+
+function destinationKey(actionSlug) {
+  return `${key(actionSlug)}${DESTINATION_SUFFIX}`;
 }
 
 /**
@@ -37,15 +42,50 @@ export function writeSelectedBotNames(actionSlug, botNames) {
 
 /**
  * @param {string} actionSlug
+ * @returns {string}
  */
-export function clearSelectedBotNames(actionSlug) {
-  sessionStorage.removeItem(key(actionSlug));
+export function readDestinationBotName(actionSlug) {
+  try {
+    const raw = sessionStorage.getItem(destinationKey(actionSlug));
+    return String(raw || '').trim();
+  } catch (err) {
+    return '';
+  }
 }
 
 /**
- * True once the user has picked at least one bot (flow started).
+ * @param {string} actionSlug
+ * @param {string} botName
+ */
+export function writeDestinationBotName(actionSlug, botName) {
+  const name = String(botName || '').trim();
+  if (!name) {
+    sessionStorage.removeItem(destinationKey(actionSlug));
+    return;
+  }
+  sessionStorage.setItem(destinationKey(actionSlug), name);
+}
+
+/**
+ * @param {string} actionSlug
+ */
+export function clearDestinationBotName(actionSlug) {
+  sessionStorage.removeItem(destinationKey(actionSlug));
+}
+
+/**
+ * @param {string} actionSlug
+ */
+export function clearSelectedBotNames(actionSlug) {
+  sessionStorage.removeItem(key(actionSlug));
+  clearDestinationBotName(actionSlug);
+}
+
+/**
+ * True once the user has started the flow (sources and/or inventory destination).
  * @param {string} actionSlug
  */
 export function hasStartedAction(actionSlug) {
+  if (readDestinationBotName(actionSlug)) return true;
   return readSelectedBotNames(actionSlug).length > 0;
 }

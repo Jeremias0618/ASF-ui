@@ -93,21 +93,6 @@
         <span>{{ page }} / {{ totalPages }}</span>
         <button type="button" class="button button--link" :disabled="page >= totalPages" @click="page += 1">&rsaquo;</button>
       </div>
-
-      <label class="bulk-actions-field">
-        <span class="bulk-actions-field__label">{{ $t('bulk-action-inventory-destination') }}</span>
-        <select v-model="destinationBot" class="bulk-actions-field__control" :disabled="busy">
-          <option value="">{{ $t('bulk-action-inventory-destination-placeholder') }}</option>
-          <option
-            v-for="bot in destinationBots"
-            :key="bot.name"
-            :value="bot.name"
-            :disabled="selectedSourceBots.includes(bot.name)"
-          >
-            {{ bot.viewableName || bot.name }}
-          </option>
-        </select>
-      </label>
     </div>
 
     <footer class="bulk-actions-setup-bar">
@@ -186,7 +171,7 @@
     props: {
       action: { type: Object, required: true },
       bots: { type: Array, default: () => [] },
-      allBots: { type: Array, default: () => [] },
+      destinationBot: { type: String, required: true },
     },
     data() {
       return {
@@ -197,7 +182,6 @@
         kindFilter: 'all',
         gameFilter: '',
         statusFilter: 'tradable',
-        destinationBot: '',
         page: 1,
         loading: false,
         loadError: '',
@@ -211,9 +195,6 @@
     },
     computed: {
       title() { return this.$t(this.action.titleKey); },
-      destinationBots() {
-        return (this.allBots && this.allBots.length) ? this.allBots : this.bots;
-      },
       botNamesWithItems() {
         return [...new Set(this.allItems.map(i => i.botName))].sort();
       },

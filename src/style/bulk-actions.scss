@@ -662,6 +662,66 @@
   gap: 0.4rem;
 }
 
+.bulk-actions-bots__hint {
+  color: var(--lote-muted);
+  font-size: 0.9rem;
+  line-height: 1.4;
+  margin: 0 0 0.75rem;
+}
+
+.bulk-actions-bots__card.is-master:not(.is-selected) {
+  border-color: color-mix(in srgb, var(--lote-accent) 45%, var(--lote-border));
+}
+
+.bulk-actions-bots__card.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+
+  &:hover,
+  &:focus-visible {
+    border-color: var(--lote-border);
+    transform: none;
+  }
+}
+
+.bulk-actions-destination-chip {
+  align-items: center;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--lote-accent) 12%, transparent), transparent 60%),
+    var(--lote-surface);
+  border: 1px solid var(--lote-border);
+  border-radius: 0.85rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem 0.85rem;
+  justify-content: space-between;
+  margin: 0 0 0.85rem;
+  padding: 0.7rem 0.9rem;
+}
+
+.bulk-actions-destination-chip__label {
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.bulk-actions-destination-chip__edit {
+  background: transparent;
+  border: 1px solid var(--lote-border);
+  border-radius: 999px;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.3rem 0.7rem;
+
+  &:hover,
+  &:focus-visible {
+    border-color: var(--lote-accent);
+    outline: none;
+  }
+}
+
 .bulk-actions-deck--setup {
   display: grid;
   gap: 1rem;

@@ -12,14 +12,30 @@
           <span class="bulk-actions-pipeline__index" aria-hidden="true">1</span>
           <span class="bulk-actions-pipeline__text">{{ $t('bulk-actions-pipeline-pick') }}</span>
         </li>
-        <li class="bulk-actions-pipeline__step is-done">
-          <span class="bulk-actions-pipeline__index" aria-hidden="true">2</span>
-          <span class="bulk-actions-pipeline__text">{{ $t('bulk-actions-pipeline-bots') }}</span>
-        </li>
-        <li class="bulk-actions-pipeline__step is-current" aria-current="step">
-          <span class="bulk-actions-pipeline__index" aria-hidden="true">3</span>
-          <span class="bulk-actions-pipeline__text">{{ $t('bulk-actions-pipeline-run') }}</span>
-        </li>
+        <template v-if="isInventory">
+          <li class="bulk-actions-pipeline__step is-done">
+            <span class="bulk-actions-pipeline__index" aria-hidden="true">2</span>
+            <span class="bulk-actions-pipeline__text">{{ $t('bulk-actions-pipeline-destination') }}</span>
+          </li>
+          <li class="bulk-actions-pipeline__step is-done">
+            <span class="bulk-actions-pipeline__index" aria-hidden="true">3</span>
+            <span class="bulk-actions-pipeline__text">{{ $t('bulk-actions-pipeline-sources') }}</span>
+          </li>
+          <li class="bulk-actions-pipeline__step is-current" aria-current="step">
+            <span class="bulk-actions-pipeline__index" aria-hidden="true">4</span>
+            <span class="bulk-actions-pipeline__text">{{ $t('bulk-actions-pipeline-run') }}</span>
+          </li>
+        </template>
+        <template v-else>
+          <li class="bulk-actions-pipeline__step is-done">
+            <span class="bulk-actions-pipeline__index" aria-hidden="true">2</span>
+            <span class="bulk-actions-pipeline__text">{{ $t('bulk-actions-pipeline-bots') }}</span>
+          </li>
+          <li class="bulk-actions-pipeline__step is-current" aria-current="step">
+            <span class="bulk-actions-pipeline__index" aria-hidden="true">3</span>
+            <span class="bulk-actions-pipeline__text">{{ $t('bulk-actions-pipeline-run') }}</span>
+          </li>
+        </template>
       </ol>
     </header>
 
@@ -44,6 +60,15 @@
       </p>
 
       <template v-else>
+        <div v-if="isInventory && destinationBotModel" class="bulk-actions-destination-chip">
+          <span class="bulk-actions-destination-chip__label">
+            {{ $t('bulk-actions-destination-chip', { name: destinationBotModel.viewableName || destinationBotModel.name }) }}
+          </span>
+          <button type="button" class="bulk-actions-destination-chip__edit" @click="goChangeDestination">
+            {{ $t('bulk-actions-destination-change') }}
+          </button>
+        </div>
+
         <BulkSelectedCrew
           :bots="selectedBotModels"
           @change="goSelectBots"
@@ -54,7 +79,7 @@
             v-if="action.kind === 'inventory'"
             :action="action"
             :bots="selectedBotModels"
-            :allBots="sortedBots"
+            :destination-bot="destinationName"
             @back="goSelectBots"
             @finished="onFinished"
             @plugin-missing="pluginMissing = true"
@@ -104,7 +129,7 @@
     actionBotsRoute, getBulkAction,
   } from '../constants/actions';
   import {
-    clearSelectedBotNames, readSelectedBotNames,
+    clearSelectedBotNames, readDestinationBotName, readSelectedBotNames,
   } from '../utils/action-session';
   import leaveGuard from '../mixins/leave-guard';
   import BulkLeaveDialog from '../components/leave-dialog.vue';
@@ -132,12 +157,16 @@
       return {
         pluginMissing: false,
         selectedNames: [],
+        destinationName: '',
       };
     },
     computed: {
       ...mapGetters({ bots: 'bots/bots' }),
       action() {
         return getBulkAction(this.$route.params.action);
+      },
+      isInventory() {
+        return Boolean(this.action && this.action.kind === 'inventory');
       },
       title() {
         return this.action ? this.$t(this.action.titleKey) : this.$t('bulk-actions');
@@ -152,6 +181,10 @@
         const set = new Set(this.selectedNames);
         return this.sortedBots.filter(bot => set.has(bot.name));
       },
+      destinationBotModel() {
+        if (!this.destinationName) return null;
+        return this.sortedBots.find(bot => bot.name === this.destinationName) || null;
+      },
     },
     watch: {
       '$route.params.action': {
@@ -161,8 +194,11 @@
             this.$router.replace({ name: 'multi-action' });
             return;
           }
-          this.selectedNames = readSelectedBotNames(this.action.slug);
-          if (!this.selectedNames.length) {
+          this.selectedNames = readSelectedBotNames(this.action.slug)
+            .filter(name => name !== readDestinationBotName(this.action.slug));
+          this.destinationName = readDestinationBotName(this.action.slug);
+          if (!this.selectedNames.length
+            || (this.isInventory && !this.destinationName)) {
             this.continueWithoutGuard(actionBotsRoute(this.action));
           }
         },
@@ -171,6 +207,12 @@
     methods: {
       goSelectBots() {
         this.continueWithoutGuard(actionBotsRoute(this.action));
+      },
+      goChangeDestination() {
+        this.continueWithoutGuard({
+          ...actionBotsRoute(this.action),
+          query: { step: 'destination' },
+        });
       },
       onFinished() {
         this.markActionFinished();
