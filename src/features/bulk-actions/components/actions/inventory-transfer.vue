@@ -3,10 +3,8 @@
     <header class="bulk-actions__panel-header">
       <button type="button" class="button button--link bulk-actions__back" @click="$emit('back')">
         <FontAwesomeIcon icon="chevron-left" aria-hidden="true"></FontAwesomeIcon>
-        {{ $t('back') }}
+        {{ $t('bulk-actions-bots-change') }}
       </button>
-      <h2 class="bulk-actions__panel-title">{{ title }}</h2>
-      <p class="bulk-actions__panel-lead">{{ lead }}</p>
     </header>
 
     <div class="bulk-actions__inv-toolbar">
@@ -107,7 +105,7 @@
       <select v-model="destinationBot" class="bulk-actions__select" :disabled="busy">
         <option value="">{{ $t('bulk-action-inventory-destination-placeholder') }}</option>
         <option
-          v-for="bot in bots"
+          v-for="bot in destinationBots"
           :key="bot.name"
           :value="bot.name"
           :disabled="selectedSourceBots.includes(bot.name)"
@@ -181,6 +179,7 @@
     props: {
       action: { type: Object, required: true },
       bots: { type: Array, default: () => [] },
+      allBots: { type: Array, default: () => [] },
     },
     data() {
       return {
@@ -198,13 +197,16 @@
         openConfirm: false,
         progressOpen: false,
         busy: false,
+        completedOk: false,
         runner: createBulkRunner(),
         kindOptions: INVENTORY_FILTERS.filter(k => k !== 'all'),
       };
     },
     computed: {
       title() { return this.$t(this.action.titleKey); },
-      lead() { return this.$t(this.action.leadKey); },
+      destinationBots() {
+        return (this.allBots && this.allBots.length) ? this.allBots : this.bots;
+      },
       botNamesWithItems() {
         return [...new Set(this.allItems.map(i => i.botName))].sort();
       },
@@ -330,6 +332,7 @@
         this.openConfirm = false;
         this.busy = true;
         this.progressOpen = true;
+        this.completedOk = false;
         const batches = groupInventoryTransferBatches(this.selectedItems);
         const target = this.destinationBot;
         try {
@@ -355,6 +358,7 @@
               }
             },
           })));
+          this.completedOk = this.runner.results.some(row => row.ok);
         } finally {
           this.busy = false;
         }
@@ -363,6 +367,10 @@
         this.progressOpen = false;
         this.runner.reset();
         this.clearSelection();
+        if (this.completedOk) {
+          this.$emit('finished');
+          return;
+        }
         this.loadAll(true);
       },
     },

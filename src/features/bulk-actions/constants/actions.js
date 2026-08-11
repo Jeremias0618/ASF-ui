@@ -1,4 +1,6 @@
-/** Catalog of bulk social actions shown on the hub. */
+/** Catalog of multi-action (bulk social) actions. */
+
+export const MULTI_ACTION_BASE = 'multi-action';
 
 export const BULK_ACTION_IDS = Object.freeze({
   INVENTORY_TRANSFER: 'inventory-transfer',
@@ -17,6 +19,7 @@ export const BULK_ACTION_IDS = Object.freeze({
  * @typedef {'inventory' | 'url-bots' | 'reviews-vote' | 'shared-act'} BulkActionKind
  * @typedef {{
  *   id: string,
+ *   slug: string,
  *   icon: string,
  *   kind: BulkActionKind,
  *   titleKey: string,
@@ -31,6 +34,7 @@ export const BULK_ACTION_IDS = Object.freeze({
 export const BULK_ACTIONS = Object.freeze([
   {
     id: BULK_ACTION_IDS.INVENTORY_TRANSFER,
+    slug: 'inventory',
     icon: 'exchange-alt',
     kind: 'inventory',
     titleKey: 'bulk-action-inventory-title',
@@ -38,6 +42,7 @@ export const BULK_ACTIONS = Object.freeze([
   },
   {
     id: BULK_ACTION_IDS.FRIENDS_ADD,
+    slug: 'friends',
     icon: 'user-plus',
     kind: 'url-bots',
     titleKey: 'bulk-action-friends-title',
@@ -48,6 +53,7 @@ export const BULK_ACTIONS = Object.freeze([
   },
   {
     id: BULK_ACTION_IDS.GROUPS_JOIN,
+    slug: 'groups',
     icon: 'users',
     kind: 'url-bots',
     titleKey: 'bulk-action-groups-title',
@@ -58,6 +64,7 @@ export const BULK_ACTIONS = Object.freeze([
   },
   {
     id: BULK_ACTION_IDS.FOLLOWERS_FOLLOW,
+    slug: 'followers',
     icon: 'heart',
     kind: 'url-bots',
     titleKey: 'bulk-action-followers-title',
@@ -68,6 +75,7 @@ export const BULK_ACTIONS = Object.freeze([
   },
   {
     id: BULK_ACTION_IDS.CURATORS_FOLLOW,
+    slug: 'curators',
     icon: 'star',
     kind: 'url-bots',
     titleKey: 'bulk-action-curators-title',
@@ -78,6 +86,7 @@ export const BULK_ACTIONS = Object.freeze([
   },
   {
     id: BULK_ACTION_IDS.REVIEWS_VOTE,
+    slug: 'reviews',
     icon: 'comments',
     kind: 'reviews-vote',
     titleKey: 'bulk-action-reviews-title',
@@ -87,6 +96,7 @@ export const BULK_ACTIONS = Object.freeze([
   },
   {
     id: BULK_ACTION_IDS.SHARED_ACT,
+    slug: 'shared',
     icon: 'thumbs-up',
     kind: 'shared-act',
     titleKey: 'bulk-action-shared-title',
@@ -96,6 +106,7 @@ export const BULK_ACTIONS = Object.freeze([
   },
   {
     id: BULK_ACTION_IDS.WISHLIST_FOLLOW_ADD,
+    slug: 'wishlist-follow',
     icon: 'heart',
     kind: 'url-bots',
     titleKey: 'bulk-action-wishlist-follow-title',
@@ -106,6 +117,7 @@ export const BULK_ACTIONS = Object.freeze([
   },
   {
     id: BULK_ACTION_IDS.GAMES_ADD,
+    slug: 'games',
     icon: 'plus',
     kind: 'url-bots',
     titleKey: 'bulk-action-games-add-title',
@@ -116,6 +128,7 @@ export const BULK_ACTIONS = Object.freeze([
   },
   {
     id: BULK_ACTION_IDS.WISHLIST_ADD,
+    slug: 'wishlist',
     icon: 'book-open',
     kind: 'url-bots',
     titleKey: 'bulk-action-wishlist-add-title',
@@ -126,10 +139,25 @@ export const BULK_ACTIONS = Object.freeze([
   },
 ]);
 
-export function getBulkAction(id) {
-  return BULK_ACTIONS.find(action => action.id === id) || null;
+export function getBulkAction(idOrSlug) {
+  const key = String(idOrSlug || '');
+  return BULK_ACTIONS.find(action => action.id === key || action.slug === key) || null;
 }
 
-export function isKnownBulkAction(id) {
-  return Boolean(getBulkAction(id));
+export function isKnownBulkAction(idOrSlug) {
+  return Boolean(getBulkAction(idOrSlug));
+}
+
+export function actionBotsRoute(action) {
+  return {
+    name: 'multi-action-bots',
+    params: { action: action.slug },
+  };
+}
+
+export function actionSetupRoute(action) {
+  return {
+    name: 'multi-action-setup',
+    params: { action: action.slug },
+  };
 }

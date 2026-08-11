@@ -20,7 +20,9 @@ const routes = {
   botSocial: 'bot-social',
   botWishlist: 'bot-wishlist',
   bots: 'bots',
-  bulkActions: 'bulk-actions',
+  bulkActions: 'multi-action',
+  multiActionBots: 'multi-action-bots',
+  multiActionSetup: 'multi-action-setup',
   commands: 'commands',
   configuration: 'configuration',
   home: 'home',
@@ -328,14 +330,42 @@ export default [
     redirect: { name: routes.bots },
   },
   {
+    path: '/bulk-actions',
+    redirect: { name: routes.bulkActions },
+  },
+  {
+    path: '/bulk-actions/:action',
+    redirect: to => ({
+      name: routes.multiActionBots,
+      params: { action: to.params.action },
+    }),
+  },
+  {
+    path: '/bulk-actions/:action/setup',
+    redirect: to => ({
+      name: routes.multiActionSetup,
+      params: { action: to.params.action },
+    }),
+  },
+  {
+    path: '/multi-action',
+    name: routes.bulkActions,
+    component: () => import('../views/BulkActions.vue'),
+  },
+  {
+    path: '/multi-action/:action/setup',
+    name: routes.multiActionSetup,
+    component: () => import('../views/MultiActionSetup.vue'),
+  },
+  {
+    path: '/multi-action/:action',
+    name: routes.multiActionBots,
+    component: () => import('../views/MultiActionBots.vue'),
+  },
+  {
     path: '/commands',
     name: routes.commands,
     component: () => import('../views/Commands.vue'),
-  },
-  {
-    path: '/bulk-actions',
-    name: routes.bulkActions,
-    component: () => import('../views/BulkActions.vue'),
   },
   {
     path: '/configuration',

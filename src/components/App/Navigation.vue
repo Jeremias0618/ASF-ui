@@ -5,7 +5,7 @@
         <NavigationCategoryTitle :name="$t('control')"></NavigationCategoryTitle>
         <NavigationLink :name="$t('home')" icon="home" :to="{ name: 'home' }"></NavigationLink>
         <NavigationLink :name="$t('bots')" icon="users" :to="{ name: 'bots' }"></NavigationLink>
-        <NavigationLink :name="$t('bulk-actions')" icon="layer-group" :to="{ name: 'bulk-actions' }"></NavigationLink>
+        <NavigationLink :name="$t('bulk-actions')" icon="layer-group" :to="{ name: 'multi-action' }"></NavigationLink>
         <NavigationLink :name="$t('commands')" icon="laptop" :to="{ name: 'commands' }"></NavigationLink>
         <NavigationLink :name="$t('releases')" icon="code-branch" :to="{ name: 'releases' }"></NavigationLink>
         <NavigationLink :name="$t('plugins')" icon="puzzle-piece" :to="{ name: 'plugins' }"></NavigationLink>

@@ -3,13 +3,9 @@
     <header class="bulk-actions__panel-header">
       <button type="button" class="button button--link bulk-actions__back" @click="$emit('back')">
         <FontAwesomeIcon icon="chevron-left" aria-hidden="true"></FontAwesomeIcon>
-        {{ $t('back') }}
+        {{ $t('bulk-actions-bots-change') }}
       </button>
-      <h2 class="bulk-actions__panel-title">{{ title }}</h2>
-      <p class="bulk-actions__panel-lead">{{ lead }}</p>
     </header>
-
-    <BulkBotPicker :value="selectedBots" :bots="bots" @input="selectedBots = $event"></BulkBotPicker>
 
     <label class="bulk-actions__field">
       <span class="bulk-actions__field-label">{{ targetLabel }}</span>
@@ -62,46 +58,37 @@
   import { isPluginMissingError } from '../../../bot-social/api/bot-social';
   import { flattenMutationResults, runUrlBotsApi } from '../../api/bulk-social';
   import { createBulkRunner } from '../../composables/use-bulk-runner';
-  import BulkBotPicker from '../bot-picker.vue';
   import BulkConfirmDialog from '../confirm-dialog.vue';
   import BulkProgressModal from '../progress-modal.vue';
 
   export default {
     name: 'BulkUrlBotsAction',
-    components: { BulkBotPicker, BulkConfirmDialog, BulkProgressModal },
+    components: { BulkConfirmDialog, BulkProgressModal },
     props: {
       action: { type: Object, required: true },
       bots: { type: Array, default: () => [] },
     },
     data() {
       return {
-        selectedBots: [],
         target: '',
         openConfirm: false,
         progressOpen: false,
         busy: false,
         runner: createBulkRunner(),
+        completedOk: false,
       };
     },
     computed: {
-      title() {
-        return this.$t(this.action.titleKey);
-      },
-      lead() {
-        return this.$t(this.action.leadKey);
-      },
-      targetLabel() {
-        return this.$t(this.action.targetLabelKey);
-      },
-      targetPlaceholder() {
-        return this.$t(this.action.targetPlaceholderKey);
-      },
+      title() { return this.$t(this.action.titleKey); },
+      targetLabel() { return this.$t(this.action.targetLabelKey); },
+      targetPlaceholder() { return this.$t(this.action.targetPlaceholderKey); },
+      botNames() { return this.bots.map(b => b.name); },
       canSubmit() {
-        return this.selectedBots.length > 0 && Boolean(this.target.trim());
+        return this.botNames.length > 0 && Boolean(this.target.trim());
       },
       confirmLines() {
         return [
-          this.$t('bulk-actions-confirm-bots', { n: this.selectedBots.length }),
+          this.$t('bulk-actions-confirm-bots', { n: this.botNames.length }),
           this.$t('bulk-actions-confirm-target', { target: this.target }),
         ];
       },
@@ -111,9 +98,9 @@
         this.openConfirm = false;
         this.busy = true;
         this.progressOpen = true;
-        const botNames = this.selectedBots.slice();
+        this.completedOk = false;
+        const botNames = this.botNames.slice();
         const target = this.target.trim();
-
         try {
           await this.runner.runSteps([{
             label: botNames.join(', '),
@@ -122,7 +109,7 @@
                 const payload = await runUrlBotsApi(this.action.api, botNames, { target });
                 return flattenMutationResults(payload);
               } catch (err) {
-                if (err?.message === 'INVALID_APP_ID') {
+                if (err && err.message === 'INVALID_APP_ID') {
                   throw new Error(this.$t('bulk-actions-invalid-appid'));
                 }
                 if (isPluginMissingError(err)) this.$emit('plugin-missing');
@@ -130,6 +117,7 @@
               }
             },
           }]);
+          this.completedOk = this.runner.results.some(row => row.ok);
         } finally {
           this.busy = false;
         }
@@ -137,6 +125,7 @@
       onProgressClose() {
         this.progressOpen = false;
         this.runner.reset();
+        if (this.completedOk) this.$emit('finished');
       },
     },
   };

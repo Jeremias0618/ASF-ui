@@ -3,13 +3,9 @@
     <header class="bulk-actions__panel-header">
       <button type="button" class="button button--link bulk-actions__back" @click="$emit('back')">
         <FontAwesomeIcon icon="chevron-left" aria-hidden="true"></FontAwesomeIcon>
-        {{ $t('back') }}
+        {{ $t('bulk-actions-bots-change') }}
       </button>
-      <h2 class="bulk-actions__panel-title">{{ title }}</h2>
-      <p class="bulk-actions__panel-lead">{{ lead }}</p>
     </header>
-
-    <BulkBotPicker :value="selectedBots" :bots="bots" @input="selectedBots = $event"></BulkBotPicker>
 
     <label class="bulk-actions__field">
       <span class="bulk-actions__field-label">{{ $t(action.targetLabelKey) }}</span>
@@ -83,20 +79,18 @@
   import { isPluginMissingError } from '../../../bot-social/api/bot-social';
   import { flattenMutationResults, sharedFilesAct } from '../../api/bulk-social';
   import { createBulkRunner } from '../../composables/use-bulk-runner';
-  import BulkBotPicker from '../bot-picker.vue';
   import BulkConfirmDialog from '../confirm-dialog.vue';
   import BulkProgressModal from '../progress-modal.vue';
 
   export default {
     name: 'BulkSharedActAction',
-    components: { BulkBotPicker, BulkConfirmDialog, BulkProgressModal },
+    components: { BulkConfirmDialog, BulkProgressModal },
     props: {
       action: { type: Object, required: true },
       bots: { type: Array, default: () => [] },
     },
     data() {
       return {
-        selectedBots: [],
         target: '',
         vote: 'like',
         favorite: false,
@@ -104,19 +98,20 @@
         progressOpen: false,
         busy: false,
         runner: createBulkRunner(),
+        completedOk: false,
       };
     },
     computed: {
       title() { return this.$t(this.action.titleKey); },
-      lead() { return this.$t(this.action.leadKey); },
+      botNames() { return this.bots.map(b => b.name); },
       canSubmit() {
-        return this.selectedBots.length > 0
+        return this.botNames.length > 0
           && Boolean(this.target.trim())
           && (Boolean(this.vote) || this.favorite);
       },
       confirmLines() {
         const lines = [
-          this.$t('bulk-actions-confirm-bots', { n: this.selectedBots.length }),
+          this.$t('bulk-actions-confirm-bots', { n: this.botNames.length }),
           this.$t('bulk-actions-confirm-target', { target: this.target }),
         ];
         if (this.vote) lines.push(this.$t('bulk-actions-confirm-vote', { vote: this.vote }));
@@ -129,7 +124,8 @@
         this.openConfirm = false;
         this.busy = true;
         this.progressOpen = true;
-        const botNames = this.selectedBots.slice();
+        this.completedOk = false;
+        const botNames = this.botNames.slice();
         const url = this.target.trim();
         const vote = this.vote || null;
         const { favorite } = this;
@@ -146,6 +142,7 @@
               }
             },
           }]);
+          this.completedOk = this.runner.results.some(row => row.ok);
         } finally {
           this.busy = false;
         }
@@ -153,6 +150,7 @@
       onProgressClose() {
         this.progressOpen = false;
         this.runner.reset();
+        if (this.completedOk) this.$emit('finished');
       },
     },
   };
