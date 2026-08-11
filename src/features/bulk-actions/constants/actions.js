@@ -17,11 +17,13 @@ export const BULK_ACTION_IDS = Object.freeze({
 
 /**
  * @typedef {'inventory' | 'url-bots' | 'reviews-vote' | 'shared-act'} BulkActionKind
+ * @typedef {'inventory' | 'community' | 'library'} BulkActionGroup
  * @typedef {{
  *   id: string,
  *   slug: string,
  *   icon: string,
  *   kind: BulkActionKind,
+ *   group: BulkActionGroup,
  *   titleKey: string,
  *   leadKey: string,
  *   targetLabelKey?: string,
@@ -30,6 +32,13 @@ export const BULK_ACTION_IDS = Object.freeze({
  * }} BulkActionDef
  */
 
+/** @type {{ id: BulkActionGroup, titleKey: string }[]} */
+export const BULK_ACTION_GROUPS = Object.freeze([
+  { id: 'inventory', titleKey: 'bulk-actions-group-inventory' },
+  { id: 'community', titleKey: 'bulk-actions-group-community' },
+  { id: 'library', titleKey: 'bulk-actions-group-library' },
+]);
+
 /** @type {BulkActionDef[]} */
 export const BULK_ACTIONS = Object.freeze([
   {
@@ -37,6 +46,7 @@ export const BULK_ACTIONS = Object.freeze([
     slug: 'inventory',
     icon: 'exchange-alt',
     kind: 'inventory',
+    group: 'inventory',
     titleKey: 'bulk-action-inventory-title',
     leadKey: 'bulk-action-inventory-lead',
   },
@@ -45,6 +55,7 @@ export const BULK_ACTIONS = Object.freeze([
     slug: 'friends',
     icon: 'user-plus',
     kind: 'url-bots',
+    group: 'community',
     titleKey: 'bulk-action-friends-title',
     leadKey: 'bulk-action-friends-lead',
     targetLabelKey: 'bulk-action-friends-target-label',
@@ -56,6 +67,7 @@ export const BULK_ACTIONS = Object.freeze([
     slug: 'groups',
     icon: 'users',
     kind: 'url-bots',
+    group: 'community',
     titleKey: 'bulk-action-groups-title',
     leadKey: 'bulk-action-groups-lead',
     targetLabelKey: 'bulk-action-groups-target-label',
@@ -67,6 +79,7 @@ export const BULK_ACTIONS = Object.freeze([
     slug: 'followers',
     icon: 'heart',
     kind: 'url-bots',
+    group: 'community',
     titleKey: 'bulk-action-followers-title',
     leadKey: 'bulk-action-followers-lead',
     targetLabelKey: 'bulk-action-followers-target-label',
@@ -78,6 +91,7 @@ export const BULK_ACTIONS = Object.freeze([
     slug: 'curators',
     icon: 'star',
     kind: 'url-bots',
+    group: 'community',
     titleKey: 'bulk-action-curators-title',
     leadKey: 'bulk-action-curators-lead',
     targetLabelKey: 'bulk-action-curators-target-label',
@@ -89,6 +103,7 @@ export const BULK_ACTIONS = Object.freeze([
     slug: 'reviews',
     icon: 'comments',
     kind: 'reviews-vote',
+    group: 'community',
     titleKey: 'bulk-action-reviews-title',
     leadKey: 'bulk-action-reviews-lead',
     targetLabelKey: 'bulk-action-reviews-target-label',
@@ -99,6 +114,7 @@ export const BULK_ACTIONS = Object.freeze([
     slug: 'shared',
     icon: 'thumbs-up',
     kind: 'shared-act',
+    group: 'community',
     titleKey: 'bulk-action-shared-title',
     leadKey: 'bulk-action-shared-lead',
     targetLabelKey: 'bulk-action-shared-target-label',
@@ -109,6 +125,7 @@ export const BULK_ACTIONS = Object.freeze([
     slug: 'wishlist-follow',
     icon: 'heart',
     kind: 'url-bots',
+    group: 'library',
     titleKey: 'bulk-action-wishlist-follow-title',
     leadKey: 'bulk-action-wishlist-follow-lead',
     targetLabelKey: 'bulk-action-game-target-label',
@@ -120,6 +137,7 @@ export const BULK_ACTIONS = Object.freeze([
     slug: 'games',
     icon: 'plus',
     kind: 'url-bots',
+    group: 'library',
     titleKey: 'bulk-action-games-add-title',
     leadKey: 'bulk-action-games-add-lead',
     targetLabelKey: 'bulk-action-game-target-label',
@@ -131,6 +149,7 @@ export const BULK_ACTIONS = Object.freeze([
     slug: 'wishlist',
     icon: 'book-open',
     kind: 'url-bots',
+    group: 'library',
     titleKey: 'bulk-action-wishlist-add-title',
     leadKey: 'bulk-action-wishlist-add-lead',
     targetLabelKey: 'bulk-action-game-target-label',

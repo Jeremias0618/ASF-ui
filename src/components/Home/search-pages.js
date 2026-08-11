@@ -19,7 +19,7 @@ export const SEARCH_PAGES = [
     labelKey: 'bulk-actions',
     descKey: 'home2-search-desc-bulk-actions',
     icon: 'layer-group',
-    keywords: 'bulk actions multiaccion multi-action acciones lote social inventory friends',
+    keywords: 'bulk actions batch acciones por lote social inventory friends',
   },
   {
     route: 'commands',
