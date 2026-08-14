@@ -26,12 +26,16 @@
           {{ $t('bot-social-games-clear-search') }}
         </button>
         <button
+          v-if="showRefresh"
           type="button"
           class="bot-social-games__refresh"
-          :disabled="refreshDisabled"
+          :disabled="refreshDisabled || cooldownSeconds > 0"
           @click="$emit('refresh')"
         >
           <FontAwesomeIcon v-if="busy" icon="spinner" spin></FontAwesomeIcon>
+          <span v-else-if="cooldownSeconds > 0">
+            {{ $t('bot-social-refresh-cooldown', { s: cooldownSeconds }) }}
+          </span>
           <span v-else>{{ $t('bot-social-refresh') }}</span>
         </button>
       </div>
@@ -64,6 +68,9 @@
       query: { type: String, default: '' },
       busy: { type: Boolean, default: false },
       refreshDisabled: { type: Boolean, default: false },
+      /** Seconds remaining before Actualizar can be used again. */
+      cooldownSeconds: { type: Number, default: 0 },
+      showRefresh: { type: Boolean, default: true },
       showFilters: { type: Boolean, default: true },
       hasActiveFilters: { type: Boolean, default: false },
       filtersAriaLabel: { type: String, default: '' },

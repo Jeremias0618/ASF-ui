@@ -1,33 +1,19 @@
 const PRIMARY_CDN = 'https://cdn.cloudflare.steamstatic.com/steam/apps';
-const ALT_CDNS = [
-  'https://cdn.akamai.steamstatic.com/steam/apps',
-  'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps',
-  'https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps',
-];
 
-/** Portrait / library shelf — includes library_hero for apps without classic header art. */
+/** Portrait / library shelf — primary CDN only (fast fail → Cover API). */
 const PORTRAIT_ASSETS = [
   'library_600x900.jpg',
   'library_hero.jpg',
   'header.jpg',
   'capsule_616x353.jpg',
-  'capsule_231x87.jpg',
 ];
 
-/** Landscape store capsules (Steam store page / wishlist headers). */
+/** Landscape store capsules. */
 const LANDSCAPE_ASSETS = [
   'header.jpg',
   'capsule_616x353.jpg',
   'capsule_231x87.jpg',
   'library_hero.jpg',
-  'library_600x900.jpg',
-];
-
-const CROSS_HOST_ASSETS = [
-  'header.jpg',
-  'library_hero.jpg',
-  'library_600x900.jpg',
-  'capsule_231x87.jpg',
 ];
 
 /**
@@ -41,23 +27,12 @@ function buildCandidates(appId, assets) {
 
   const urls = [];
   const seen = new Set();
-  const push = url => {
+  assets.forEach(asset => {
+    const url = `${PRIMARY_CDN}/${id}/${asset}`;
     if (seen.has(url)) return;
     seen.add(url);
     urls.push(url);
-  };
-
-  // Fast path: all assets on the primary CDN (most common hit).
-  assets.forEach(asset => push(`${PRIMARY_CDN}/${id}/${asset}`));
-
-  // Slow path: a few key assets on alternate hosts / store_item_assets layout.
-  ALT_CDNS.forEach(host => {
-    CROSS_HOST_ASSETS.forEach(asset => {
-      if (!assets.includes(asset)) return;
-      push(`${host}/${id}/${asset}`);
-    });
   });
-
   return urls;
 }
 

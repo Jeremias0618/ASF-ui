@@ -24,15 +24,6 @@
               {{ $t('bot-social-games-discovery-detail-empty') }}
             </p>
           </div>
-          <button
-            type="button"
-            class="games-discovery__refresh"
-            :disabled="loading || exploring"
-            @click="refresh"
-          >
-            <FontAwesomeIcon :icon="loading ? 'spinner' : 'redo-alt'" :spin="loading"></FontAwesomeIcon>
-            <span>{{ $t('bot-social-refresh') }}</span>
-          </button>
         </div>
 
         <div class="games-discovery__actions">
@@ -56,7 +47,7 @@
                   type="radio"
                   name="discovery-queues"
                   :value="opt.value"
-                  :disabled="exploring"
+                  :disabled="exploring || exploreCooldownSec > 0"
                 >
                 <span>{{ opt.label }}</span>
               </label>
@@ -66,10 +57,13 @@
           <button
             type="button"
             class="button games-discovery__run"
-            :disabled="exploring || loading"
+            :disabled="exploring || loading || exploreCooldownSec > 0"
             @click="explore"
           >
             <FontAwesomeIcon v-if="exploring" icon="spinner" spin></FontAwesomeIcon>
+            <template v-else-if="exploreCooldownSec > 0">
+              <span>{{ $t('bot-social-community-submit-cooldown', { s: exploreCooldownSec }) }}</span>
+            </template>
             <template v-else>
               <FontAwesomeIcon icon="compass" aria-hidden="true"></FontAwesomeIcon>
               <span>{{ exploreLabel }}</span>
@@ -93,6 +87,9 @@
     fetchDiscoveryQueueStatus,
     isPluginMissingError,
   } from '../../api/bot-social';
+
+  /** UI ≥ DiscoveryQueueExploreLimiter (8s). */
+  const EXPLORE_COOLDOWN_MS = 9000;
 
   function pickEntry(payload, botName) {
     if (!payload || typeof payload !== 'object') return null;
@@ -125,9 +122,15 @@
         queues: 1,
         lastResult: '',
         lastOk: false,
+        exploreCooldownEndsAt: 0,
+        nowMs: Date.now(),
+        cooldownTick: null,
       };
     },
     computed: {
+      exploreCooldownSec() {
+        return Math.max(0, Math.ceil((this.exploreCooldownEndsAt - this.nowMs) / 1000));
+      },
       queueOptions() {
         return [
           { value: 1, label: this.$t('bot-social-games-discovery-queues-one') },
@@ -155,12 +158,34 @@
       botName: {
         immediate: true,
         handler() {
+          this.exploreCooldownEndsAt = 0;
           this.refresh();
         },
       },
     },
+    beforeDestroy() {
+      this.stopCooldownTick();
+    },
     methods: {
+      startCooldownTick() {
+        if (this.cooldownTick) return;
+        this.cooldownTick = setInterval(() => {
+          this.nowMs = Date.now();
+          if (this.exploreCooldownEndsAt <= this.nowMs) this.stopCooldownTick();
+        }, 250);
+      },
+      stopCooldownTick() {
+        if (!this.cooldownTick) return;
+        clearInterval(this.cooldownTick);
+        this.cooldownTick = null;
+      },
+      armExploreCooldown() {
+        this.exploreCooldownEndsAt = Date.now() + EXPLORE_COOLDOWN_MS;
+        this.nowMs = Date.now();
+        this.startCooldownTick();
+      },
       async refresh() {
+        if (this.loading || this.exploring) return;
         this.loading = true;
         this.error = '';
         try {
@@ -179,6 +204,7 @@
         }
       },
       async explore() {
+        if (this.exploring || this.loading || this.exploreCooldownSec > 0) return;
         this.exploring = true;
         this.error = '';
         this.lastResult = '';
@@ -203,6 +229,7 @@
           this.$error(this.lastResult);
         } finally {
           this.exploring = false;
+          this.armExploreCooldown();
         }
       },
     },

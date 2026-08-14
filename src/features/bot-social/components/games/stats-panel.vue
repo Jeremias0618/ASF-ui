@@ -77,15 +77,6 @@
             {{ $t('bot-social-games-stats-sort-achievements') }}
           </button>
         </div>
-        <button
-          type="button"
-          class="games-stats__refresh"
-          :disabled="loading || refreshing"
-          @click="refresh"
-        >
-          <FontAwesomeIcon v-if="refreshing" icon="spinner" spin></FontAwesomeIcon>
-          <span v-else>{{ $t('bot-social-refresh') }}</span>
-        </button>
       </div>
 
       <div class="games-stats__filters" role="group" :aria-label="$t('bot-social-games-filters')">
@@ -141,9 +132,9 @@
       </div>
 
       <div v-if="!filteredGames.length" class="bot-social__state">{{ $t('bot-social-games-empty') }}</div>
-      <ul v-else class="games-stats__list" :class="{ 'is-refreshing': refreshing }">
+      <ul v-else class="games-stats__list" :class="{ 'is-refreshing': loading }">
         <li
-          v-for="game in filteredGames"
+          v-for="game in visibleGames"
           :key="game.appId"
           class="games-stats__row"
           :class="{ 'games-stats__row--clickable': hasAchievements(game) }"
@@ -193,6 +184,15 @@
           </div>
         </li>
       </ul>
+      <div v-if="canShowMore" class="bot-social-games__more">
+        <button type="button" class="bot-social-games__more-btn" @click="showMoreGames">
+          {{ $t('bot-social-games-show-more', {
+            n: Math.min(PAGE_SIZE, filteredGames.length - visibleGames.length),
+            shown: visibleGames.length,
+            total: filteredGames.length,
+          }) }}
+        </button>
+      </div>
     </template>
     </template>
   </section>
@@ -211,6 +211,7 @@
     played: 0,
     neverPlayed: 0,
   });
+  const PAGE_SIZE = 80;
 
   export default {
     name: 'BotSocialGamesStatsPanel',
@@ -221,7 +222,6 @@
     data() {
       return {
         loading: false,
-        refreshing: false,
         error: '',
         query: '',
         sortBy: 'playtime',
@@ -231,9 +231,13 @@
         summary: emptySummary(),
         games: [],
         selectedGame: null,
+        renderCount: PAGE_SIZE,
       };
     },
     computed: {
+      PAGE_SIZE() {
+        return PAGE_SIZE;
+      },
       filteredGames() {
         const q = this.query.trim().toLowerCase();
         let list = this.games;
@@ -272,6 +276,12 @@
         }
         return sorted;
       },
+      visibleGames() {
+        return this.filteredGames.slice(0, this.renderCount);
+      },
+      canShowMore() {
+        return this.visibleGames.length < this.filteredGames.length;
+      },
     },
     watch: {
       botName: {
@@ -280,10 +290,16 @@
           this.bootstrap();
         },
       },
+      filteredGames() {
+        this.renderCount = Math.min(PAGE_SIZE, this.filteredGames.length || PAGE_SIZE);
+      },
     },
     methods: {
       setCardsFilter(value) {
         this.cardsFilter = this.cardsFilter === value ? 'all' : value;
+      },
+      showMoreGames() {
+        this.renderCount = Math.min(this.renderCount + PAGE_SIZE, this.filteredGames.length);
       },
       hasAchievements(game) {
         return Number(game?.achievementsTotal) > 0;
@@ -307,6 +323,7 @@
       applyPayload(data) {
         this.games = data?.games || [];
         this.summary = data?.summary ? { ...data.summary } : emptySummary();
+        this.renderCount = Math.min(PAGE_SIZE, this.games.length || PAGE_SIZE);
       },
       bootstrap() {
         this.selectedGame = null;
@@ -356,8 +373,7 @@
       },
       async load(force) {
         const hasData = this.games.length > 0;
-        this.loading = !hasData;
-        this.refreshing = force && hasData;
+        this.loading = !hasData || Boolean(force);
         if (force) this.error = '';
         try {
           const result = await loadGameStats(this.botName, { force });
@@ -378,13 +394,7 @@
           } else this.error = err.message || String(err);
         } finally {
           this.loading = false;
-          this.refreshing = false;
         }
-      },
-      refresh() {
-        if (this.loading || this.refreshing) return;
-        invalidateGameStats(this.botName);
-        this.load(true);
       },
     },
   };

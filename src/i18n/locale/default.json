@@ -329,6 +329,7 @@
   "bot-social-games-showing": "{shown} of {total} games",
   "bot-social-games-painting": "painting…",
   "bot-social-games-painting-progress": "Showing {shown} of {total}…",
+  "bot-social-games-show-more": "Show {n} more ({shown}/{total})",
   "bot-social-games-empty": "No games found.",
   "bot-social-games-open-store": "Open {name} on Steam",
   "bot-social-games-views": "Games view",

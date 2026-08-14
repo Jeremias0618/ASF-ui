@@ -77,10 +77,13 @@
         <button
           type="button"
           class="games-add__add-btn"
-          :disabled="!canAdd(item) || addingId === item.appId"
+          :disabled="!canAdd(item) || addLocked || addingId === item.appId"
           @click="onAdd(item)"
         >
           <FontAwesomeIcon v-if="addingId === item.appId" icon="spinner" spin></FontAwesomeIcon>
+          <span v-else-if="cooldownSeconds > 0 && !item.owned && !item.demoOwned">
+            {{ $t('bot-social-community-submit-cooldown', { s: cooldownSeconds }) }}
+          </span>
           <span v-else-if="item.owned">{{ $t('bot-social-games-add-owned') }}</span>
           <span v-else-if="item.demoOwned">{{ $t('bot-social-games-add-demo-owned') }}</span>
           <span v-else-if="addUsesDemo(item)">{{ $t('bot-social-games-add-demo-action') }}</span>
@@ -93,13 +96,17 @@
 
 <script>
   import { addGames, isPluginMissingError, searchGames } from '../../api/bot-social';
+  import { createSubmitCooldownMixin } from '../../mixins/submit-cooldown';
   import { normalizeGameSearchQuery } from '../../utils/game-target';
   import CoverImage from './cover-image.vue';
 
-  const DEBOUNCE_MS = 400;
+  const DEBOUNCE_MS = 1200;
+  /** UI ≥ GamesAddLimiter (3s). */
+  const ADD_COOLDOWN_MS = 5000;
 
   export default {
     name: 'BotSocialGamesAddPanel',
+    mixins: [createSubmitCooldownMixin(ADD_COOLDOWN_MS)],
     components: { CoverImage },
     props: {
       botName: { type: String, required: true },
@@ -119,6 +126,9 @@
     computed: {
       canSearch() {
         return normalizeGameSearchQuery(this.query).length > 0;
+      },
+      addLocked() {
+        return Boolean(this.addingId) || this.cooldownSeconds > 0;
       },
     },
     beforeDestroy() {
@@ -210,7 +220,7 @@
         }
       },
       async onAdd(item) {
-        if (!item || !this.canAdd(item) || this.addingId) return;
+        if (!item || !this.canAdd(item) || this.addLocked) return;
         this.addingId = item.appId;
         this.error = '';
         try {
@@ -259,6 +269,7 @@
           this.$error(err.message || String(err));
         } finally {
           this.addingId = 0;
+          this.armSubmitCooldown();
         }
       },
     },

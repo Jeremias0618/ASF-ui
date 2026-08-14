@@ -23,6 +23,7 @@
 
 <script>
   import { fetchGameCover } from '../../api/bot-social';
+  import { enqueueCoverResolve } from '../../utils/cover-resolve-queue';
   import {
     gameBannerCandidates, gameCoverCandidates, gamePlaceholderLabel,
     peekResolvedCover, rememberResolvedCover,
@@ -146,7 +147,9 @@
         this.resolvingStore = true;
         this.storeTried = true;
         try {
-          const payload = await fetchGameCover(this.botName, this.appId);
+          const payload = await enqueueCoverResolve(
+            () => fetchGameCover(this.botName, this.appId),
+          );
           const botResult = payload?.[this.botName]
             || payload?.[Object.keys(payload || {}).find(k => k.toLowerCase() === String(this.botName || '').toLowerCase())]
             || payload?.[Object.keys(payload || {})[0]];

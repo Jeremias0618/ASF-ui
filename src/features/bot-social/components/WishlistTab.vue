@@ -14,7 +14,8 @@
         <GamesBrowseToolbar
           :query.sync="query"
           :busy="refreshing || loading"
-          :refresh-disabled="loading || refreshing || mutating"
+          :refresh-disabled="loading || refreshing || mutating || cooldownSeconds > 0"
+          :cooldown-seconds="cooldownSeconds"
           :show-filters="false"
           @refresh="refresh"
         >
@@ -49,14 +50,17 @@
               spellcheck="false"
               :placeholder="$t('bot-social-games-wishlist-placeholder')"
               :aria-label="$t('bot-social-wishlist-compose-title')"
-              :disabled="mutating"
+              :disabled="mutating || cooldownSeconds > 0"
             >
             <button
               type="submit"
               class="games-wishlist__submit"
-              :disabled="!parsedAppId || mutating"
+              :disabled="!parsedAppId || mutating || cooldownSeconds > 0"
             >
               <FontAwesomeIcon v-if="mutating" icon="spinner" spin aria-hidden="true"></FontAwesomeIcon>
+              <span v-else-if="cooldownSeconds > 0">
+                {{ $t('bot-social-community-submit-cooldown', { s: cooldownSeconds }) }}
+              </span>
               <span v-else>{{ $t('bot-social-wishlist-add') }}</span>
             </button>
           </div>
@@ -103,7 +107,7 @@
               <button
                 type="button"
                 class="wishlist-hub__remove"
-                :disabled="mutating"
+                :disabled="mutating || cooldownSeconds > 0"
                 :aria-label="$t('bot-social-wishlist-remove-aria', { name: item.name })"
                 :title="$t('delete')"
                 @click="onRemove(item)"
@@ -124,6 +128,7 @@
   } from '../api/bot-social';
   import { invalidateWishlist, loadWishlist } from '../cache/bot-social-queries';
   import { resolveLocalData } from '../cache/load-policy';
+  import { createSubmitCooldownMixin } from '../mixins/submit-cooldown';
   import { parseGameAppId } from '../utils/game-target';
   import CoverTile from './games/cover-tile.vue';
   import GamesBrowseToolbar from './games/browse-toolbar.vue';
@@ -132,6 +137,8 @@
 
   const PANEL_MODES = new Set(['library', 'banner', 'add']);
   const PANEL_VIEW_DEFAULT = 'library';
+  /** UI ≥ Wishlist MIN_REFRESH (6s) / write limiter (3s). */
+  const ACTION_COOLDOWN_MS = 6000;
 
   function resolveInitialPanel(route) {
     const fromRoute = normalizeQueryValue(route?.query?.view);
@@ -145,6 +152,7 @@
 
   export default {
     name: 'BotSocialWishlistTab',
+    mixins: [createSubmitCooldownMixin(ACTION_COOLDOWN_MS)],
     components: { CoverTile, PluginMissing, GamesBrowseToolbar },
     props: {
       botName: { type: String, required: true },
@@ -291,14 +299,15 @@
         } finally {
           this.loading = false;
           this.refreshing = false;
+          if (force) this.armSubmitCooldown();
         }
       },
       refresh() {
-        if (this.loading || this.refreshing || this.mutating) return;
+        if (this.loading || this.refreshing || this.mutating || this.cooldownSeconds > 0) return;
         this.load(true);
       },
       async onAdd() {
-        if (!this.parsedAppId || this.mutating) return;
+        if (!this.parsedAppId || this.mutating || this.cooldownSeconds > 0) return;
         this.mutating = true;
         try {
           await addWishlist(this.botName, [this.parsedAppId]);
@@ -312,10 +321,11 @@
           else this.$error(err.message || String(err));
         } finally {
           this.mutating = false;
+          this.armSubmitCooldown();
         }
       },
       async onRemove(item) {
-        if (this.mutating) return;
+        if (this.mutating || this.cooldownSeconds > 0) return;
         const ok = window.confirm(this.$t('bot-social-wishlist-remove-confirm', { name: item.name }));
         if (!ok) return;
         this.mutating = true;
@@ -329,6 +339,7 @@
           else this.$error(err.message || String(err));
         } finally {
           this.mutating = false;
+          this.armSubmitCooldown();
         }
       },
     },

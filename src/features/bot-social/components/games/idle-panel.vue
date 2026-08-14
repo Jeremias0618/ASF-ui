@@ -23,21 +23,15 @@
       <div class="games-idle__toolbar-actions">
         <button
           type="button"
-          class="games-idle__btn games-idle__btn--ghost"
-          :disabled="loading || saving || suggesting"
-          @click="reload"
-        >
-          <FontAwesomeIcon v-if="loading" icon="spinner" spin></FontAwesomeIcon>
-          <span v-else>{{ $t('bot-social-refresh') }}</span>
-        </button>
-        <button
-          type="button"
           class="games-idle__btn games-idle__btn--accent"
-          :disabled="loading || saving || suggesting"
+          :disabled="loading || saving || suggesting || boosterCooldownSec > 0"
           :title="$t('bot-social-games-idle-booster-hint')"
           @click="fillFromBoosters"
         >
           <FontAwesomeIcon v-if="suggesting" icon="spinner" spin></FontAwesomeIcon>
+          <template v-else-if="boosterCooldownSec > 0">
+            <span>{{ $t('bot-social-community-submit-cooldown', { s: boosterCooldownSec }) }}</span>
+          </template>
           <template v-else>
             <FontAwesomeIcon icon="puzzle-piece" aria-hidden="true"></FontAwesomeIcon>
             <span>{{ $t('bot-social-games-idle-booster-fill') }}</span>
@@ -263,6 +257,7 @@
     fetchIdleGamesConfig, MAX_IDLE_GAMES, saveIdleGames,
   } from '../../api/idle-games';
   import { loadGameStats } from '../../cache/bot-social-queries';
+  import { createSubmitCooldownMixin } from '../../mixins/submit-cooldown';
   import CoverImage from './cover-image.vue';
 
   function unwrapBotPayload(result, botName) {
@@ -275,6 +270,8 @@
   }
 
   const CANDIDATE_LIMIT = 80;
+  /** UI ≥ GamesBoosterIdleLimiter (4s). */
+  const BOOSTER_COOLDOWN_MS = 5500;
 
   function sameIdList(a, b) {
     if (a === b) return true;
@@ -284,6 +281,7 @@
 
   export default {
     name: 'BotSocialGamesIdlePanel',
+    mixins: [createSubmitCooldownMixin(BOOSTER_COOLDOWN_MS)],
     components: { CoverImage },
     props: {
       botName: { type: String, required: true },
@@ -308,6 +306,9 @@
       };
     },
     computed: {
+      boosterCooldownSec() {
+        return this.cooldownSeconds;
+      },
       isFull() {
         return this.idleAppIds.length >= MAX_IDLE_GAMES;
       },
@@ -459,7 +460,7 @@
           .filter(id => Number.isInteger(id) && id > 0);
       },
       async fillFromBoosters() {
-        if (this.saving || this.suggesting || this.loading) return;
+        if (this.saving || this.suggesting || this.loading || this.boosterCooldownSec > 0) return;
         if (this.idleAppIds.length
           && !window.confirm(this.$t('bot-social-games-idle-booster-replace-confirm'))) {
           return;
@@ -493,6 +494,7 @@
           this.$error(err.message || String(err));
         } finally {
           this.suggesting = false;
+          this.armSubmitCooldown();
         }
       },
       swapWithRandomBooster(index) {

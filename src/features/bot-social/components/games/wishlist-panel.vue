@@ -17,16 +17,19 @@
           class="games-wishlist__input"
           type="text"
           :placeholder="$t('bot-social-games-wishlist-placeholder')"
-          :disabled="mutating"
+          :disabled="submitLocked"
           autocomplete="off"
           spellcheck="false"
         >
         <button
           type="submit"
           class="games-wishlist__submit"
-          :disabled="!canSubmit || mutating"
+          :disabled="!canSubmit || submitLocked"
         >
           <FontAwesomeIcon v-if="mutating" icon="spinner" spin aria-hidden="true"></FontAwesomeIcon>
+          <span v-else-if="cooldownSeconds > 0">
+            {{ $t('bot-social-community-submit-cooldown', { s: cooldownSeconds }) }}
+          </span>
           <span v-else>{{ $t('bot-social-games-wishlist-submit') }}</span>
         </button>
       </div>
@@ -45,10 +48,16 @@
 <script>
   import { followAndWishlist, isPluginMissingError } from '../../api/bot-social';
   import { invalidateWishlist } from '../../cache/bot-social-queries';
+  import { createSubmitCooldownMixin } from '../../mixins/submit-cooldown';
+  import { firstMutationResult, mutationSucceeded } from '../../utils/mutation-result';
   import { parseGameAppId } from '../../utils/game-target';
+
+  /** UI ≥ WishlistWriteLimiter (3s). */
+  const SUBMIT_COOLDOWN_MS = 5000;
 
   export default {
     name: 'BotSocialGamesWishlistPanel',
+    mixins: [createSubmitCooldownMixin(SUBMIT_COOLDOWN_MS)],
     props: {
       botName: { type: String, required: true },
     },
@@ -67,25 +76,12 @@
       botName() {
         this.storeUrl = '';
         this.mutating = false;
+        this.resetSubmitCooldown();
       },
     },
     methods: {
-      mutationSucceeded(entry) {
-        if (!entry || typeof entry !== 'object') return false;
-        return (entry.Success ?? entry.success) === true;
-      },
-      firstMutationResult(payload) {
-        if (!payload || typeof payload !== 'object') return null;
-        const botResult = payload[this.botName]
-          || payload[Object.keys(payload).find(k => k.toLowerCase() === String(this.botName || '').toLowerCase())]
-          || payload[Object.keys(payload)[0]];
-        if (!botResult) return null;
-        if (Array.isArray(botResult)) return botResult[0] || null;
-        const list = botResult.Results || botResult.results;
-        return Array.isArray(list) ? (list[0] || null) : null;
-      },
       async onSubmit() {
-        if (this.mutating || !this.canSubmit) return;
+        if (this.submitLocked || !this.canSubmit) return;
         const appId = parseGameAppId(this.storeUrl);
         if (!appId) {
           this.$error(this.$t('bot-social-games-wishlist-invalid'));
@@ -94,8 +90,8 @@
         this.mutating = true;
         try {
           const payload = await followAndWishlist(this.botName, this.storeUrl.trim());
-          const first = this.firstMutationResult(payload);
-          if (!this.mutationSucceeded(first)) {
+          const first = firstMutationResult(payload, this.botName);
+          if (!mutationSucceeded(first)) {
             const detail = first?.Message || first?.message || this.$t('bot-social-games-wishlist-failed');
             this.$error(detail);
             return;
@@ -112,6 +108,7 @@
           else this.$error(err.message || String(err));
         } finally {
           this.mutating = false;
+          this.armSubmitCooldown();
         }
       },
     },

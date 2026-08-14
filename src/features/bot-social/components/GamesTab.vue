@@ -13,18 +13,14 @@
       <div v-show="isBrowseMode" class="bot-social-games__chrome">
         <GamesBrowseToolbar
           :query.sync="query"
-          :busy="refreshing || loading"
-          :refresh-disabled="loading || refreshing"
+          :busy="loading"
+          :show-refresh="false"
           :has-active-filters="hasActiveFilters"
           :filters-aria-label="$t('bot-social-games-filters')"
-          @refresh="refresh"
           @clear-filters="clearFilters"
         >
           <template #count>
-            {{ $t('bot-social-games-showing', { shown: visibleGames.length, total: games.length }) }}
-            <span v-if="isPaintingMore" class="bot-social-games__count-more">
-              · {{ $t('bot-social-games-painting') }}
-            </span>
+            {{ $t('bot-social-games-showing', { shown: visibleGames.length, total: filteredGames.length }) }}
           </template>
           <template #filters>
             <div class="bot-social-games__field">
@@ -128,7 +124,7 @@
             class="bot-social-games"
             :class="[
               `bot-social-games--${browseVariant}`,
-              { 'is-refreshing': refreshing || loading },
+              { 'is-refreshing': loading },
             ]"
           >
             <CoverTile
@@ -139,10 +135,15 @@
               :variant="browseVariant"
             ></CoverTile>
           </div>
-          <p v-if="isPaintingMore" class="bot-social-games__paint-hint" aria-live="polite">
-            <FontAwesomeIcon icon="spinner" spin></FontAwesomeIcon>
-            {{ $t('bot-social-games-painting-progress', { shown: visibleGames.length, total: filteredGames.length }) }}
-          </p>
+          <div v-if="canShowMore" class="bot-social-games__more">
+            <button type="button" class="bot-social-games__more-btn" @click="showMoreGames">
+              {{ $t('bot-social-games-show-more', {
+                n: Math.min(RENDER_CHUNK, filteredGames.length - visibleGames.length),
+                shown: visibleGames.length,
+                total: filteredGames.length,
+              }) }}
+            </button>
+          </div>
         </template>
       </div>
     </template>
@@ -179,8 +180,9 @@
     music: 'bot-social-games-filter-type-music',
     other: 'bot-social-games-filter-type-other',
   };
-  const INITIAL_RENDER = 72;
-  const RENDER_CHUNK = 48;
+  /** Cap mounted cover tiles; user loads more on demand (avoids 1400× CDN/Cover storms). */
+  const INITIAL_RENDER = 96;
+  const RENDER_CHUNK = 96;
 
   function resolveInitialPanel(route) {
     const fromRoute = normalizeQueryValue(route?.query?.view);
@@ -212,7 +214,6 @@
       const panelMode = resolveInitialPanel(this.$route);
       return {
         loading: false,
-        refreshing: false,
         error: '',
         games: [],
         query: '',
@@ -226,10 +227,12 @@
         statsMounted: panelMode === 'stats',
         idleMounted: panelMode === 'idle',
         renderCount: INITIAL_RENDER,
-        paintRaf: 0,
       };
     },
     computed: {
+      RENDER_CHUNK() {
+        return RENDER_CHUNK;
+      },
       isBrowseMode() {
         return isBrowse(this.panelMode);
       },
@@ -303,7 +306,7 @@
       visibleGames() {
         return this.filteredGames.slice(0, this.renderCount);
       },
-      isPaintingMore() {
+      canShowMore() {
         return this.visibleGames.length < this.filteredGames.length;
       },
     },
@@ -317,10 +320,8 @@
       pluginMissing(value) {
         if (!value) this.bootstrap();
       },
-      filteredGames: {
-        handler() {
-          this.startProgressivePaint();
-        },
+      filteredGames() {
+        this.renderCount = Math.min(INITIAL_RENDER, this.filteredGames.length || INITIAL_RENDER);
       },
       '$route.query.view'() {
         this.syncPanelFromRoute();
@@ -335,15 +336,18 @@
         // ignore
       }
     },
-    beforeDestroy() {
-      this.cancelProgressivePaint();
-    },
     methods: {
       clearFilters() {
         this.ownershipFilter = 'all';
         this.achievementsFilter = 'all';
         this.cardsFilter = 'all';
         this.typeFilter = 'all';
+      },
+      showMoreGames() {
+        this.renderCount = Math.min(
+          this.renderCount + RENDER_CHUNK,
+          this.filteredGames.length,
+        );
       },
       applyPanelMode(mode, { syncRoute = true } = {}) {
         if (!PANEL_MODES.has(mode) || mode === this.panelMode) return;
@@ -370,34 +374,12 @@
       setPanelMode(mode) {
         this.applyPanelMode(mode, { syncRoute: true });
       },
-      cancelProgressivePaint() {
-        if (this.paintRaf) {
-          cancelAnimationFrame(this.paintRaf);
-          this.paintRaf = 0;
-        }
-      },
-      startProgressivePaint() {
-        this.cancelProgressivePaint();
-        const total = this.filteredGames.length;
-        this.renderCount = Math.min(INITIAL_RENDER, total);
-        if (this.renderCount >= total) return;
-
-        const step = () => {
-          if (this.renderCount >= this.filteredGames.length) {
-            this.paintRaf = 0;
-            return;
-          }
-          this.renderCount = Math.min(this.renderCount + RENDER_CHUNK, this.filteredGames.length);
-          this.paintRaf = requestAnimationFrame(step);
-        };
-        this.paintRaf = requestAnimationFrame(step);
-      },
       applyGamesPayload(payload, { emitLoaded = true } = {}) {
         this.games = payload?.games || [];
+        this.renderCount = Math.min(INITIAL_RENDER, this.games.length || INITIAL_RENDER);
         if (emitLoaded) {
           this.$emit('loaded', { total: payload?.total ?? this.games.length });
         }
-        this.startProgressivePaint();
       },
       async onGameAdded() {
         invalidateGames(this.botName);
@@ -427,7 +409,7 @@
             sharedTotal: session.sharedTotal,
           }, { updatedAt: session.updatedAt });
           this.applyGamesPayload(session);
-          // Keep cached view; only network on Actualizar / empty cache.
+          // Keep cached view; network only when cache/session empty (or after Add).
           return;
         }
 
@@ -436,8 +418,7 @@
       async load(force) {
         if (this.pluginMissing) return;
         const hasData = this.games.length > 0;
-        this.loading = !hasData;
-        this.refreshing = Boolean(force && hasData);
+        this.loading = !hasData || Boolean(force);
         if (force) this.error = '';
 
         try {
@@ -460,12 +441,7 @@
           } else this.error = err.message || String(err);
         } finally {
           this.loading = false;
-          this.refreshing = false;
         }
-      },
-      refresh() {
-        if (this.loading || this.refreshing) return;
-        this.load(true);
       },
     },
   };
