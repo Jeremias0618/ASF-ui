@@ -18,16 +18,19 @@
             class="community-hub__compose-input"
             type="text"
             :placeholder="$t('bot-social-community-reviews-placeholder')"
-            :disabled="mutating"
+            :disabled="submitLocked"
             autocomplete="off"
             spellcheck="false"
           >
           <button
             type="submit"
             class="community-hub__compose-submit"
-            :disabled="!canSubmit || mutating"
+            :disabled="!canSubmit || submitLocked"
           >
             <FontAwesomeIcon v-if="mutating" icon="spinner" spin aria-hidden="true"></FontAwesomeIcon>
+            <span v-else-if="cooldownSeconds > 0">
+              {{ $t('bot-social-community-submit-cooldown', { s: cooldownSeconds }) }}
+            </span>
             <span v-else>{{ $t('bot-social-community-reviews-submit') }}</span>
           </button>
         </div>
@@ -54,7 +57,7 @@
               type="radio"
               name="community-review-vote"
               :value="opt.value"
-              :disabled="mutating"
+              :disabled="submitLocked"
             >
             <FontAwesomeIcon :icon="opt.icon" aria-hidden="true"></FontAwesomeIcon>
             <span>{{ opt.label }}</span>
@@ -74,10 +77,16 @@
 
 <script>
   import { isPluginMissingError, voteReview } from '../../api/bot-social';
+  import { createSubmitCooldownMixin } from '../../mixins/submit-cooldown';
+  import { firstMutationResult, mutationSucceeded } from '../../utils/mutation-result';
   import { isLikelyReviewUrl } from '../../utils/review-target';
+
+  /** UI ≥ ReviewsWriteLimiter (3s); multi-hop Steam. */
+  const SUBMIT_COOLDOWN_MS = 5500;
 
   export default {
     name: 'BotSocialCommunityReviewsPanel',
+    mixins: [createSubmitCooldownMixin(SUBMIT_COOLDOWN_MS)],
     props: {
       botName: { type: String, required: true },
     },
@@ -105,25 +114,12 @@
         this.reviewUrl = '';
         this.vote = 'yes';
         this.mutating = false;
+        this.resetSubmitCooldown();
       },
     },
     methods: {
-      mutationSucceeded(entry) {
-        if (!entry || typeof entry !== 'object') return false;
-        return (entry.Success ?? entry.success) === true;
-      },
-      firstMutationResult(payload) {
-        if (!payload || typeof payload !== 'object') return null;
-        const botResult = payload[this.botName]
-          || payload[Object.keys(payload).find(k => k.toLowerCase() === String(this.botName || '').toLowerCase())]
-          || payload[Object.keys(payload)[0]];
-        if (!botResult) return null;
-        if (Array.isArray(botResult)) return botResult[0] || null;
-        const list = botResult.Results || botResult.results;
-        return Array.isArray(list) ? (list[0] || null) : null;
-      },
       async onSubmit() {
-        if (this.mutating || !this.canSubmit) return;
+        if (this.submitLocked || !this.canSubmit) return;
         if (!isLikelyReviewUrl(this.reviewUrl)) {
           this.$error(this.$t('bot-social-community-reviews-invalid'));
           return;
@@ -134,8 +130,8 @@
             url: this.reviewUrl.trim(),
             vote: this.vote,
           });
-          const first = this.firstMutationResult(payload);
-          if (!this.mutationSucceeded(first)) {
+          const first = firstMutationResult(payload, this.botName);
+          if (!mutationSucceeded(first)) {
             const detail = first?.Message || first?.message || this.$t('bot-social-community-reviews-failed');
             this.$error(detail);
             return;
@@ -147,6 +143,7 @@
           else this.$error(err.message || String(err));
         } finally {
           this.mutating = false;
+          this.armSubmitCooldown();
         }
       },
     },

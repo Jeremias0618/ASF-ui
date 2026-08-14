@@ -18,16 +18,19 @@
             class="community-hub__compose-input"
             type="text"
             :placeholder="$t('bot-social-community-shared-placeholder')"
-            :disabled="mutating"
+            :disabled="submitLocked"
             autocomplete="off"
             spellcheck="false"
           >
           <button
             type="submit"
             class="community-hub__compose-submit"
-            :disabled="!canSubmit || mutating"
+            :disabled="!canSubmit || submitLocked"
           >
             <FontAwesomeIcon v-if="mutating" icon="spinner" spin aria-hidden="true"></FontAwesomeIcon>
+            <span v-else-if="cooldownSeconds > 0">
+              {{ $t('bot-social-community-submit-cooldown', { s: cooldownSeconds }) }}
+            </span>
             <span v-else>{{ $t('bot-social-community-shared-submit') }}</span>
           </button>
         </div>
@@ -55,7 +58,7 @@
                 type="radio"
                 name="community-shared-vote"
                 :value="opt.value"
-                :disabled="mutating"
+                :disabled="submitLocked"
               >
               <FontAwesomeIcon :icon="opt.icon" aria-hidden="true"></FontAwesomeIcon>
               <span>{{ opt.label }}</span>
@@ -63,7 +66,7 @@
           </div>
 
           <label class="community-hub__vote-chip community-hub__vote-chip--check" :class="{ 'is-active': favorite }">
-            <input v-model="favorite" type="checkbox" :disabled="mutating">
+            <input v-model="favorite" type="checkbox" :disabled="submitLocked">
             <FontAwesomeIcon icon="star" aria-hidden="true"></FontAwesomeIcon>
             <span>{{ $t('bot-social-community-shared-favorite') }}</span>
           </label>
@@ -83,10 +86,16 @@
 
 <script>
   import { actSharedFile, isPluginMissingError } from '../../api/bot-social';
+  import { createSubmitCooldownMixin } from '../../mixins/submit-cooldown';
+  import { firstMutationResult, mutationSucceeded } from '../../utils/mutation-result';
   import { isLikelySharedFileUrl } from '../../utils/shared-file-target';
+
+  /** UI ≥ SharedFilesWriteLimiter (3s); vote + optional favorite. */
+  const SUBMIT_COOLDOWN_MS = 5500;
 
   export default {
     name: 'BotSocialCommunitySharedPanel',
+    mixins: [createSubmitCooldownMixin(SUBMIT_COOLDOWN_MS)],
     props: {
       botName: { type: String, required: true },
     },
@@ -115,25 +124,12 @@
         this.vote = '';
         this.favorite = false;
         this.mutating = false;
+        this.resetSubmitCooldown();
       },
     },
     methods: {
-      mutationSucceeded(entry) {
-        if (!entry || typeof entry !== 'object') return false;
-        return (entry.Success ?? entry.success) === true;
-      },
-      firstMutationResult(payload) {
-        if (!payload || typeof payload !== 'object') return null;
-        const botResult = payload[this.botName]
-          || payload[Object.keys(payload).find(k => k.toLowerCase() === String(this.botName || '').toLowerCase())]
-          || payload[Object.keys(payload)[0]];
-        if (!botResult) return null;
-        if (Array.isArray(botResult)) return botResult[0] || null;
-        const list = botResult.Results || botResult.results;
-        return Array.isArray(list) ? (list[0] || null) : null;
-      },
       async onSubmit() {
-        if (this.mutating || !this.canSubmit) return;
+        if (this.submitLocked || !this.canSubmit) return;
         if (!isLikelySharedFileUrl(this.sharedUrl)) {
           this.$error(this.$t('bot-social-community-shared-invalid'));
           return;
@@ -149,8 +145,8 @@
             vote: this.vote || null,
             favorite: this.favorite,
           });
-          const first = this.firstMutationResult(payload);
-          if (!this.mutationSucceeded(first)) {
+          const first = firstMutationResult(payload, this.botName);
+          if (!mutationSucceeded(first)) {
             const detail = first?.Message || first?.message || this.$t('bot-social-community-shared-failed');
             this.$error(detail);
             return;
@@ -163,6 +159,7 @@
           else this.$error(err.message || String(err));
         } finally {
           this.mutating = false;
+          this.armSubmitCooldown();
         }
       },
     },

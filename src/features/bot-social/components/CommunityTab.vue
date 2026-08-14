@@ -226,13 +226,21 @@
         immediate: true,
         handler() {
           this.syncPanelFromRoute();
-          this.load(false);
+          this.steamPoints = null;
+          this.hasLoaded = false;
+          this.error = '';
+          if (this.panelMode === 'account') this.load(false);
         },
       },
       pluginMissing(value) {
         if (value) {
           this.loading = false;
           this.refreshing = false;
+        }
+      },
+      panelMode(mode) {
+        if (mode === 'account' && !this.pluginMissing && !this.hasLoaded) {
+          this.load(false);
         }
       },
       '$route.query.view'() {
@@ -250,11 +258,11 @@
         replaceModalView(this.$router, this.$route, mode, COMMUNITY_VIEW_DEFAULT);
       },
       async refresh() {
-        if (this.loading || this.refreshing || this.pluginMissing) return;
+        if (this.panelMode !== 'account' || this.loading || this.refreshing || this.pluginMissing) return;
         await this.load(true);
       },
       async load(force) {
-        if (this.pluginMissing || !this.botName) return;
+        if (this.pluginMissing || !this.botName || this.panelMode !== 'account') return;
         const first = !this.hasLoaded;
         this.loading = first;
         this.refreshing = !first && !!force;

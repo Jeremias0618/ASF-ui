@@ -18,16 +18,19 @@
             class="community-hub__compose-input"
             type="text"
             :placeholder="$t('bot-social-community-followers-placeholder')"
-            :disabled="mutating"
+            :disabled="submitLocked"
             autocomplete="off"
             spellcheck="false"
           >
           <button
             type="submit"
             class="community-hub__compose-submit"
-            :disabled="!followTarget || mutating"
+            :disabled="!followTarget || submitLocked"
           >
             <FontAwesomeIcon v-if="mutating" icon="spinner" spin aria-hidden="true"></FontAwesomeIcon>
+            <span v-else-if="cooldownSeconds > 0">
+              {{ $t('bot-social-community-submit-cooldown', { s: cooldownSeconds }) }}
+            </span>
             <span v-else>{{ $t('bot-social-community-followers-submit') }}</span>
           </button>
         </div>
@@ -47,10 +50,16 @@
 
 <script>
   import { followUsers, isPluginMissingError } from '../../api/bot-social';
+  import { createSubmitCooldownMixin } from '../../mixins/submit-cooldown';
+  import { firstMutationResult, mutationSucceeded } from '../../utils/mutation-result';
   import { normalizeFriendTarget } from '../../utils/friend-target';
+
+  /** UI ≥ FollowersWriteLimiter (3s). */
+  const SUBMIT_COOLDOWN_MS = 5000;
 
   export default {
     name: 'BotSocialCommunityFollowersPanel',
+    mixins: [createSubmitCooldownMixin(SUBMIT_COOLDOWN_MS)],
     props: {
       botName: { type: String, required: true },
     },
@@ -64,25 +73,12 @@
       botName() {
         this.followTarget = '';
         this.mutating = false;
+        this.resetSubmitCooldown();
       },
     },
     methods: {
-      mutationSucceeded(entry) {
-        if (!entry || typeof entry !== 'object') return false;
-        return (entry.Success ?? entry.success) === true;
-      },
-      firstMutationResult(payload) {
-        if (!payload || typeof payload !== 'object') return null;
-        const botResult = payload[this.botName]
-          || payload[Object.keys(payload).find(k => k.toLowerCase() === String(this.botName || '').toLowerCase())]
-          || payload[Object.keys(payload)[0]];
-        if (!botResult) return null;
-        if (Array.isArray(botResult)) return botResult[0] || null;
-        const list = botResult.Results || botResult.results;
-        return Array.isArray(list) ? (list[0] || null) : null;
-      },
       async onFollow() {
-        if (this.mutating) return;
+        if (this.submitLocked) return;
         const target = normalizeFriendTarget(this.followTarget);
         if (!target) {
           this.$error(this.$t('bot-social-community-followers-invalid'));
@@ -91,8 +87,8 @@
         this.mutating = true;
         try {
           const payload = await followUsers(this.botName, [target]);
-          const first = this.firstMutationResult(payload);
-          if (!this.mutationSucceeded(first)) {
+          const first = firstMutationResult(payload, this.botName);
+          if (!mutationSucceeded(first)) {
             const detail = first?.Message || first?.message || this.$t('bot-social-community-followers-failed');
             this.$error(detail);
             return;
@@ -104,6 +100,7 @@
           else this.$error(err.message || String(err));
         } finally {
           this.mutating = false;
+          this.armSubmitCooldown();
         }
       },
     },

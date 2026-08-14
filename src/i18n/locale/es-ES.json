@@ -111,6 +111,7 @@
   "bot-social-community-hint": "Datos básicos de la cuenta. Usa Actualizar para refrescar los puntos de Steam.",
   "bot-social-community-modes": "Secciones de comunidad",
   "bot-social-community-mode-account": "Cuenta",
+  "bot-social-community-submit-cooldown": "Espera {s}s…",
   "bot-social-community-mode-groups": "Grupos",
   "bot-social-community-mode-followers": "Seguidores",
   "bot-social-community-mode-curators": "Mentor de Steam",

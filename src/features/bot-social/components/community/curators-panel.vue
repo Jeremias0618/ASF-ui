@@ -18,16 +18,19 @@
             class="community-hub__compose-input"
             type="text"
             :placeholder="$t('bot-social-community-curators-placeholder')"
-            :disabled="mutating"
+            :disabled="submitLocked"
             autocomplete="off"
             spellcheck="false"
           >
           <button
             type="submit"
             class="community-hub__compose-submit"
-            :disabled="!curatorTarget || mutating"
+            :disabled="!curatorTarget || submitLocked"
           >
             <FontAwesomeIcon v-if="mutating" icon="spinner" spin aria-hidden="true"></FontAwesomeIcon>
+            <span v-else-if="cooldownSeconds > 0">
+              {{ $t('bot-social-community-submit-cooldown', { s: cooldownSeconds }) }}
+            </span>
             <span v-else>{{ $t('bot-social-community-curators-submit') }}</span>
           </button>
         </div>
@@ -46,10 +49,16 @@
 
 <script>
   import { followCurators, isPluginMissingError } from '../../api/bot-social';
+  import { createSubmitCooldownMixin } from '../../mixins/submit-cooldown';
+  import { firstMutationResult, mutationSucceeded } from '../../utils/mutation-result';
   import { isLikelyCuratorTarget, normalizeCuratorTarget } from '../../utils/curator-target';
+
+  /** UI ≥ CuratorsWriteLimiter (3s). */
+  const SUBMIT_COOLDOWN_MS = 5000;
 
   export default {
     name: 'BotSocialCommunityCuratorsPanel',
+    mixins: [createSubmitCooldownMixin(SUBMIT_COOLDOWN_MS)],
     props: {
       botName: { type: String, required: true },
     },
@@ -63,25 +72,12 @@
       botName() {
         this.curatorTarget = '';
         this.mutating = false;
+        this.resetSubmitCooldown();
       },
     },
     methods: {
-      mutationSucceeded(entry) {
-        if (!entry || typeof entry !== 'object') return false;
-        return (entry.Success ?? entry.success) === true;
-      },
-      firstMutationResult(payload) {
-        if (!payload || typeof payload !== 'object') return null;
-        const botResult = payload[this.botName]
-          || payload[Object.keys(payload).find(k => k.toLowerCase() === String(this.botName || '').toLowerCase())]
-          || payload[Object.keys(payload)[0]];
-        if (!botResult) return null;
-        if (Array.isArray(botResult)) return botResult[0] || null;
-        const list = botResult.Results || botResult.results;
-        return Array.isArray(list) ? (list[0] || null) : null;
-      },
       async onFollow() {
-        if (this.mutating) return;
+        if (this.submitLocked) return;
         const target = normalizeCuratorTarget(this.curatorTarget);
         if (!isLikelyCuratorTarget(this.curatorTarget) || !target) {
           this.$error(this.$t('bot-social-community-curators-invalid'));
@@ -93,8 +89,8 @@
             ? this.curatorTarget.trim()
             : target;
           const payload = await followCurators(this.botName, [payloadTarget]);
-          const first = this.firstMutationResult(payload);
-          if (!this.mutationSucceeded(first)) {
+          const first = firstMutationResult(payload, this.botName);
+          if (!mutationSucceeded(first)) {
             const detail = first?.Message || first?.message || this.$t('bot-social-community-curators-failed');
             this.$error(detail);
             return;
@@ -106,6 +102,7 @@
           else this.$error(err.message || String(err));
         } finally {
           this.mutating = false;
+          this.armSubmitCooldown();
         }
       },
     },

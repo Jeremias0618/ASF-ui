@@ -111,6 +111,7 @@
   "bot-social-community-hint": "Basic account details. Refresh to update Steam Points.",
   "bot-social-community-modes": "Community sections",
   "bot-social-community-mode-account": "Account",
+  "bot-social-community-submit-cooldown": "Wait {s}s…",
   "bot-social-community-mode-groups": "Groups",
   "bot-social-community-mode-followers": "Followers",
   "bot-social-community-mode-curators": "Steam Curator",
