@@ -5,7 +5,7 @@
       'is-expanded': expanded || mobileOpen,
       'is-mobile-open': mobileOpen,
       'is-collapsed': !expanded && !mobileOpen,
-      'is-rail-ready': railReady,
+      'is-rail-ready': railReady
     }"
     :aria-label="$t('home2-nav-label')"
   >
@@ -33,10 +33,10 @@
 
     <div class="home2-sidebar__search-wrap" :class="{ 'is-collapsed': collapsed }">
       <button
+        v-tooltip="railTip($t('home2-search-open'))"
         type="button"
         class="home2-sidebar__search"
         :class="{ 'is-collapsed': collapsed }"
-        v-tooltip="collapsed ? { content: $t('home2-search-open'), placement: 'right', delay: { show: 180, hide: 0 } } : false"
         :aria-label="$t('home2-search-open')"
         @click="$emit('open-search')"
       >
@@ -63,15 +63,15 @@
             ></span>
           </h2>
           <ul class="home2-sidebar__list">
-            <li v-for="item in section.items" :key="item.route">
+            <li v-for="item in section.items" :key="`${item.route}-${collapsed ? 'rail' : 'wide'}`">
               <router-link
+                v-tooltip="railTip($t(item.labelKey))"
                 class="home2-menu-item"
                 :class="{
                   'is-active': isActive(item.route),
-                  'is-rail': collapsed,
+                  'is-rail': collapsed
                 }"
                 :to="{ name: item.route }"
-                v-tooltip="collapsed ? { content: $t(item.labelKey), placement: 'right', delay: { show: 180, hide: 0 } } : false"
                 :aria-label="$t(item.labelKey)"
                 @click.native="$emit('close-mobile')"
               >
@@ -91,22 +91,22 @@
     <div class="home2-sidebar__footer" :class="{ 'is-collapsed': collapsed }">
       <div class="home2-theme" :class="{ 'is-collapsed': collapsed }" role="group" :aria-label="$t('home2-theme')">
         <button
+          v-tooltip="railTip($t('home2-theme-light'))"
           type="button"
           class="home2-theme__btn"
           :class="{ 'is-active': !darkMode }"
           :aria-pressed="!darkMode ? 'true' : 'false'"
-          v-tooltip="collapsed ? { content: $t('home2-theme-light'), placement: 'right', delay: { show: 180, hide: 0 } } : false"
           @click="setDark(false)"
         >
           <FontAwesomeIcon icon="sun" fixedWidth></FontAwesomeIcon>
           <span v-if="!collapsed">{{ $t('home2-theme-light') }}</span>
         </button>
         <button
+          v-tooltip="railTip($t('home2-theme-dark'))"
           type="button"
           class="home2-theme__btn"
           :class="{ 'is-active': darkMode }"
           :aria-pressed="darkMode ? 'true' : 'false'"
-          v-tooltip="collapsed ? { content: $t('home2-theme-dark'), placement: 'right', delay: { show: 180, hide: 0 } } : false"
           @click="setDark(true)"
         >
           <FontAwesomeIcon icon="moon" fixedWidth></FontAwesomeIcon>
@@ -117,8 +117,8 @@
       <div class="home2-user" :class="{ 'is-collapsed': collapsed }">
         <template v-if="collapsed">
           <span
+            v-tooltip="railTip(userLabel)"
             class="home2-user__avatar"
-            v-tooltip="{ content: userLabel, placement: 'right', delay: { show: 180, hide: 0 } }"
             :aria-label="userLabel"
           >
             <FontAwesomeIcon icon="user" fixedWidth></FontAwesomeIcon>
@@ -178,9 +178,10 @@
 
   // Keep parent nav highlighted on nested modal routes (e.g. /bot/:bot/config → Bots).
   const ACTIVE_ROUTE_GROUPS = {
-    bots: [
+    'bots': [
       'bots',
       'bot',
+      'bot-idle',
       'bot-config',
       'bot-create',
       'bot-copy',
@@ -189,6 +190,11 @@
       'bot-2fa-delete',
       'bot-bgr',
       'bot-input',
+      'bot-inventory',
+      'bot-friends',
+      'bot-community',
+      'bot-games',
+      'bot-wishlist',
       'password-encrypt',
     ],
     'multi-action': ['multi-action', 'multi-action-bots', 'multi-action-setup'],
@@ -256,6 +262,19 @@
           clearTimeout(this.railTimer);
           this.railTimer = null;
         }
+      },
+      /** Tooltip only while the desktop rail is collapsed (icons only). */
+      railTip(content) {
+        if (!this.collapsed || !content) return '';
+        return {
+          content: String(content),
+          html: false,
+          placement: 'right',
+          container: 'body',
+          delay: { show: 80, hide: 0 },
+          offset: 10,
+          classes: 'tooltip home2-rail-tooltip',
+        };
       },
       isActive(routeName) {
         const current = this.$route.name;
@@ -867,6 +886,43 @@
       background: var(--h2-soft);
       color: var(--h2-error);
       outline: none;
+    }
+  }
+</style>
+
+<style lang="scss">
+  /* Appended to body — keep outside scoped/component cascade assumptions. */
+  .tooltip.home2-rail-tooltip {
+    font-size: 0.8rem;
+    pointer-events: none;
+    z-index: 10050 !important;
+
+    .tooltip-inner {
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 0.5rem;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.35);
+      color: #f9fafb;
+      font-weight: 500;
+      max-width: 16rem;
+      padding: 0.4rem 0.7rem;
+      white-space: nowrap;
+    }
+
+    .tooltip-arrow {
+      border-color: #1f2937;
+    }
+  }
+
+  .app:not(.app--dark-mode) .tooltip.home2-rail-tooltip {
+    .tooltip-inner {
+      background: #101828;
+      border-color: #1d2939;
+      color: #f9fafb;
+    }
+
+    .tooltip-arrow {
+      border-color: #101828;
     }
   }
 </style>

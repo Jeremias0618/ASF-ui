@@ -16,6 +16,7 @@ const routes = {
   botFriends: 'bot-friends',
   botCommunity: 'bot-community',
   botGames: 'bot-games',
+  botIdle: 'bot-idle',
   botInventory: 'bot-inventory',
   botSocial: 'bot-social',
   botWishlist: 'bot-wishlist',
@@ -306,6 +307,19 @@ export default [
       closeRoute: routes.bots,
       feature: 'wishlist',
       modalSize: 'workspace',
+    },
+  },
+  {
+    path: '/bot/:bot/idle',
+    name: routes.botIdle,
+    components: {
+      default: () => import('../views/Bots.vue'),
+      modal: () => import('../views/modals/Bot.vue'),
+    },
+    meta: {
+      modal: true,
+      arrows: true,
+      closeRoute: routes.bots,
     },
   },
   {

@@ -15,6 +15,7 @@ export const HOME2_SHELL_ROUTES = new Set([
   'bot-community',
   'bot-games',
   'bot-wishlist',
+  'bot-idle',
   'bot-bgr',
   'bot-2fa',
   'bot-2fa-delete',

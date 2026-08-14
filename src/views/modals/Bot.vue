@@ -25,6 +25,7 @@
         <BotLink v-tooltip="$t('bot-fav-buttons-community')" icon="globe" :link="{ name: 'bot-community', params: { bot: bot.name } }"></BotLink>
         <BotLink v-tooltip="$t('bot-fav-buttons-games')" icon="gamepad" :link="{ name: 'bot-games', params: { bot: bot.name } }"></BotLink>
         <BotLink v-tooltip="$t('bot-fav-buttons-wishlist')" icon="heart" :link="{ name: 'bot-wishlist', params: { bot: bot.name } }"></BotLink>
+        <BotLink v-tooltip="$t('bot-fav-buttons-idle')" icon="clock" :link="{ name: 'bot-idle', params: { bot: bot.name } }"></BotLink>
         <BotLink v-tooltip="$t('bot-fav-buttons-bgr')" icon="key" :link="{ name: 'bot-bgr', params: { bot: bot.name } }"></BotLink>
         <BotLink v-tooltip="$t('bot-fav-buttons-2fa')" icon="lock" :link="{ name: 'bot-2fa', params: { bot: bot.name } }"></BotLink>
 
@@ -39,12 +40,21 @@
     </div>
 
     <div class="bot-farming-info">
-      <BotFarmingInfo :value="gamesRemaining" icon="gamepad"></BotFarmingInfo>
-      <BotFarmingInfo :value="timeRemaining" icon="clock"></BotFarmingInfo>
-      <BotFarmingInfo :value="cardsRemaining" icon="clone"></BotFarmingInfo>
+      <template v-if="isIdleView">
+        <BotFarmingInfo :value="idleGamesCount" icon="gamepad"></BotFarmingInfo>
+        <BotFarmingInfo :value="idleCustomName" icon="clock"></BotFarmingInfo>
+        <BotFarmingInfo :value="idlePlayingLabel" icon="play"></BotFarmingInfo>
+      </template>
+      <template v-else>
+        <BotFarmingInfo :value="gamesRemaining" icon="gamepad"></BotFarmingInfo>
+        <BotFarmingInfo :value="timeRemaining" icon="clock"></BotFarmingInfo>
+        <BotFarmingInfo :value="cardsRemaining" icon="clone"></BotFarmingInfo>
+      </template>
     </div>
 
-    <BotGames :bot="bot"></BotGames>
+    <BotGames v-if="!isIdleView" :bot="bot"></BotGames>
+    <BotIdleGames v-else-if="isPlayingIdle" :appIds="idleAppIds"></BotIdleGames>
+    <p v-else class="bot-idle-empty">{{ $t('bot-idle-empty') }}</p>
   </main>
 </template>
 
@@ -55,13 +65,28 @@
   import BotAction from '../../components/Bot/Action.vue';
   import BotFarmingInfo from '../../components/Bot/FarmingInfo.vue';
   import BotGames from '../../components/Bot/Games.vue';
+  import BotIdleGames from '../../components/Bot/IdleGames.vue';
   import BotLink from '../../components/Bot/Link.vue';
   import getUserInputType from '../../utils/getUserInputType';
+  import { fetchIdleGamesConfig, normalizeIdleAppIds } from '../../features/bot-social/api/idle-games';
 
   export default {
-    name: 'Bot',
+    name: 'BotProfile',
     components: {
-      BotAction, BotFarmingInfo, BotGames, BotLink,
+      BotAction, BotFarmingInfo, BotGames, BotIdleGames, BotLink,
+    },
+    metaInfo() {
+      if (!this.bot) return {};
+      const suffix = this.isIdleView ? this.$t('bot-fav-buttons-idle') : this.bot.viewableName;
+      return {
+        title: this.isIdleView ? `${this.bot.viewableName} · ${suffix}` : this.bot.viewableName,
+      };
+    },
+    data() {
+      return {
+        idleConfigAppIds: null,
+        idleCustomNameOverride: null,
+      };
     },
     computed: {
       ...mapGetters({
@@ -69,6 +94,34 @@
       }),
       bot() {
         return this.$store.getters['bots/bot'](this.$route.params.bot);
+      },
+      isIdleView() {
+        return this.$route.name === 'bot-idle';
+      },
+      idleAppIds() {
+        if (Array.isArray(this.idleConfigAppIds)) return this.idleConfigAppIds;
+        return normalizeIdleAppIds(this.bot?.config?.GamesPlayedWhileIdle);
+      },
+      isPlayingIdle() {
+        if (!this.bot || this.bot.status !== 'online') return false;
+        if (!this.bot.isPlayingPossible) return false;
+        return this.idleAppIds.length > 0;
+      },
+      idleGamesCount() {
+        if (!this.isPlayingIdle) return '-';
+        return this.idleAppIds.length;
+      },
+      idleCustomName() {
+        if (!this.isPlayingIdle) return '-';
+        if (this.idleCustomNameOverride !== null) {
+          return this.idleCustomNameOverride || '-';
+        }
+        const name = String(this.bot?.config?.CustomGamePlayedWhileIdle || '').trim();
+        return name || '-';
+      },
+      idlePlayingLabel() {
+        if (!this.isPlayingIdle) return '-';
+        return this.$t('bot-idle-playing');
       },
       timeRemaining() {
         if (this.bot.status !== 'farming') return '-';
@@ -84,10 +137,34 @@
         return this.bot.cardsRemaining;
       },
     },
+    watch: {
+      'isIdleView': {
+        immediate: true,
+        handler(value) {
+          if (value) this.loadIdleConfig();
+        },
+      },
+      '$route.params.bot': {
+        handler() {
+          if (this.isIdleView) this.loadIdleConfig();
+        },
+      },
+    },
     created() {
       if (!this.bot) this.$router.replace({ name: 'bots' });
     },
     methods: {
+      async loadIdleConfig() {
+        if (!this.bot?.name) return;
+        try {
+          const { config, idleAppIds } = await fetchIdleGamesConfig(this.bot.name);
+          this.idleConfigAppIds = idleAppIds;
+          this.idleCustomNameOverride = String(config.CustomGamePlayedWhileIdle || '').trim();
+        } catch (err) {
+          this.idleConfigAppIds = normalizeIdleAppIds(this.bot?.config?.GamesPlayedWhileIdle);
+          this.idleCustomNameOverride = null;
+        }
+      },
       async action(name, params = {}) {
         try {
           return await this.$http.botAction(this.bot.name, name, params);
@@ -227,5 +304,12 @@
       grid-gap: 0.5em;
       grid-template-columns: 1fr;
     }
+  }
+
+  .bot-idle-empty {
+    color: var(--color-text-disabled);
+    font-size: 0.95rem;
+    margin: 1em 0 0;
+    text-align: center;
   }
 </style>
