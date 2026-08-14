@@ -48,8 +48,18 @@
 }
 
 .wishlist-hub__tile {
+  /* Prevent CSS grid stretch from doubling row height vs Games CoverTile. */
+  align-self: start;
   min-width: 0;
   position: relative;
+  width: 100%;
+
+  > .bot-social-games__tile {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    width: 100%;
+  }
 }
 
 .wishlist-hub__remove {
@@ -84,6 +94,16 @@
     cursor: not-allowed;
     opacity: 0.35;
   }
+}
+
+.bot-social-games--banner .wishlist-hub__remove {
+  right: 0.28rem;
+  top: 0.28rem;
+}
+
+.bot-social-games--library .wishlist-hub__remove {
+  right: 0.3rem;
+  top: 0.3rem;
 }
 
 .wishlist-hub__tile:hover .wishlist-hub__remove,

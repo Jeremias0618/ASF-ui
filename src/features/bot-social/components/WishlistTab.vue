@@ -13,14 +13,15 @@
       <div v-show="isBrowseMode" class="bot-social-games__chrome">
         <GamesBrowseToolbar
           :query.sync="query"
-          :busy="refreshing || loading"
-          :refresh-disabled="loading || refreshing || mutating || cooldownSeconds > 0"
-          :cooldown-seconds="cooldownSeconds"
+          :busy="loading || mutating"
+          :show-refresh="false"
           :show-filters="false"
-          @refresh="refresh"
         >
           <template #count>
-            {{ $t('bot-social-wishlist-showing', { shown: filteredItems.length, total: items.length }) }}
+            {{ $t('bot-social-wishlist-showing', {
+              shown: visibleItems.length,
+              total: filteredItems.length,
+            }) }}
           </template>
         </GamesBrowseToolbar>
       </div>
@@ -50,12 +51,12 @@
               spellcheck="false"
               :placeholder="$t('bot-social-games-wishlist-placeholder')"
               :aria-label="$t('bot-social-wishlist-compose-title')"
-              :disabled="mutating || cooldownSeconds > 0"
+              :disabled="submitLocked"
             >
             <button
               type="submit"
               class="games-wishlist__submit"
-              :disabled="!parsedAppId || mutating || cooldownSeconds > 0"
+              :disabled="!parsedAppId || submitLocked"
             >
               <FontAwesomeIcon v-if="mutating" icon="spinner" spin aria-hidden="true"></FontAwesomeIcon>
               <span v-else-if="cooldownSeconds > 0">
@@ -91,11 +92,11 @@
             class="bot-social-games"
             :class="[
               `bot-social-games--${browseVariant}`,
-              { 'is-refreshing': refreshing || loading || mutating },
+              { 'is-refreshing': loading || mutating },
             ]"
           >
             <div
-              v-for="item in filteredItems"
+              v-for="item in visibleItems"
               :key="item.appId"
               class="wishlist-hub__tile"
             >
@@ -107,7 +108,7 @@
               <button
                 type="button"
                 class="wishlist-hub__remove"
-                :disabled="mutating || cooldownSeconds > 0"
+                :disabled="submitLocked"
                 :aria-label="$t('bot-social-wishlist-remove-aria', { name: item.name })"
                 :title="$t('delete')"
                 @click="onRemove(item)"
@@ -115,6 +116,15 @@
                 <FontAwesomeIcon icon="times" aria-hidden="true"></FontAwesomeIcon>
               </button>
             </div>
+          </div>
+          <div v-if="canShowMore" class="bot-social-games__more">
+            <button type="button" class="bot-social-games__more-btn" @click="showMoreItems">
+              {{ $t('bot-social-games-show-more', {
+                n: Math.min(RENDER_CHUNK, filteredItems.length - visibleItems.length),
+                shown: visibleItems.length,
+                total: filteredItems.length,
+              }) }}
+            </button>
           </div>
         </template>
       </div>
@@ -137,8 +147,10 @@
 
   const PANEL_MODES = new Set(['library', 'banner', 'add']);
   const PANEL_VIEW_DEFAULT = 'library';
-  /** UI ≥ Wishlist MIN_REFRESH (6s) / write limiter (3s). */
-  const ACTION_COOLDOWN_MS = 6000;
+  /** UI ≥ WishlistWriteLimiter (3s). */
+  const MUTATION_COOLDOWN_MS = 5000;
+  const INITIAL_RENDER = 96;
+  const RENDER_CHUNK = 96;
 
   function resolveInitialPanel(route) {
     const fromRoute = normalizeQueryValue(route?.query?.view);
@@ -152,7 +164,7 @@
 
   export default {
     name: 'BotSocialWishlistTab',
-    mixins: [createSubmitCooldownMixin(ACTION_COOLDOWN_MS)],
+    mixins: [createSubmitCooldownMixin(MUTATION_COOLDOWN_MS)],
     components: { CoverTile, PluginMissing, GamesBrowseToolbar },
     props: {
       botName: { type: String, required: true },
@@ -162,7 +174,6 @@
       const panelMode = resolveInitialPanel(this.$route);
       return {
         loading: false,
-        refreshing: false,
         mutating: false,
         error: '',
         items: [],
@@ -170,9 +181,13 @@
         query: '',
         panelMode,
         browseVariant: isBrowse(panelMode) ? panelMode : 'library',
+        renderCount: INITIAL_RENDER,
       };
     },
     computed: {
+      RENDER_CHUNK() {
+        return RENDER_CHUNK;
+      },
       isBrowseMode() {
         return isBrowse(this.panelMode);
       },
@@ -207,6 +222,12 @@
         });
         return sorted;
       },
+      visibleItems() {
+        return this.filteredItems.slice(0, this.renderCount);
+      },
+      canShowMore() {
+        return this.visibleItems.length < this.filteredItems.length;
+      },
     },
     watch: {
       botName: {
@@ -214,11 +235,15 @@
         handler() {
           this.query = '';
           this.appIdInput = '';
+          this.resetSubmitCooldown();
           this.bootstrap();
         },
       },
       pluginMissing(value) {
         if (!value) this.bootstrap();
+      },
+      filteredItems() {
+        this.renderCount = Math.min(INITIAL_RENDER, this.filteredItems.length || INITIAL_RENDER);
       },
       '$route.query.view'() {
         this.syncPanelFromRoute();
@@ -232,6 +257,12 @@
       }
     },
     methods: {
+      showMoreItems() {
+        this.renderCount = Math.min(
+          this.renderCount + RENDER_CHUNK,
+          this.filteredItems.length,
+        );
+      },
       applyPanelMode(mode, { syncRoute = true } = {}) {
         if (!PANEL_MODES.has(mode) || mode === this.panelMode) return;
         this.panelMode = mode;
@@ -260,6 +291,7 @@
         });
         if (resolved.hasData) {
           this.items = resolved.data.items;
+          this.renderCount = Math.min(INITIAL_RENDER, this.items.length || INITIAL_RENDER);
           this.$emit('loaded', { total: resolved.data.total ?? this.items.length });
           return;
         }
@@ -274,13 +306,13 @@
       async load(force) {
         if (this.pluginMissing) return;
         const hasData = this.items.length > 0;
-        this.loading = !hasData;
-        this.refreshing = force && hasData;
+        this.loading = !hasData || Boolean(force);
         if (force) this.error = '';
 
         try {
           const result = await loadWishlist(this.botName, { force });
           this.items = result.data?.items || [];
+          this.renderCount = Math.min(INITIAL_RENDER, this.items.length || INITIAL_RENDER);
           if (result.rateLimited) this.$error(this.$t('bot-social-rate-limited'));
           else if (result.error && result.stale) this.error = this.formatError(result.error);
           else this.error = '';
@@ -298,16 +330,10 @@
           } else this.error = this.formatError(err);
         } finally {
           this.loading = false;
-          this.refreshing = false;
-          if (force) this.armSubmitCooldown();
         }
       },
-      refresh() {
-        if (this.loading || this.refreshing || this.mutating || this.cooldownSeconds > 0) return;
-        this.load(true);
-      },
       async onAdd() {
-        if (!this.parsedAppId || this.mutating || this.cooldownSeconds > 0) return;
+        if (!this.parsedAppId || this.submitLocked) return;
         this.mutating = true;
         try {
           await addWishlist(this.botName, [this.parsedAppId]);
@@ -325,7 +351,7 @@
         }
       },
       async onRemove(item) {
-        if (this.mutating || this.cooldownSeconds > 0) return;
+        if (this.submitLocked) return;
         const ok = window.confirm(this.$t('bot-social-wishlist-remove-confirm', { name: item.name }));
         if (!ok) return;
         this.mutating = true;
