@@ -72,7 +72,7 @@
   "bot-idle-empty": "Este bot no está jugando en inactividad ahora.",
   "bot-idle-playing": "Jugando",
   "bot-idle-playtime-none": "0m",
-  "bot-idle-playtime-hint": "Tiempo total jugado de los juegos en inactividad (días, horas, minutos)",
+  "bot-idle-playtime-hint": "Tiempo de sesión en inactividad desde que el bot está en línea (se reinicia al apagarlo)",
   "bot-social-tab-inventory": "Inventario",
   "bot-social-tab-trades": "Ofertas",
   "bot-social-tab-friends": "Amigos",

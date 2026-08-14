@@ -62,7 +62,11 @@
 
     <BotGames v-if="!isIdleView" :bot="bot"></BotGames>
     <div v-else-if="isPlayingIdle" class="bot-idle-games-scroll">
-      <BotIdleGames :appIds="idleAppIds" :namesByAppId="idleNamesByAppId"></BotIdleGames>
+      <BotIdleGames
+        :appIds="idleAppIds"
+        :namesByAppId="idleNamesByAppId"
+        :botName="bot.name"
+      ></BotIdleGames>
     </div>
     <p v-else class="bot-idle-empty">{{ $t('bot-idle-empty') }}</p>
   </main>
@@ -80,6 +84,12 @@
   import getUserInputType from '../../utils/getUserInputType';
   import { fetchIdleGamesConfig, normalizeIdleAppIds } from '../../features/bot-social/api/idle-games';
   import { loadGameStats } from '../../features/bot-social/cache/bot-social-queries';
+  import {
+    formatCompactDuration,
+    syncIdlePlaySession,
+  } from '../../features/bot-social/utils/idle-play-session';
+
+  const IDLE_TICK_MS = 15_000;
 
   export default {
     name: 'BotProfile',
@@ -97,8 +107,9 @@
       return {
         idleConfigAppIds: null,
         idleNamesByAppId: {},
-        idlePlaytimeMinutes: 0,
-        idlePlaytimeLoading: false,
+        idleSessionStartedAt: null,
+        nowMs: Date.now(),
+        idleTickTimer: null,
       };
     },
     computed: {
@@ -126,15 +137,8 @@
       },
       idlePlaytimeLabel() {
         if (!this.isPlayingIdle) return '-';
-        if (this.idlePlaytimeLoading) return '…';
-        if (this.idlePlaytimeMinutes <= 0) return this.$t('bot-idle-playtime-none');
-        const language = getLocaleForHD();
-        return humanizeDuration(this.idlePlaytimeMinutes * 60 * 1000, {
-          language,
-          units: ['d', 'h', 'm'],
-          round: true,
-          largest: 3,
-        });
+        if (!this.idleSessionStartedAt) return '0m';
+        return formatCompactDuration(this.nowMs - this.idleSessionStartedAt);
       },
       idlePlaytimeTooltip() {
         return this.$t('bot-idle-playtime-hint');
@@ -162,18 +166,52 @@
         immediate: true,
         handler(value) {
           if (value) this.loadIdleConfig();
+          this.syncIdleClock();
+        },
+      },
+      'isPlayingIdle': {
+        immediate: true,
+        handler() {
+          this.syncIdleSession();
+          this.syncIdleClock();
         },
       },
       '$route.params.bot': {
         handler() {
           if (this.isIdleView) this.loadIdleConfig();
+          this.syncIdleSession();
         },
       },
     },
     created() {
       if (!this.bot) this.$router.replace({ name: 'bots' });
     },
+    beforeDestroy() {
+      this.clearIdleClock();
+    },
     methods: {
+      syncIdleSession() {
+        if (!this.bot?.name) {
+          this.idleSessionStartedAt = null;
+          return;
+        }
+        this.idleSessionStartedAt = syncIdlePlaySession(this.bot.name, this.isPlayingIdle);
+        this.nowMs = Date.now();
+      },
+      syncIdleClock() {
+        this.clearIdleClock();
+        if (!this.isIdleView || !this.isPlayingIdle) return;
+        this.nowMs = Date.now();
+        this.idleTickTimer = setInterval(() => {
+          this.nowMs = Date.now();
+        }, IDLE_TICK_MS);
+      },
+      clearIdleClock() {
+        if (this.idleTickTimer) {
+          clearInterval(this.idleTickTimer);
+          this.idleTickTimer = null;
+        }
+      },
       async loadIdleConfig() {
         if (!this.bot?.name) return;
         try {
@@ -182,37 +220,29 @@
         } catch (err) {
           this.idleConfigAppIds = normalizeIdleAppIds(this.bot?.config?.GamesPlayedWhileIdle);
         }
-        await this.loadIdlePlaytime();
+        this.syncIdleSession();
+        await this.loadIdleNames();
       },
-      async loadIdlePlaytime() {
+      async loadIdleNames() {
         if (!this.bot?.name || !this.idleAppIds.length) {
           this.idleNamesByAppId = {};
-          this.idlePlaytimeMinutes = 0;
-          this.idlePlaytimeLoading = false;
           return;
         }
 
-        this.idlePlaytimeLoading = true;
         try {
           const result = await loadGameStats(this.bot.name, { force: false });
           const games = result?.data?.games || [];
           const idleSet = new Set(this.idleAppIds);
           const names = {};
-          let totalMinutes = 0;
 
           games.forEach(game => {
-            if (!idleSet.has(game.appId)) return;
-            if (game.name) names[game.appId] = game.name;
-            totalMinutes += Number(game.playtimeMinutes) || 0;
+            if (!idleSet.has(game.appId) || !game.name) return;
+            names[game.appId] = game.name;
           });
 
           this.idleNamesByAppId = names;
-          this.idlePlaytimeMinutes = totalMinutes;
         } catch (err) {
           this.idleNamesByAppId = {};
-          this.idlePlaytimeMinutes = 0;
-        } finally {
-          this.idlePlaytimeLoading = false;
         }
       },
       async action(name, params = {}) {
@@ -243,10 +273,12 @@
 
         await this.action('start');
         await this.update({ active: true });
+        this.syncIdleSession();
       },
       async stop() {
         await this.action('stop');
         await this.update({ active: false });
+        this.syncIdleSession();
       },
     },
   };
