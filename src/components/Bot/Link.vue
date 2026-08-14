@@ -1,5 +1,16 @@
 <template>
-  <router-link v-show="visible" v-slot="{ navigate }" custom :to="link">
+  <div
+    v-if="disabled"
+    v-show="visible"
+    class="bot-action bot-action--disabled"
+    role="button"
+    aria-disabled="true"
+    @click.prevent.stop
+  >
+    <span v-if="name" class="bot-action__label">{{ name }}</span>
+    <FontAwesomeIcon v-if="icon" class="bot-action__icon" :icon="icon"></FontAwesomeIcon>
+  </div>
+  <router-link v-else v-show="visible" v-slot="{ navigate }" custom :to="link">
     <div class="bot-action" @click="navigate">
       <span v-if="name" class="bot-action__label">{{ name }}</span>
       <FontAwesomeIcon v-if="icon" class="bot-action__icon" :icon="icon"></FontAwesomeIcon>
@@ -15,6 +26,7 @@
       name: String,
       link: Object,
       condition: Function,
+      disabled: { type: Boolean, default: false },
     },
     computed: {
       visible() {
@@ -38,6 +50,24 @@
 
       .app--dark-mode & {
         color: var(--color-text);
+      }
+    }
+  }
+
+  .bot-action--disabled {
+    color: rgba(148, 163, 184, 0.35);
+    cursor: not-allowed;
+    opacity: 0.45;
+
+    .app--dark-mode & {
+      color: rgba(148, 163, 184, 0.28);
+    }
+
+    &:hover {
+      color: rgba(148, 163, 184, 0.35);
+
+      .app--dark-mode & {
+        color: rgba(148, 163, 184, 0.28);
       }
     }
   }

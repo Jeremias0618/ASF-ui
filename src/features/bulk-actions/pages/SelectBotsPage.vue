@@ -56,13 +56,22 @@
       </div>
 
       <p v-if="!sortedBots.length" class="bulk-actions__empty">
-        {{ $t('bulk-actions-no-bots') }}
-        <a class="bulk-actions__empty-link" @click="$router.push({ name: 'bot-create' })">
+        {{ bots.length
+          ? $t('bulk-actions-no-online-bots')
+          : $t('bulk-actions-no-bots') }}
+        <a
+          v-if="!bots.length"
+          class="bulk-actions__empty-link"
+          @click="$router.push({ name: 'bot-create' })"
+        >
           {{ $t('mass-editor-create-bot') }}
         </a>
       </p>
 
       <template v-else-if="isInventory && inventoryPhase === 'destination'">
+        <p v-if="offlineBotsHiddenCount" class="bulk-actions-bots__hint">
+          {{ $t('bulk-actions-bots-online-only-hint', { n: offlineBotsHiddenCount }) }}
+        </p>
         <p v-if="defaultMasterName" class="bulk-actions-bots__hint">
           {{ $t('bulk-actions-destination-master-hint', { name: defaultMasterName }) }}
         </p>
@@ -100,6 +109,9 @@
       </template>
 
       <template v-else>
+        <p v-if="offlineBotsHiddenCount" class="bulk-actions-bots__hint">
+          {{ $t('bulk-actions-bots-online-only-hint', { n: offlineBotsHiddenCount }) }}
+        </p>
         <div v-if="isInventory && destinationBot" class="bulk-actions-destination-chip">
           <span class="bulk-actions-destination-chip__label">
             {{ $t('bulk-actions-destination-chip', { name: destinationDisplayName }) }}
@@ -162,6 +174,7 @@
     writeSelectedBotNames,
   } from '../utils/action-session';
   import { findDefaultDestinationBot } from '../utils/find-default-destination';
+  import { filterBotsReadyForBulk, isBotReadyForBulk } from '../utils/bot-ready';
   import { isBulkJobActive, readBulkJob } from '../utils/bulk-job-session';
   import leaveGuard from '../mixins/leave-guard';
   import BulkBotPicker from '../components/bot-picker.vue';
@@ -198,7 +211,14 @@
         return this.action ? this.$t(this.action.titleKey) : this.$t('bulk-actions');
       },
       sortedBots() {
+        return filterBotsReadyForBulk(this.bots)
+          .sort((a, b) => String(a.name).localeCompare(String(b.name)));
+      },
+      allBotsSorted() {
         return [...this.bots].sort((a, b) => String(a.name).localeCompare(String(b.name)));
+      },
+      offlineBotsHiddenCount() {
+        return Math.max(0, this.allBotsSorted.length - this.sortedBots.length);
       },
       defaultMasterBot() {
         return findDefaultDestinationBot(this.sortedBots, this.steamOwnerID);
@@ -286,6 +306,8 @@
       sortedBots: {
         immediate: true,
         handler(list) {
+          if (!this.action) return;
+          this.pruneOfflineSelections(list);
           if (!this.isInventory || !list.length) return;
           if (this.destinationBot) return;
           if (readDestinationBotName(this.action.slug)) return;
@@ -297,6 +319,18 @@
       },
     },
     methods: {
+      pruneOfflineSelections(list = this.sortedBots) {
+        const readyNames = new Set((list || []).map(bot => bot.name));
+        const pruned = this.selectedBots.filter(name => readyNames.has(name));
+        if (pruned.length !== this.selectedBots.length) {
+          this.selectedBots = pruned;
+          writeSelectedBotNames(this.action.slug, pruned);
+        }
+        if (this.destinationBot && !readyNames.has(this.destinationBot)) {
+          this.destinationBot = '';
+          writeDestinationBotName(this.action.slug, '');
+        }
+      },
       refreshActiveJob() {
         this.activeJob = isBulkJobActive() ? readBulkJob() : null;
       },
@@ -310,13 +344,23 @@
         this.continueWithoutGuard(actionSetupRoute(this.action));
       },
       hydrateFromSession() {
-        this.selectedBots = readSelectedBotNames(this.action.slug);
+        const readyNames = new Set(this.sortedBots.map(bot => bot.name));
+        const stored = readSelectedBotNames(this.action.slug);
+        const selected = stored.filter(name => readyNames.has(name));
+        this.selectedBots = selected;
+        if (selected.length !== stored.length) {
+          writeSelectedBotNames(this.action.slug, selected);
+        }
         if (!this.isInventory) {
           this.destinationBot = '';
           this.inventoryPhase = 'sources';
           return;
         }
-        this.destinationBot = readDestinationBotName(this.action.slug);
+        const destination = readDestinationBotName(this.action.slug);
+        this.destinationBot = readyNames.has(destination) ? destination : '';
+        if (destination && !this.destinationBot) {
+          writeDestinationBotName(this.action.slug, '');
+        }
         const forceDestination = String(this.$route.query.step || '') === 'destination';
         this.inventoryPhase = (this.destinationBot && !forceDestination)
           ? 'sources'
@@ -326,17 +370,23 @@
         }
       },
       onDestinationChange(next) {
-        this.destinationBot = (next && next[0]) || '';
+        const name = (next && next[0]) || '';
+        if (name && !isBotReadyForBulk(this.sortedBots.find(bot => bot.name === name))) {
+          return;
+        }
+        this.destinationBot = name;
         writeDestinationBotName(this.action.slug, this.destinationBot);
         if (this.destinationBot) {
-          this.selectedBots = this.selectedBots.filter(name => name !== this.destinationBot);
+          this.selectedBots = this.selectedBots.filter(n => n !== this.destinationBot);
           writeSelectedBotNames(this.action.slug, this.selectedBots);
         }
       },
       onSelectionChange(next) {
-        const cleaned = this.destinationBot
-          ? next.filter(name => name !== this.destinationBot)
-          : next;
+        const readyNames = new Set(this.sortedBots.map(bot => bot.name));
+        let cleaned = next.filter(name => readyNames.has(name));
+        if (this.destinationBot) {
+          cleaned = cleaned.filter(name => name !== this.destinationBot);
+        }
         this.selectedBots = cleaned;
         writeSelectedBotNames(this.action.slug, cleaned);
       },

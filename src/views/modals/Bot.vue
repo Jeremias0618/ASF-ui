@@ -24,12 +24,42 @@
 
       <div class="bot-profile__actions">
         <BotLink v-tooltip="$t('bot-fav-buttons-config')" icon="wrench" :link="{ name: 'bot-config', params: { bot: bot.name } }"></BotLink>
-        <BotLink v-tooltip="$t('bot-fav-buttons-inventory')" icon="boxes" :link="{ name: 'bot-inventory', params: { bot: bot.name } }"></BotLink>
-        <BotLink v-tooltip="$t('bot-fav-buttons-friends')" icon="users" :link="{ name: 'bot-friends', params: { bot: bot.name } }"></BotLink>
-        <BotLink v-tooltip="$t('bot-fav-buttons-community')" icon="globe" :link="{ name: 'bot-community', params: { bot: bot.name } }"></BotLink>
-        <BotLink v-tooltip="$t('bot-fav-buttons-games')" icon="gamepad" :link="{ name: 'bot-games', params: { bot: bot.name } }"></BotLink>
-        <BotLink v-tooltip="$t('bot-fav-buttons-wishlist')" icon="heart" :link="{ name: 'bot-wishlist', params: { bot: bot.name } }"></BotLink>
-        <BotLink v-tooltip="$t('bot-fav-buttons-idle')" icon="clock" :link="{ name: 'bot-idle', params: { bot: bot.name } }"></BotLink>
+        <BotLink
+          v-tooltip="steamFeatureTooltip('bot-fav-buttons-inventory')"
+          icon="boxes"
+          :disabled="!steamFeaturesReady"
+          :link="{ name: 'bot-inventory', params: { bot: bot.name } }"
+        ></BotLink>
+        <BotLink
+          v-tooltip="steamFeatureTooltip('bot-fav-buttons-friends')"
+          icon="users"
+          :disabled="!steamFeaturesReady"
+          :link="{ name: 'bot-friends', params: { bot: bot.name } }"
+        ></BotLink>
+        <BotLink
+          v-tooltip="steamFeatureTooltip('bot-fav-buttons-community')"
+          icon="globe"
+          :disabled="!steamFeaturesReady"
+          :link="{ name: 'bot-community', params: { bot: bot.name } }"
+        ></BotLink>
+        <BotLink
+          v-tooltip="steamFeatureTooltip('bot-fav-buttons-games')"
+          icon="gamepad"
+          :disabled="!steamFeaturesReady"
+          :link="{ name: 'bot-games', params: { bot: bot.name } }"
+        ></BotLink>
+        <BotLink
+          v-tooltip="steamFeatureTooltip('bot-fav-buttons-wishlist')"
+          icon="heart"
+          :disabled="!steamFeaturesReady"
+          :link="{ name: 'bot-wishlist', params: { bot: bot.name } }"
+        ></BotLink>
+        <BotLink
+          v-tooltip="steamFeatureTooltip('bot-fav-buttons-idle')"
+          icon="clock"
+          :disabled="!steamFeaturesReady"
+          :link="{ name: 'bot-idle', params: { bot: bot.name } }"
+        ></BotLink>
         <BotLink v-tooltip="$t('bot-fav-buttons-bgr')" icon="key" :link="{ name: 'bot-bgr', params: { bot: bot.name } }"></BotLink>
         <BotLink v-tooltip="$t('bot-fav-buttons-2fa')" icon="lock" :link="{ name: 'bot-2fa', params: { bot: bot.name } }"></BotLink>
 
@@ -109,6 +139,9 @@
       },
       isIdleView() {
         return this.$route.name === 'bot-idle';
+      },
+      steamFeaturesReady() {
+        return Boolean(this.bot && this.bot.isConnected);
       },
       idleAppIds() {
         if (Array.isArray(this.idleConfigAppIds)) return this.idleConfigAppIds;
@@ -206,6 +239,11 @@
         } catch (err) {
           this.$error(err.message);
         }
+      },
+      steamFeatureTooltip(labelKey) {
+        const label = this.$t(labelKey);
+        if (this.steamFeaturesReady) return label;
+        return this.$t('bot-fav-buttons-needs-online', { action: label });
       },
       async update(params = {}) {
         return this.$store.dispatch('bots/updateBot', { name: this.bot.name, ...params });
