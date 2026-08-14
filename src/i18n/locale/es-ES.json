@@ -253,6 +253,7 @@
   "bot-social-friends-send-title": "Enviar solicitud",
   "bot-social-friends-send-lead": "Pega un SteamID64, código de amigo o la URL del perfil de Steam.",
   "bot-social-friends-send-submit": "Enviar solicitud",
+  "bot-social-friends-send-cooldown": "Espera {s}s…",
   "bot-social-friends-send-target-label": "Destino",
   "bot-social-friends-send-placeholder": "SteamID64, código, vanity o URL de perfil…",
   "bot-social-friends-send-formats": "Ejemplos",

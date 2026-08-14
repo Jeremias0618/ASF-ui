@@ -14,6 +14,7 @@
         v-if="panelMode === 'send'"
         :target.sync="addTarget"
         :submitting="mutating"
+        :cooldown-seconds="sendCooldownSec"
         @submit="onAdd"
       ></FriendsComposePanel>
 
@@ -23,7 +24,7 @@
           :count-label="countLabel"
           :has-active-filters="hasActiveFilters"
           :refreshing="refreshing"
-          :refresh-disabled="loading || refreshing || mutating"
+          :refresh-disabled="loading || refreshing || actionsLocked"
           @clear="clearFilters"
           @refresh="refresh"
         ></FriendsSearchChrome>
@@ -40,7 +41,7 @@
           :empty-label="emptyLabel"
           :error="error"
           :refreshing="refreshing"
-          :mutating="mutating"
+          :mutating="actionsLocked"
           :broken-avatars="brokenAvatars"
           :page.sync="page"
           :total-pages="totalPages"
@@ -57,7 +58,7 @@
     <RemoveDialog
       :open="Boolean(pendingAction)"
       :friend-name="pendingActionName"
-      :submitting="mutating"
+      :submitting="mutating || mutationCooldownSec > 0"
       :title-key="dialogTitleKey"
       :body-key="dialogBodyKey"
       :confirm-key="dialogConfirmKey"
@@ -91,6 +92,10 @@
   const PAGE_SIZE = 20;
   const FRIEND_VIEWS = new Set(['friends', 'sent', 'received', 'send']);
   const FRIEND_VIEW_DEFAULT = 'friends';
+  /** UI guard aligned with plugin FriendsAddLimiter (~4s) — slightly longer to absorb retries. */
+  const SEND_COOLDOWN_MS = 6000;
+  /** UI guard aligned with FriendsRemoveLimiter / accept Add (~3–4s). */
+  const MUTATION_COOLDOWN_MS = 2500;
 
   export default {
     name: 'BotSocialFriendsTab',
@@ -121,9 +126,22 @@
         page: 1,
         pendingAction: null,
         brokenAvatars: {},
+        sendCooldownEndsAt: 0,
+        mutationCooldownEndsAt: 0,
+        nowMs: Date.now(),
+        cooldownTick: null,
       };
     },
     computed: {
+      sendCooldownSec() {
+        return Math.max(0, Math.ceil((this.sendCooldownEndsAt - this.nowMs) / 1000));
+      },
+      mutationCooldownSec() {
+        return Math.max(0, Math.ceil((this.mutationCooldownEndsAt - this.nowMs) / 1000));
+      },
+      actionsLocked() {
+        return this.mutating || this.mutationCooldownSec > 0;
+      },
       modeTabs() {
         return [
           {
@@ -254,7 +272,34 @@
         this.syncPanelFromRoute();
       },
     },
+    beforeDestroy() {
+      this.stopCooldownTick();
+    },
     methods: {
+      startCooldownTick() {
+        if (this.cooldownTick) return;
+        this.cooldownTick = setInterval(() => {
+          this.nowMs = Date.now();
+          if (this.sendCooldownEndsAt <= this.nowMs && this.mutationCooldownEndsAt <= this.nowMs) {
+            this.stopCooldownTick();
+          }
+        }, 250);
+      },
+      stopCooldownTick() {
+        if (!this.cooldownTick) return;
+        clearInterval(this.cooldownTick);
+        this.cooldownTick = null;
+      },
+      armSendCooldown() {
+        this.sendCooldownEndsAt = Date.now() + SEND_COOLDOWN_MS;
+        this.nowMs = Date.now();
+        this.startCooldownTick();
+      },
+      armMutationCooldown() {
+        this.mutationCooldownEndsAt = Date.now() + MUTATION_COOLDOWN_MS;
+        this.nowMs = Date.now();
+        this.startCooldownTick();
+      },
       syncPanelFromRoute() {
         const next = readModalView(this.$route, FRIEND_VIEWS, FRIEND_VIEW_DEFAULT);
         if (next !== this.panelMode) this.panelMode = next;
@@ -328,7 +373,7 @@
         }
       },
       refresh() {
-        if (this.loading || this.refreshing || this.mutating) return;
+        if (this.loading || this.refreshing || this.actionsLocked) return;
         this.load(true);
       },
       onProfileClick(friend, event) {
@@ -356,7 +401,7 @@
         return Array.isArray(list) ? (list[0] || null) : null;
       },
       async onAdd() {
-        if (this.mutating) return;
+        if (this.mutating || this.sendCooldownSec > 0) return;
         const target = normalizeFriendTarget(this.addTarget);
         if (!target) {
           this.$error(this.$t('bot-social-friends-send-invalid'));
@@ -381,15 +426,16 @@
           else this.$error(err.message || String(err));
         } finally {
           this.mutating = false;
+          this.armSendCooldown();
         }
       },
       askAction(friend, mode) {
-        if (this.mutating || !friend) return;
+        if (this.actionsLocked || !friend) return;
         this.pendingAction = { friend, mode: mode || this.dangerActionMode };
       },
       async confirmAction() {
         const pending = this.pendingAction;
-        if (!pending?.friend || this.mutating) return;
+        if (!pending?.friend || this.actionsLocked) return;
         this.mutating = true;
         try {
           if (pending.mode === 'accept') {
@@ -409,6 +455,7 @@
           else this.$error(err.message || String(err));
         } finally {
           this.mutating = false;
+          this.armMutationCooldown();
         }
       },
     },

@@ -7,7 +7,7 @@
         <p class="friends-hub__compose-lead">{{ $t('bot-social-friends-send-lead') }}</p>
       </header>
 
-      <form class="friends-hub__compose-form" @submit.prevent="$emit('submit')">
+      <form class="friends-hub__compose-form" @submit.prevent="onSubmit">
         <label class="friends-hub__field-label" for="friends-send-target">
           {{ $t('bot-social-friends-send-target-label') }}
         </label>
@@ -18,7 +18,7 @@
             type="text"
             :value="target"
             :placeholder="$t('bot-social-friends-send-placeholder')"
-            :disabled="submitting"
+            :disabled="submitting || cooldownSeconds > 0"
             autocomplete="off"
             spellcheck="false"
             @input="$emit('update:target', $event.target.value)"
@@ -26,9 +26,12 @@
           <button
             type="submit"
             class="friends-hub__compose-submit"
-            :disabled="!target || submitting"
+            :disabled="!canSubmit"
           >
             <FontAwesomeIcon v-if="submitting" icon="spinner" spin aria-hidden="true"></FontAwesomeIcon>
+            <span v-else-if="cooldownSeconds > 0">
+              {{ $t('bot-social-friends-send-cooldown', { s: cooldownSeconds }) }}
+            </span>
             <span v-else>{{ $t('bot-social-friends-send-submit') }}</span>
           </button>
         </div>
@@ -53,6 +56,20 @@
     props: {
       target: { type: String, default: '' },
       submitting: { type: Boolean, default: false },
+      cooldownSeconds: { type: Number, default: 0 },
+    },
+    computed: {
+      canSubmit() {
+        return Boolean(this.target)
+          && !this.submitting
+          && this.cooldownSeconds <= 0;
+      },
+    },
+    methods: {
+      onSubmit() {
+        if (!this.canSubmit) return;
+        this.$emit('submit');
+      },
     },
   };
 </script>
