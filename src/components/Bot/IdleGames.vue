@@ -3,13 +3,12 @@
     <a
       v-for="appId in appIds"
       :key="appId"
-      v-tooltip="labelFor(appId)"
       class="bot-idle-games__item status--farming"
       target="_blank"
       rel="noreferrer noopener"
       :href="`https://store.steampowered.com/app/${appId}/`"
+      :aria-label="labelFor(appId)"
     >
-      <span class="bot-idle-games__shade" aria-hidden="true"></span>
       <GameCoverImage
         class="bot-idle-games__cover"
         :appId="appId"
@@ -19,6 +18,8 @@
         variant="banner"
         loading="lazy"
       ></GameCoverImage>
+      <span class="bot-idle-games__shade" aria-hidden="true"></span>
+      <span class="bot-idle-games__name">{{ labelFor(appId) }}</span>
     </a>
   </div>
 </template>
@@ -83,18 +84,58 @@
     &:focus-visible {
       box-shadow: 0 0 0 1px var(--color-status, #90ba3c);
       outline: none;
+
+      .bot-idle-games__shade {
+        opacity: 1;
+      }
+
+      .bot-idle-games__name {
+        opacity: 1;
+      }
+
+      .game-cover-img__media {
+        filter: brightness(0.45);
+      }
     }
   }
 
   .bot-idle-games__shade {
-    background: rgba(0, 0, 0, 0.42);
+    background: rgba(0, 0, 0, 0.55);
     bottom: 0;
     left: 0;
+    opacity: 0;
     pointer-events: none;
     position: absolute;
     right: 0;
     top: 0;
+    transition: opacity 0.15s ease;
     z-index: 1;
+  }
+
+  .bot-idle-games__name {
+    align-items: center;
+    box-sizing: border-box;
+    color: var(--color-text, #f9fafb);
+    display: flex;
+    font-size: 0.8rem;
+    font-weight: 700;
+    justify-content: center;
+    left: 0;
+    line-height: 1.25;
+    opacity: 0;
+    overflow: hidden;
+    padding: 0.65rem 0.5rem;
+    pointer-events: none;
+    position: absolute;
+    right: 0;
+    text-align: center;
+    text-overflow: ellipsis;
+    top: 50%;
+    transform: translateY(-50%);
+    transition: opacity 0.15s ease;
+    white-space: nowrap;
+    width: 100%;
+    z-index: 2;
   }
 
   .bot-idle-games__cover {
@@ -103,9 +144,10 @@
     width: 100%;
 
     .game-cover-img__media {
-      filter: brightness(0.72);
+      filter: brightness(0.85);
       height: 100%;
       object-fit: cover;
+      transition: filter 0.15s ease;
       width: 100%;
     }
 

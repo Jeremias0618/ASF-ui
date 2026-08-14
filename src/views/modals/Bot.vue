@@ -46,11 +46,7 @@
     <div class="bot-farming-info">
       <template v-if="isIdleView">
         <BotFarmingInfo :value="idleGamesCount" icon="gamepad"></BotFarmingInfo>
-        <BotFarmingInfo
-          v-tooltip="idlePlaytimeTooltip"
-          :value="idlePlaytimeLabel"
-          icon="clock"
-        ></BotFarmingInfo>
+        <BotFarmingInfo :value="idleCustomName" icon="clock"></BotFarmingInfo>
         <BotFarmingInfo :value="idlePlayingLabel" icon="play"></BotFarmingInfo>
       </template>
       <template v-else>
@@ -84,12 +80,6 @@
   import getUserInputType from '../../utils/getUserInputType';
   import { fetchIdleGamesConfig, normalizeIdleAppIds } from '../../features/bot-social/api/idle-games';
   import { loadGameStats } from '../../features/bot-social/cache/bot-social-queries';
-  import {
-    formatCompactDuration,
-    syncIdlePlaySession,
-  } from '../../features/bot-social/utils/idle-play-session';
-
-  const IDLE_TICK_MS = 15_000;
 
   export default {
     name: 'BotProfile',
@@ -106,10 +96,8 @@
     data() {
       return {
         idleConfigAppIds: null,
+        idleCustomNameOverride: null,
         idleNamesByAppId: {},
-        idleSessionStartedAt: null,
-        nowMs: Date.now(),
-        idleTickTimer: null,
       };
     },
     computed: {
@@ -135,13 +123,13 @@
         if (!this.isPlayingIdle) return '-';
         return this.idleAppIds.length;
       },
-      idlePlaytimeLabel() {
+      idleCustomName() {
         if (!this.isPlayingIdle) return '-';
-        if (!this.idleSessionStartedAt) return '0m';
-        return formatCompactDuration(this.nowMs - this.idleSessionStartedAt);
-      },
-      idlePlaytimeTooltip() {
-        return this.$t('bot-idle-playtime-hint');
+        if (this.idleCustomNameOverride !== null) {
+          return this.idleCustomNameOverride || '-';
+        }
+        const name = String(this.bot?.config?.CustomGamePlayedWhileIdle || '').trim();
+        return name || '-';
       },
       idlePlayingLabel() {
         if (!this.isPlayingIdle) return '-';
@@ -166,61 +154,28 @@
         immediate: true,
         handler(value) {
           if (value) this.loadIdleConfig();
-          this.syncIdleClock();
-        },
-      },
-      'isPlayingIdle': {
-        immediate: true,
-        handler() {
-          this.syncIdleSession();
-          this.syncIdleClock();
         },
       },
       '$route.params.bot': {
         handler() {
           if (this.isIdleView) this.loadIdleConfig();
-          this.syncIdleSession();
         },
       },
     },
     created() {
       if (!this.bot) this.$router.replace({ name: 'bots' });
     },
-    beforeDestroy() {
-      this.clearIdleClock();
-    },
     methods: {
-      syncIdleSession() {
-        if (!this.bot?.name) {
-          this.idleSessionStartedAt = null;
-          return;
-        }
-        this.idleSessionStartedAt = syncIdlePlaySession(this.bot.name, this.isPlayingIdle);
-        this.nowMs = Date.now();
-      },
-      syncIdleClock() {
-        this.clearIdleClock();
-        if (!this.isIdleView || !this.isPlayingIdle) return;
-        this.nowMs = Date.now();
-        this.idleTickTimer = setInterval(() => {
-          this.nowMs = Date.now();
-        }, IDLE_TICK_MS);
-      },
-      clearIdleClock() {
-        if (this.idleTickTimer) {
-          clearInterval(this.idleTickTimer);
-          this.idleTickTimer = null;
-        }
-      },
       async loadIdleConfig() {
         if (!this.bot?.name) return;
         try {
-          const { idleAppIds } = await fetchIdleGamesConfig(this.bot.name);
+          const { config, idleAppIds } = await fetchIdleGamesConfig(this.bot.name);
           this.idleConfigAppIds = idleAppIds;
+          this.idleCustomNameOverride = String(config.CustomGamePlayedWhileIdle || '').trim();
         } catch (err) {
           this.idleConfigAppIds = normalizeIdleAppIds(this.bot?.config?.GamesPlayedWhileIdle);
+          this.idleCustomNameOverride = null;
         }
-        this.syncIdleSession();
         await this.loadIdleNames();
       },
       async loadIdleNames() {
@@ -273,12 +228,10 @@
 
         await this.action('start');
         await this.update({ active: true });
-        this.syncIdleSession();
       },
       async stop() {
         await this.action('stop');
         await this.update({ active: false });
-        this.syncIdleSession();
       },
     },
   };
