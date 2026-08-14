@@ -1,5 +1,9 @@
 <template>
-  <main v-if="bot" class="main-container main-container--bot-profile">
+  <main
+    v-if="bot"
+    class="main-container main-container--bot-profile"
+    :class="{ 'main-container--bot-idle': isIdleView }"
+  >
     <div class="bot-profile" :class="[`status--${bot.status}`]">
       <div class="bot-profile__avatar-wrapper">
         <a v-if="bot.steamid !== '0'" target="_blank" rel="noreferrer noopener" :href="bot.profileURL">
@@ -42,7 +46,11 @@
     <div class="bot-farming-info">
       <template v-if="isIdleView">
         <BotFarmingInfo :value="idleGamesCount" icon="gamepad"></BotFarmingInfo>
-        <BotFarmingInfo :value="idleCustomName" icon="clock"></BotFarmingInfo>
+        <BotFarmingInfo
+          v-tooltip="idlePlaytimeTooltip"
+          :value="idlePlaytimeLabel"
+          icon="clock"
+        ></BotFarmingInfo>
         <BotFarmingInfo :value="idlePlayingLabel" icon="play"></BotFarmingInfo>
       </template>
       <template v-else>
@@ -53,7 +61,9 @@
     </div>
 
     <BotGames v-if="!isIdleView" :bot="bot"></BotGames>
-    <BotIdleGames v-else-if="isPlayingIdle" :appIds="idleAppIds"></BotIdleGames>
+    <div v-else-if="isPlayingIdle" class="bot-idle-games-scroll">
+      <BotIdleGames :appIds="idleAppIds" :namesByAppId="idleNamesByAppId"></BotIdleGames>
+    </div>
     <p v-else class="bot-idle-empty">{{ $t('bot-idle-empty') }}</p>
   </main>
 </template>
@@ -69,6 +79,7 @@
   import BotLink from '../../components/Bot/Link.vue';
   import getUserInputType from '../../utils/getUserInputType';
   import { fetchIdleGamesConfig, normalizeIdleAppIds } from '../../features/bot-social/api/idle-games';
+  import { loadGameStats } from '../../features/bot-social/cache/bot-social-queries';
 
   export default {
     name: 'BotProfile',
@@ -85,7 +96,9 @@
     data() {
       return {
         idleConfigAppIds: null,
-        idleCustomNameOverride: null,
+        idleNamesByAppId: {},
+        idlePlaytimeMinutes: 0,
+        idlePlaytimeLoading: false,
       };
     },
     computed: {
@@ -111,13 +124,20 @@
         if (!this.isPlayingIdle) return '-';
         return this.idleAppIds.length;
       },
-      idleCustomName() {
+      idlePlaytimeLabel() {
         if (!this.isPlayingIdle) return '-';
-        if (this.idleCustomNameOverride !== null) {
-          return this.idleCustomNameOverride || '-';
-        }
-        const name = String(this.bot?.config?.CustomGamePlayedWhileIdle || '').trim();
-        return name || '-';
+        if (this.idlePlaytimeLoading) return '…';
+        if (this.idlePlaytimeMinutes <= 0) return this.$t('bot-idle-playtime-none');
+        const language = getLocaleForHD();
+        return humanizeDuration(this.idlePlaytimeMinutes * 60 * 1000, {
+          language,
+          units: ['d', 'h', 'm'],
+          round: true,
+          largest: 3,
+        });
+      },
+      idlePlaytimeTooltip() {
+        return this.$t('bot-idle-playtime-hint');
       },
       idlePlayingLabel() {
         if (!this.isPlayingIdle) return '-';
@@ -157,12 +177,42 @@
       async loadIdleConfig() {
         if (!this.bot?.name) return;
         try {
-          const { config, idleAppIds } = await fetchIdleGamesConfig(this.bot.name);
+          const { idleAppIds } = await fetchIdleGamesConfig(this.bot.name);
           this.idleConfigAppIds = idleAppIds;
-          this.idleCustomNameOverride = String(config.CustomGamePlayedWhileIdle || '').trim();
         } catch (err) {
           this.idleConfigAppIds = normalizeIdleAppIds(this.bot?.config?.GamesPlayedWhileIdle);
-          this.idleCustomNameOverride = null;
+        }
+        await this.loadIdlePlaytime();
+      },
+      async loadIdlePlaytime() {
+        if (!this.bot?.name || !this.idleAppIds.length) {
+          this.idleNamesByAppId = {};
+          this.idlePlaytimeMinutes = 0;
+          this.idlePlaytimeLoading = false;
+          return;
+        }
+
+        this.idlePlaytimeLoading = true;
+        try {
+          const result = await loadGameStats(this.bot.name, { force: false });
+          const games = result?.data?.games || [];
+          const idleSet = new Set(this.idleAppIds);
+          const names = {};
+          let totalMinutes = 0;
+
+          games.forEach(game => {
+            if (!idleSet.has(game.appId)) return;
+            if (game.name) names[game.appId] = game.name;
+            totalMinutes += Number(game.playtimeMinutes) || 0;
+          });
+
+          this.idleNamesByAppId = names;
+          this.idlePlaytimeMinutes = totalMinutes;
+        } catch (err) {
+          this.idleNamesByAppId = {};
+          this.idlePlaytimeMinutes = 0;
+        } finally {
+          this.idlePlaytimeLoading = false;
         }
       },
       async action(name, params = {}) {
@@ -311,5 +361,23 @@
     font-size: 0.95rem;
     margin: 1em 0 0;
     text-align: center;
+  }
+
+  .main-container--bot-idle {
+    display: flex;
+    flex-direction: column;
+    max-height: min(72vh, 34rem);
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .bot-idle-games-scroll {
+    flex: 1 1 auto;
+    margin: 1em 0 0;
+    max-height: min(42vh, 18rem);
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding-right: 0.15rem;
   }
 </style>
