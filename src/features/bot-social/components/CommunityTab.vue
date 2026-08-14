@@ -46,11 +46,19 @@
           <button
             type="button"
             class="community-hub__refresh"
-            :disabled="loading || refreshing"
+            :disabled="loading || refreshing || refreshCooldownSec > 0"
             @click="refresh"
           >
-            <FontAwesomeIcon :icon="loading || refreshing ? 'spinner' : 'redo-alt'" :spin="loading || refreshing"></FontAwesomeIcon>
-            {{ $t('bot-social-refresh') }}
+            <FontAwesomeIcon
+              :icon="loading || refreshing ? 'spinner' : 'redo-alt'"
+              :spin="loading || refreshing"
+            ></FontAwesomeIcon>
+            <template v-if="refreshCooldownSec > 0">
+              {{ $t('bot-social-refresh-cooldown', { s: refreshCooldownSec }) }}
+            </template>
+            <template v-else>
+              {{ $t('bot-social-refresh') }}
+            </template>
           </button>
         </div>
 
@@ -106,7 +114,10 @@
 </template>
 
 <script>
-  import { fetchSteamPoints, isPluginMissingError } from '../api/bot-social';
+  import { isPluginMissingError } from '../api/bot-social';
+  import { loadPoints } from '../cache/bot-social-queries';
+  import { resolveLocalData } from '../cache/load-policy';
+  import { createSubmitCooldownMixin } from '../mixins/submit-cooldown';
   import CuratorsPanel from './community/curators-panel.vue';
   import FollowersPanel from './community/followers-panel.vue';
   import GroupsPanel from './community/groups-panel.vue';
@@ -117,9 +128,12 @@
 
   const COMMUNITY_VIEWS = new Set(['account', 'groups', 'followers', 'curators', 'reviews', 'shared']);
   const COMMUNITY_VIEW_DEFAULT = 'account';
+  /** UI countdown ≥ points MIN_REFRESH (2s) / PointsReadLimiter. */
+  const REFRESH_COOLDOWN_MS = 3000;
 
   export default {
     name: 'BotSocialCommunityTab',
+    mixins: [createSubmitCooldownMixin(REFRESH_COOLDOWN_MS)],
     components: {
       CuratorsPanel,
       FollowersPanel,
@@ -143,6 +157,9 @@
       };
     },
     computed: {
+      refreshCooldownSec() {
+        return this.cooldownSeconds;
+      },
       modeTabs() {
         return [
           { id: 'account', icon: 'user', label: this.$t('bot-social-community-mode-account') },
@@ -226,22 +243,20 @@
         immediate: true,
         handler() {
           this.syncPanelFromRoute();
-          this.steamPoints = null;
-          this.hasLoaded = false;
-          this.error = '';
-          if (this.panelMode === 'account') this.load(false);
+          this.resetPointsView();
+          if (this.panelMode === 'account') this.bootstrapPoints();
         },
       },
       pluginMissing(value) {
         if (value) {
           this.loading = false;
           this.refreshing = false;
+          return;
         }
+        if (this.panelMode === 'account') this.bootstrapPoints();
       },
       panelMode(mode) {
-        if (mode === 'account' && !this.pluginMissing && !this.hasLoaded) {
-          this.load(false);
-        }
+        if (mode === 'account' && !this.pluginMissing) this.bootstrapPoints();
       },
       '$route.query.view'() {
         this.syncPanelFromRoute();
@@ -257,8 +272,40 @@
         this.panelMode = mode;
         replaceModalView(this.$router, this.$route, mode, COMMUNITY_VIEW_DEFAULT);
       },
+      resetPointsView() {
+        this.steamPoints = null;
+        this.hasLoaded = false;
+        this.error = '';
+        this.loading = false;
+        this.refreshing = false;
+        this.resetSubmitCooldown();
+      },
+      applyPoints(points) {
+        this.steamPoints = points == null ? null : Number(points);
+        this.hasLoaded = true;
+      },
+      bootstrapPoints() {
+        if (this.pluginMissing || this.panelMode !== 'account') return;
+        const resolved = resolveLocalData({
+          resource: 'points',
+          botName: this.botName,
+          isUsable: data => data === null || Number.isFinite(Number(data)),
+        });
+        if (resolved.hasData) {
+          this.applyPoints(resolved.data);
+          this.error = '';
+          return;
+        }
+        this.load(false);
+      },
       async refresh() {
-        if (this.panelMode !== 'account' || this.loading || this.refreshing || this.pluginMissing) return;
+        if (
+          this.panelMode !== 'account'
+          || this.loading
+          || this.refreshing
+          || this.pluginMissing
+          || this.refreshCooldownSec > 0
+        ) return;
         await this.load(true);
       },
       async load(force) {
@@ -266,27 +313,29 @@
         const first = !this.hasLoaded;
         this.loading = first;
         this.refreshing = !first && !!force;
-        this.error = '';
+        if (force) this.error = '';
 
         try {
-          const payload = await fetchSteamPoints(this.botName);
-          const botResult = payload?.[this.botName]
-            || payload?.[Object.keys(payload || {}).find(k => k.toLowerCase() === String(this.botName || '').toLowerCase())]
-            || payload?.[Object.keys(payload || {})[0]];
-          const points = botResult?.Points ?? botResult?.points;
-          this.steamPoints = points == null ? null : Number(points);
-          this.hasLoaded = true;
+          const result = await loadPoints(this.botName, { force });
+          this.applyPoints(result.data);
+          if (result.rateLimited) this.$error(this.$t('bot-social-rate-limited'));
+          else if (result.error && result.stale) this.error = result.error.message || String(result.error);
+          else this.error = '';
         } catch (err) {
           if (isPluginMissingError(err)) {
             this.$emit('plugin-missing');
             return;
           }
-          this.error = err.message || String(err);
-          if (!this.hasLoaded) this.steamPoints = null;
-          this.hasLoaded = true;
+          if (err?.code === 'RATE_LIMITED') this.$error(this.$t('bot-social-rate-limited'));
+          else {
+            this.error = err.message || String(err);
+            if (!this.hasLoaded) this.steamPoints = null;
+            this.hasLoaded = true;
+          }
         } finally {
           this.loading = false;
           this.refreshing = false;
+          if (force) this.armSubmitCooldown();
         }
       },
     },

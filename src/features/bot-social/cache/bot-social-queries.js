@@ -4,6 +4,7 @@ import {
   fetchGameStats,
   fetchSocialStatus,
   fetchSteamInventory,
+  fetchSteamPoints,
   fetchTradeOffers,
   fetchWishlist,
 } from '../api/bot-social';
@@ -225,6 +226,23 @@ export function loadStatus(botName, { force = false } = {}) {
   });
 }
 
+/** Normalized Steam Points balance (number | null). */
+export function loadPoints(botName, { force = false } = {}) {
+  return query({
+    resource: 'points',
+    botName,
+    force,
+    fetcher: async () => {
+      const result = await fetchSteamPoints(botName);
+      const payload = unwrap(result, botName);
+      const points = payload?.Points ?? payload?.points;
+      if (points == null || points === '') return null;
+      const n = Number(points);
+      return Number.isFinite(n) ? n : null;
+    },
+  });
+}
+
 export function invalidateFriends(botName) {
   invalidate('friends', botName);
 }
@@ -248,4 +266,8 @@ export function invalidateInventory(botName) {
 
 export function invalidateTradeOffers(botName) {
   invalidate('trades', botName);
+}
+
+export function invalidatePoints(botName) {
+  invalidate('points', botName);
 }

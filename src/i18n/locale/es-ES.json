@@ -183,6 +183,7 @@
   "bot-social-lead-wishlist": "Lista de deseos de este bot.",
   "bot-social-loading": "Cargando…",
   "bot-social-refresh": "Actualizar",
+  "bot-social-refresh-cooldown": "Actualizar ({s}s)",
   "bot-social-rate-limited": "Espera unos segundos antes de actualizar de nuevo.",
   "bot-social-search": "Buscar…",
   "bot-social-inventory-apps": "{n} apps con inventario",

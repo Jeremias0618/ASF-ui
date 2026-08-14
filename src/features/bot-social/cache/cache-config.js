@@ -10,6 +10,7 @@ export const CACHE_TTL_MS = Object.freeze({
   wishlist: 5 * 60 * 1000,
   trades: 60 * 1000, // pending offers change often
   status: 30 * 60 * 1000,
+  points: 3 * 60 * 1000, // Steam Points — slow-changing; avoid remount spam
 });
 
 /** Minimum gap between forced refreshes of the same resource+bot (client-side). */
@@ -21,6 +22,7 @@ export const MIN_REFRESH_MS = Object.freeze({
   wishlist: 6 * 1000,
   trades: 5 * 1000,
   status: 2 * 1000,
+  points: 2 * 1000, // align with plugin PointsReadLimiter (2s)
 });
 
 /** Set true in localStorage `asf-bot-social-cache-debug=1` or pass debug:true. */
