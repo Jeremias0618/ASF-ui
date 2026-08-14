@@ -1,5 +1,11 @@
 <template>
   <section class="bulk-actions-setup-panel" :aria-label="title">
+    <BulkJobBanner
+      v-if="jobBlocked && blockedJob"
+      :job="blockedJob"
+      :show-resume="false"
+    ></BulkJobBanner>
+
     <div class="bulk-actions-setup-panel__body">
       <div class="bulk-actions-choice bulk-actions-discovery-queues">
         <p class="bulk-actions-field__label" id="bulk-discovery-queues-label">
@@ -21,7 +27,7 @@
               type="radio"
               name="bulk-discovery-queues"
               :value="opt.value"
-              :disabled="busy"
+              :disabled="busy || jobBlocked"
             >
             {{ opt.label }}
           </label>
@@ -34,12 +40,12 @@
 
     <footer class="bulk-actions-setup-bar">
       <div class="bulk-actions-setup-bar__copy">
-        <p class="bulk-actions-setup-bar__hint">{{ $t('bulk-actions-setup-hint') }}</p>
+        <p class="bulk-actions-setup-bar__hint">{{ $t('bulk-actions-setup-hint-paced') }}</p>
       </div>
       <button
         type="button"
         class="button button--confirm bulk-actions-setup-bar__cta"
-        :disabled="!canSubmit || busy"
+        :disabled="runDisabled"
         @click="requestConfirm"
       >
         {{ $t('bulk-actions-run') }}
@@ -52,7 +58,7 @@
       :title="$t('bulk-actions-confirm-title')"
       :lead="$t('bulk-actions-confirm-lead')"
       :lines="confirmLines"
-      :warning="$t('bulk-actions-confirm-warning')"
+      :warning="$t('bulk-actions-confirm-warning-paced')"
       :confirmLabel="$t('bulk-actions-run')"
       @cancel="openConfirm = false"
       @confirm="onConfirm"
@@ -67,8 +73,9 @@
       :results="runner.results"
       :summary-target="summaryTarget"
       :bots-total="botNames.length"
-      @cancel="runner.cancel()"
-      @close="onProgressClose"
+      :paced="true"
+      @cancel="onBulkProgressCancel"
+      @close="onBulkProgressClose"
     ></BulkProgressModal>
   </section>
 </template>
@@ -76,14 +83,16 @@
 <script>
   import { isPluginMissingError } from '../../../bot-social/api/bot-social';
   import { exploreDiscoveryQueues, flattenDiscoveryExploreResults } from '../../api/bulk-social';
-  import { summarizeMutationResults } from '../../utils/result-outcomes';
   import { createBulkRunner } from '../../composables/use-bulk-runner';
+  import bulkJobLifecycle from '../../mixins/bulk-job-lifecycle';
   import BulkConfirmDialog from '../confirm-dialog.vue';
+  import BulkJobBanner from '../job-banner.vue';
   import BulkProgressModal from '../progress-modal.vue';
 
   export default {
     name: 'BulkDiscoveryQueueAction',
-    components: { BulkConfirmDialog, BulkProgressModal },
+    components: { BulkConfirmDialog, BulkJobBanner, BulkProgressModal },
+    mixins: [bulkJobLifecycle],
     props: {
       action: { type: Object, required: true },
       bots: { type: Array, default: () => [] },
@@ -92,9 +101,6 @@
       return {
         queues: 1,
         openConfirm: false,
-        progressOpen: false,
-        busy: false,
-        completedOk: false,
         runner: createBulkRunner(),
       };
     },
@@ -106,7 +112,7 @@
         return this.bots.map(bot => bot.name).filter(Boolean);
       },
       canSubmit() {
-        return this.botNames.length > 0 && this.queues >= 1 && this.queues <= 3;
+        return this.botNames.length > 0 && this.queues >= 1 && this.queues <= 3 && !this.jobBlocked;
       },
       queueOptions() {
         return [
@@ -122,44 +128,41 @@
         return [
           this.$t('bulk-actions-confirm-bots', { n: this.botNames.length }),
           this.$t('bulk-action-discovery-confirm-queues', { n: this.queues }),
+          this.$t('bulk-actions-confirm-paced'),
         ];
       },
     },
     methods: {
+      applyJobParams(job) {
+        const q = Number(job.params?.queues);
+        if (q >= 1 && q <= 3) this.queues = q;
+      },
       requestConfirm() {
         if (!this.canSubmit || this.busy) return;
         this.openConfirm = true;
       },
       async onConfirm() {
         this.openConfirm = false;
-        this.busy = true;
-        this.progressOpen = true;
-        this.completedOk = false;
-        const botNames = this.botNames.slice();
-        const { queues } = this;
-        try {
-          await this.runner.runSteps([{
-            label: this.summaryTarget,
-            run: async () => {
-              try {
-                const payload = await exploreDiscoveryQueues(botNames, queues);
-                return flattenDiscoveryExploreResults(payload);
-              } catch (err) {
-                if (isPluginMissingError(err)) this.$emit('plugin-missing');
-                throw err;
-              }
-            },
-          }]);
-          const summary = summarizeMutationResults(this.runner.results);
-          this.completedOk = summary.ok > 0 || summary.skipped > 0;
-        } finally {
-          this.busy = false;
-        }
+        const job = this.beginBulkJob({
+          params: { queues: this.queues },
+          botNames: this.botNames.slice(),
+          summaryTarget: this.summaryTarget,
+          api: 'discoveryExplore',
+        });
+        if (!job) return;
+        await this.continueBulkJob(job);
       },
-      onProgressClose() {
-        this.progressOpen = false;
-        this.runner.reset();
-        if (this.completedOk) this.$emit('finished');
+      async continueBulkJob(job) {
+        const queues = Number(job.params.queues) || this.queues;
+        await this.executePacedJob(job, async botName => {
+          try {
+            const payload = await exploreDiscoveryQueues([botName], queues);
+            return flattenDiscoveryExploreResults(payload);
+          } catch (err) {
+            if (isPluginMissingError(err)) this.$emit('plugin-missing');
+            throw err;
+          }
+        }, { api: 'discoveryExplore' });
       },
     },
   };

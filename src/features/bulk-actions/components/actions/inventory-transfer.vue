@@ -1,5 +1,11 @@
 ﻿<template>
   <section class="bulk-actions-setup-panel bulk-actions-setup-panel--inventory" :aria-label="title">
+    <BulkJobBanner
+      v-if="jobBlocked && blockedJob"
+      :job="blockedJob"
+      :show-resume="false"
+    ></BulkJobBanner>
+
     <div class="bulk-actions-setup-panel__body">
       <div class="bulk-actions__inv-toolbar">
         <label class="bulk-actions-bots__search">
@@ -131,7 +137,7 @@
         <button
           type="button"
           class="button button--confirm bulk-actions-setup-bar__cta"
-          :disabled="!canSubmit || busy"
+          :disabled="!canSubmit || busy || jobBlocked"
           @click="openConfirm = true"
         >
           {{ $t('bulk-actions-run') }}
@@ -145,7 +151,7 @@
       :title="$t('bulk-actions-confirm-title')"
       :lead="$t('bulk-actions-confirm-lead')"
       :lines="confirmLines"
-      :warning="$t('bulk-actions-confirm-warning')"
+      :warning="$t('bulk-actions-confirm-warning-paced')"
       :confirmLabel="$t('bulk-actions-run')"
       @cancel="openConfirm = false"
       @confirm="onConfirm"
@@ -160,8 +166,9 @@
       :results="runner.results"
       :summary-target="destinationBot"
       :bots-total="selectedSourceBots.length"
-      @cancel="runner.cancel()"
-      @close="onProgressClose"
+      :paced="true"
+      @cancel="onBulkProgressCancel"
+      @close="onBulkProgressClose"
     ></BulkProgressModal>
   </section>
 </template>
@@ -174,8 +181,13 @@
     filterInventoryItems, gameKey, NO_GAME_ID, paginateItems,
   } from '../../../bot-social/utils/filter-inventory';
   import { createBulkRunner, groupInventoryTransferBatches } from '../../composables/use-bulk-runner';
+  import { pacingMsForApi } from '../../constants/bulk-pacing';
+  import bulkJobLifecycle from '../../mixins/bulk-job-lifecycle';
+  import { writeDestinationBotName } from '../../utils/action-session';
+  import { checkpointBulkJob, finishBulkJob } from '../../utils/bulk-run';
   import { summarizeMutationResults } from '../../utils/result-outcomes';
   import BulkConfirmDialog from '../confirm-dialog.vue';
+  import BulkJobBanner from '../job-banner.vue';
   import BulkProgressModal from '../progress-modal.vue';
 
   const PAGE_SIZE = 40;
@@ -190,7 +202,8 @@
 
   export default {
     name: 'BulkInventoryTransferAction',
-    components: { BulkConfirmDialog, BulkProgressModal },
+    components: { BulkConfirmDialog, BulkJobBanner, BulkProgressModal },
+    mixins: [bulkJobLifecycle],
     props: {
       action: { type: Object, required: true },
       bots: { type: Array, default: () => [] },
@@ -209,9 +222,6 @@
         loading: false,
         loadError: '',
         openConfirm: false,
-        progressOpen: false,
-        busy: false,
-        completedOk: false,
         runner: createBulkRunner(),
         kindOptions: INVENTORY_FILTERS.filter(k => k !== 'all'),
       };
@@ -269,13 +279,15 @@
       canSubmit() {
         return this.selectedItems.length > 0
           && Boolean(this.destinationBot)
-          && !this.selectedSourceBots.includes(this.destinationBot);
+          && !this.selectedSourceBots.includes(this.destinationBot)
+          && !this.jobBlocked;
       },
       confirmLines() {
         return [
           this.$t('bulk-action-inventory-confirm-items', { n: this.selectedItems.length }),
           this.$t('bulk-action-inventory-confirm-sources', { n: this.selectedSourceBots.length }),
           this.$t('bulk-action-inventory-confirm-destination', { bot: this.destinationBot }),
+          this.$t('bulk-actions-confirm-paced'),
         ];
       },
     },
@@ -352,13 +364,37 @@
       },
       async onConfirm() {
         this.openConfirm = false;
+        const batches = groupInventoryTransferBatches(this.selectedItems);
+        if (!batches.length) return;
+        const target = this.destinationBot;
+        writeDestinationBotName(this.action.slug, target);
+        const job = this.beginBulkJob({
+          api: 'inventoryTransfer',
+          params: {
+            destinationBot: target,
+            batches,
+          },
+          botNames: batches.map(batch => batch.sourceBotName),
+          summaryTarget: target,
+        });
+        if (!job) return;
+        await this.continueBulkJob(job);
+      },
+      applyJobParams(job) {
+        if (job.params?.destinationBot) {
+          writeDestinationBotName(this.action.slug, job.params.destinationBot);
+        }
+      },
+      async continueBulkJob(job) {
+        const batches = Array.isArray(job.params?.batches) ? job.params.batches : [];
+        const target = String(job.params?.destinationBot || this.destinationBot || '').trim();
+        const start = Math.min(Math.max(0, job.nextIndex || 0), batches.length);
+        const remaining = batches.slice(start);
         this.busy = true;
         this.progressOpen = true;
         this.completedOk = false;
-        const batches = groupInventoryTransferBatches(this.selectedItems);
-        const target = this.destinationBot;
         try {
-          await this.runner.runSteps(batches.map(batch => ({
+          await this.runner.runSteps(remaining.map(batch => ({
             label: batch.sourceBotName,
             run: async () => {
               try {
@@ -379,21 +415,25 @@
                 throw err;
               }
             },
-          })));
+          })), {
+            delayMs: pacingMsForApi('inventoryTransfer'),
+            startOffset: start,
+            initialResults: Array.isArray(job.results) ? job.results : [],
+            onStepDone: ({ absoluteIndex, results }) => {
+              checkpointBulkJob(results, absoluteIndex + 1);
+            },
+          });
+          const cancelled = this.runner.cancelled;
+          finishBulkJob(cancelled ? 'cancelled' : 'done', this.runner.results);
           const summary = summarizeMutationResults(this.runner.results);
           this.completedOk = summary.ok > 0 || summary.skipped > 0;
         } finally {
           this.busy = false;
+          this._bulkResuming = false;
         }
       },
-      onProgressClose() {
-        this.progressOpen = false;
-        this.runner.reset();
+      afterProgressCloseIncomplete() {
         this.clearSelection();
-        if (this.completedOk) {
-          this.$emit('finished');
-          return;
-        }
         this.loadAll(true);
       },
     },

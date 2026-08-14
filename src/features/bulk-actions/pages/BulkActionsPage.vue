@@ -23,6 +23,13 @@
       </ol>
     </header>
 
+    <BulkJobBanner
+      v-if="activeJob"
+      :job="activeJob"
+      :show-resume="true"
+      @resume="resumeActiveJob"
+    ></BulkJobBanner>
+
     <section class="bulk-actions-deck" :aria-label="$t('bulk-actions')">
       <div class="bulk-actions-deck__toolbar">
         <label class="bulk-actions-deck__search">
@@ -82,11 +89,18 @@
   import { mapGetters } from 'vuex';
   import {
     actionBotsRoute,
+    actionSetupRoute,
     BULK_ACTION_GROUPS,
     BULK_ACTIONS,
     getBulkAction,
   } from '../constants/actions';
+  import {
+    writeDestinationBotName,
+    writeSelectedBotNames,
+  } from '../utils/action-session';
+  import { isBulkJobActive, readBulkJob } from '../utils/bulk-job-session';
   import BulkActionCard from '../components/action-card.vue';
+  import BulkJobBanner from '../components/job-banner.vue';
 
   export default {
     name: 'BulkActionsPage',
@@ -95,12 +109,13 @@
         title: this.$t('bulk-actions'),
       };
     },
-    components: { BulkActionCard },
+    components: { BulkActionCard, BulkJobBanner },
     data() {
       return {
         query: '',
         groups: BULK_ACTION_GROUPS,
         actions: BULK_ACTIONS,
+        activeJob: null,
       };
     },
     computed: {
@@ -126,10 +141,43 @@
           .filter(group => group.actions.length > 0);
       },
     },
+    mounted() {
+      this.refreshActiveJob();
+    },
+    activated() {
+      this.refreshActiveJob();
+    },
     methods: {
+      refreshActiveJob() {
+        this.activeJob = isBulkJobActive() ? readBulkJob() : null;
+      },
+      resumeActiveJob() {
+        const job = readBulkJob();
+        if (!job || job.status !== 'running') {
+          this.activeJob = null;
+          return;
+        }
+        const action = getBulkAction(job.actionSlug || job.actionId);
+        if (!action) return;
+        writeSelectedBotNames(action.slug, job.botNames || []);
+        if (action.kind === 'inventory' && job.params?.destinationBot) {
+          writeDestinationBotName(action.slug, job.params.destinationBot);
+        }
+        this.$router.push(actionSetupRoute(action));
+      },
       openAction(id) {
         const action = getBulkAction(id);
         if (!action) return;
+        const job = readBulkJob();
+        if (job && job.status === 'running') {
+          const same = String(job.actionSlug || '').toLowerCase() === String(action.slug).toLowerCase();
+          if (same) {
+            this.resumeActiveJob();
+            return;
+          }
+          this.activeJob = job;
+          return;
+        }
         this.$router.push(actionBotsRoute(action));
       },
     },

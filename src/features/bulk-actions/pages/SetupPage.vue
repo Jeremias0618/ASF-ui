@@ -52,6 +52,12 @@
         <p>{{ $t('bot-social-plugin-missing-body') }}</p>
       </div>
 
+      <BulkJobBanner
+        v-if="foreignJob"
+        :job="foreignJob"
+        :show-resume="false"
+      ></BulkJobBanner>
+
       <p v-if="!selectedBotModels.length" class="bulk-actions__empty">
         {{ $t('bulk-actions-bots-required') }}
         <a class="bulk-actions__empty-link" @click="goSelectBots">
@@ -139,9 +145,12 @@
   } from '../constants/actions';
   import {
     clearSelectedBotNames, readDestinationBotName, readSelectedBotNames,
+    writeDestinationBotName, writeSelectedBotNames,
   } from '../utils/action-session';
+  import { isBulkJobActiveForOtherAction, readBulkJob } from '../utils/bulk-job-session';
   import leaveGuard from '../mixins/leave-guard';
   import BulkLeaveDialog from '../components/leave-dialog.vue';
+  import BulkJobBanner from '../components/job-banner.vue';
   import BulkSelectedCrew from '../components/selected-crew.vue';
   import BulkUrlBotsAction from '../components/actions/url-bots-action.vue';
   import BulkReviewsVoteAction from '../components/actions/reviews-vote.vue';
@@ -153,6 +162,7 @@
     name: 'MultiActionSetupPage',
     components: {
       BulkLeaveDialog,
+      BulkJobBanner,
       BulkSelectedCrew,
       BulkUrlBotsAction,
       BulkReviewsVoteAction,
@@ -196,6 +206,11 @@
         if (!this.destinationName) return null;
         return this.sortedBots.find(bot => bot.name === this.destinationName) || null;
       },
+      foreignJob() {
+        if (!this.action) return null;
+        if (!isBulkJobActiveForOtherAction(this.action.slug)) return null;
+        return readBulkJob();
+      },
     },
     watch: {
       '$route.params.action': {
@@ -205,9 +220,7 @@
             this.$router.replace({ name: 'multi-action' });
             return;
           }
-          this.selectedNames = readSelectedBotNames(this.action.slug)
-            .filter(name => name !== readDestinationBotName(this.action.slug));
-          this.destinationName = readDestinationBotName(this.action.slug);
+          this.hydrateFromSessionAndJob();
           if (!this.selectedNames.length
             || (this.isInventory && !this.destinationName)) {
             this.continueWithoutGuard(actionBotsRoute(this.action));
@@ -216,6 +229,27 @@
       },
     },
     methods: {
+      hydrateFromSessionAndJob() {
+        let selected = readSelectedBotNames(this.action.slug)
+          .filter(name => name !== readDestinationBotName(this.action.slug));
+        let destination = readDestinationBotName(this.action.slug);
+        const job = readBulkJob();
+        const sameJob = job
+          && String(job.actionSlug || '').toLowerCase() === String(this.action.slug).toLowerCase()
+          && (job.status === 'running' || job.status === 'done' || job.status === 'cancelled');
+        if (sameJob) {
+          if ((!selected.length) && Array.isArray(job.botNames) && job.botNames.length) {
+            selected = job.botNames.slice();
+            writeSelectedBotNames(this.action.slug, selected);
+          }
+          if (this.isInventory && !destination && job.params?.destinationBot) {
+            destination = String(job.params.destinationBot);
+            writeDestinationBotName(this.action.slug, destination);
+          }
+        }
+        this.selectedNames = selected;
+        this.destinationName = destination;
+      },
       goSelectBots() {
         this.continueWithoutGuard(actionBotsRoute(this.action));
       },

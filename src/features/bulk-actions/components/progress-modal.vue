@@ -54,6 +54,10 @@
           ></span>
         </div>
 
+        <p v-if="paced && !isIndeterminate" class="bulk-run-modal__pace-hint">
+          {{ $t('bulk-actions-progress-pace-hint') }}
+        </p>
+
         <footer class="bulk-run-modal__foot">
           <button type="button" class="button bulk-run-modal__stop" @click="$emit('cancel')">
             {{ $t('bulk-actions-progress-cancel') }}
@@ -125,6 +129,7 @@
       results: { type: Array, default: () => [] },
       summaryTarget: { type: String, default: '' },
       botsTotal: { type: Number, default: 0 },
+      paced: { type: Boolean, default: false },
     },
     data() {
       progressSeq += 1;

@@ -1,5 +1,32 @@
 /**
  * Cooperative bulk runner state for Vue 2 (plain mutable object).
+ * Supports per-step delays and resume from a checkpoint.
+ */
+
+/**
+ * @param {number} ms
+ * @param {() => boolean} isCancelled
+ */
+function sleepCancellable(ms, isCancelled) {
+  if (ms <= 0) return Promise.resolve();
+  return new Promise(resolve => {
+    const started = Date.now();
+    const tick = () => {
+      if (isCancelled()) {
+        resolve();
+        return;
+      }
+      if (Date.now() - started >= ms) {
+        resolve();
+        return;
+      }
+      setTimeout(tick, Math.min(250, ms - (Date.now() - started)));
+    };
+    setTimeout(tick, Math.min(250, ms));
+  });
+}
+
+/**
  * @returns {{
  *   running: boolean,
  *   cancelled: boolean,
@@ -9,7 +36,7 @@
  *   results: object[],
  *   reset: () => void,
  *   cancel: () => void,
- *   runSteps: (steps: { label: string, run: () => Promise<object|object[]> }[]) => Promise<object[]>,
+ *   runSteps: (steps: { label: string, run: () => Promise<object|object[]> }[], opts?: object) => Promise<object[]>,
  * }}
  */
 export function createBulkRunner() {
@@ -33,20 +60,31 @@ export function createBulkRunner() {
     },
     /**
      * @param {{ label: string, run: () => Promise<object|object[]> }[]} steps
+     * @param {{
+     *   delayMs?: number,
+     *   initialResults?: object[],
+     *   startOffset?: number,
+     *   onStepDone?: (info: { stepIndex: number, absoluteIndex: number, results: object[] }) => void,
+     * }} [opts]
      */
-    async runSteps(steps) {
+    async runSteps(steps, opts = {}) {
+      const delayMs = Math.max(0, Number(opts.delayMs) || 0);
+      const startOffset = Math.max(0, Number(opts.startOffset) || 0);
+      const initialResults = Array.isArray(opts.initialResults) ? opts.initialResults.slice() : [];
+
       state.running = true;
       state.cancelled = false;
-      state.current = 0;
-      state.total = steps.length;
+      state.current = startOffset;
+      state.total = startOffset + steps.length;
       state.label = '';
-      state.results = [];
-      const all = [];
+      state.results = initialResults;
+      const all = initialResults.slice();
 
       for (let i = 0; i < steps.length; i += 1) {
         if (state.cancelled) break;
         const step = steps[i];
-        state.current = i + 1;
+        const absoluteIndex = startOffset + i;
+        state.current = absoluteIndex + 1;
         state.label = step.label;
         try {
           const raw = await step.run();
@@ -60,6 +98,15 @@ export function createBulkRunner() {
           });
         }
         state.results = all.slice();
+        opts.onStepDone?.({
+          stepIndex: i,
+          absoluteIndex,
+          results: all.slice(),
+        });
+
+        if (delayMs > 0 && i < steps.length - 1 && !state.cancelled) {
+          await sleepCancellable(delayMs, () => state.cancelled);
+        }
       }
 
       state.running = false;

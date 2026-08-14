@@ -1,8 +1,10 @@
 import { hasStartedAction } from '../utils/action-session';
+import { clearBulkJob, isBulkJobActive, readBulkJob } from '../utils/bulk-job-session';
 
 /**
  * Guard in-progress multi-action flows against accidental navigation.
- * Same-action bots ↔ setup transitions are allowed without prompting.
+ * Same-action bots ↔ setup transitions are allowed without prompting
+ * unless a paced bulk job is actively running.
  */
 export default {
   data() {
@@ -19,6 +21,7 @@ export default {
     },
     isFlowDirty() {
       if (this.actionFinished) return false;
+      if (isBulkJobActive()) return true;
       return hasStartedAction(this.actionSlug);
     },
   },
@@ -32,6 +35,13 @@ export default {
     if (this.allowNextNavigation || this.actionFinished || !this.isFlowDirty) {
       this.allowNextNavigation = false;
       next();
+      return;
+    }
+    // While a bulk job runs, keep the user on setup (reload recovers the modal).
+    if (isBulkJobActive()) {
+      this.pendingRoute = to;
+      this.leaveDialogOpen = true;
+      next(false);
       return;
     }
     if (this.isSameActionFlow(to, from)) {
@@ -63,6 +73,7 @@ export default {
     confirmLeaveFlow(clearSession) {
       this.leaveDialogOpen = false;
       this.allowNextNavigation = true;
+      if (isBulkJobActive()) clearBulkJob();
       if (typeof clearSession === 'function') clearSession();
       const target = this.pendingRoute;
       this.pendingRoute = null;
@@ -78,6 +89,9 @@ export default {
     continueWithoutGuard(routeLocation) {
       this.allowNextNavigation = true;
       return this.$router.push(routeLocation);
+    },
+    readActiveBulkJob() {
+      return readBulkJob();
     },
   },
 };

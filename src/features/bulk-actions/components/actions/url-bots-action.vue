@@ -1,5 +1,11 @@
 <template>
   <section class="bulk-actions-setup-panel" :aria-label="title">
+    <BulkJobBanner
+      v-if="jobBlocked && blockedJob"
+      :job="blockedJob"
+      :show-resume="false"
+    ></BulkJobBanner>
+
     <div class="bulk-actions-setup-panel__body">
       <label class="bulk-actions-field">
         <span class="bulk-actions-field__label">{{ targetLabel }}</span>
@@ -11,7 +17,7 @@
           autocomplete="off"
           spellcheck="false"
           :placeholder="targetPlaceholder"
-          :disabled="busy"
+          :disabled="busy || jobBlocked"
           :aria-invalid="showTargetError ? 'true' : 'false'"
           :aria-describedby="showTargetError ? targetErrorId : null"
           @blur="targetTouched = true"
@@ -29,12 +35,12 @@
 
     <footer class="bulk-actions-setup-bar">
       <div class="bulk-actions-setup-bar__copy">
-        <p class="bulk-actions-setup-bar__hint">{{ $t('bulk-actions-setup-hint') }}</p>
+        <p class="bulk-actions-setup-bar__hint">{{ $t('bulk-actions-setup-hint-paced') }}</p>
       </div>
       <button
         type="button"
         class="button button--confirm bulk-actions-setup-bar__cta"
-        :disabled="!canSubmit || busy"
+        :disabled="runDisabled"
         @click="requestConfirm"
       >
         {{ $t('bulk-actions-run') }}
@@ -47,7 +53,7 @@
       :title="$t('bulk-actions-confirm-title')"
       :lead="$t('bulk-actions-confirm-lead')"
       :lines="confirmLines"
-      :warning="$t('bulk-actions-confirm-warning')"
+      :warning="$t('bulk-actions-confirm-warning-paced')"
       :confirmLabel="$t('bulk-actions-run')"
       @cancel="openConfirm = false"
       @confirm="onConfirm"
@@ -62,8 +68,9 @@
       :results="runner.results"
       :summary-target="progressTarget"
       :bots-total="botNames.length"
-      @cancel="runner.cancel()"
-      @close="onProgressClose"
+      :paced="true"
+      @cancel="onBulkProgressCancel"
+      @close="onBulkProgressClose"
     ></BulkProgressModal>
   </section>
 </template>
@@ -71,8 +78,8 @@
 <script>
   import { isPluginMissingError } from '../../../bot-social/api/bot-social';
   import { flattenMutationResults, runUrlBotsApi } from '../../api/bulk-social';
-  import { summarizeMutationResults } from '../../utils/result-outcomes';
   import { createBulkRunner } from '../../composables/use-bulk-runner';
+  import bulkJobLifecycle from '../../mixins/bulk-job-lifecycle';
   import {
     bulkTargetErrorKey,
     getBulkTargetKind,
@@ -80,13 +87,15 @@
     normalizeBulkTarget,
   } from '../../utils/validate-target';
   import BulkConfirmDialog from '../confirm-dialog.vue';
+  import BulkJobBanner from '../job-banner.vue';
   import BulkProgressModal from '../progress-modal.vue';
 
   let targetErrorSeq = 0;
 
   export default {
     name: 'BulkUrlBotsAction',
-    components: { BulkConfirmDialog, BulkProgressModal },
+    components: { BulkConfirmDialog, BulkJobBanner, BulkProgressModal },
+    mixins: [bulkJobLifecycle],
     props: {
       action: { type: Object, required: true },
       bots: { type: Array, default: () => [] },
@@ -98,10 +107,7 @@
         targetTouched: false,
         targetErrorId: `bulk-target-error-${targetErrorSeq}`,
         openConfirm: false,
-        progressOpen: false,
-        busy: false,
         runner: createBulkRunner(),
-        completedOk: false,
       };
     },
     computed: {
@@ -119,7 +125,7 @@
         return this.targetTouched && Boolean(this.target.trim()) && !this.targetValid;
       },
       canSubmit() {
-        return this.botNames.length > 0 && this.targetValid;
+        return this.botNames.length > 0 && this.targetValid && !this.jobBlocked;
       },
       progressTarget() {
         return this.target.trim();
@@ -128,48 +134,48 @@
         return [
           this.$t('bulk-actions-confirm-bots', { n: this.botNames.length }),
           this.$t('bulk-actions-confirm-target', { target: this.target.trim() }),
+          this.$t('bulk-actions-confirm-paced'),
         ];
       },
     },
     methods: {
+      applyJobParams(job) {
+        if (job.params && job.params.target) {
+          this.target = String(job.params.target);
+        }
+      },
       requestConfirm() {
         this.targetTouched = true;
-        if (!this.canSubmit) return;
+        if (!this.canSubmit || this.busy) return;
         this.openConfirm = true;
       },
       async onConfirm() {
         this.openConfirm = false;
-        this.busy = true;
-        this.progressOpen = true;
-        this.completedOk = false;
         const botNames = this.botNames.slice();
+        const targetRaw = this.target.trim();
         const target = normalizeBulkTarget(this.action, this.target);
-        try {
-          await this.runner.runSteps([{
-            label: target,
-            run: async () => {
-              try {
-                const payload = await runUrlBotsApi(this.action.api, botNames, { target });
-                return flattenMutationResults(payload);
-              } catch (err) {
-                if (err && err.message === 'INVALID_APP_ID') {
-                  throw new Error(this.$t('bulk-actions-invalid-appid'));
-                }
-                if (isPluginMissingError(err)) this.$emit('plugin-missing');
-                throw err;
-              }
-            },
-          }]);
-          const summary = summarizeMutationResults(this.runner.results);
-          this.completedOk = summary.ok > 0 || summary.skipped > 0;
-        } finally {
-          this.busy = false;
-        }
+        const job = this.beginBulkJob({
+          params: { target: targetRaw },
+          botNames,
+          summaryTarget: target,
+        });
+        if (!job) return;
+        await this.continueBulkJob(job);
       },
-      onProgressClose() {
-        this.progressOpen = false;
-        this.runner.reset();
-        if (this.completedOk) this.$emit('finished');
+      async continueBulkJob(job) {
+        const target = normalizeBulkTarget(this.action, job.params.target || this.target);
+        await this.executePacedJob(job, async botName => {
+          try {
+            const payload = await runUrlBotsApi(this.action.api, [botName], { target });
+            return flattenMutationResults(payload);
+          } catch (err) {
+            if (err && err.message === 'INVALID_APP_ID') {
+              throw new Error(this.$t('bulk-actions-invalid-appid'));
+            }
+            if (isPluginMissingError(err)) this.$emit('plugin-missing');
+            throw err;
+          }
+        });
       },
     },
   };

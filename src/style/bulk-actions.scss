@@ -334,6 +334,27 @@
   }
 }
 
+.bulk-actions__banner--job {
+  .bulk-actions__banner-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.65rem;
+  }
+
+  .bulk-actions__banner-note {
+    color: var(--h2-muted, #667085);
+    font-size: 0.9rem;
+    margin: 0.35rem 0 0;
+  }
+}
+
+.bulk-run-modal__pace-hint {
+  color: var(--h2-muted, #667085);
+  font-size: 0.85rem;
+  margin: 0.5rem 0 0;
+}
+
 .bulk-actions__empty {
   color: var(--h2-muted, #667085);
   margin: 0.5rem 0;

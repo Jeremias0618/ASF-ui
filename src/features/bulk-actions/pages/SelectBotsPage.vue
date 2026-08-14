@@ -40,6 +40,13 @@
       </ol>
     </header>
 
+    <BulkJobBanner
+      v-if="activeJob"
+      :job="activeJob"
+      :show-resume="canResumeJob"
+      @resume="resumeJob"
+    ></BulkJobBanner>
+
     <section class="bulk-actions-deck bulk-actions-deck--bots" :aria-label="stepTitle">
       <div class="bulk-actions-deck__nav">
         <button type="button" class="bulk-actions-back" @click="requestBack">
@@ -83,7 +90,7 @@
           <button
             type="button"
             class="button button--confirm bulk-actions-bots-bar__cta"
-            :disabled="!destinationBot"
+            :disabled="!destinationBot || botsStepLocked"
             @click="continueToSources"
           >
             {{ $t('bulk-actions-proceed') }}
@@ -124,7 +131,7 @@
           <button
             type="button"
             class="button button--confirm bulk-actions-bots-bar__cta"
-            :disabled="!selectedBots.length"
+            :disabled="!selectedBots.length || botsStepLocked"
             @click="continueToSetup"
           >
             {{ $t('bulk-actions-proceed') }}
@@ -155,13 +162,15 @@
     writeSelectedBotNames,
   } from '../utils/action-session';
   import { findDefaultDestinationBot } from '../utils/find-default-destination';
+  import { isBulkJobActive, readBulkJob } from '../utils/bulk-job-session';
   import leaveGuard from '../mixins/leave-guard';
   import BulkBotPicker from '../components/bot-picker.vue';
+  import BulkJobBanner from '../components/job-banner.vue';
   import BulkLeaveDialog from '../components/leave-dialog.vue';
 
   export default {
     name: 'MultiActionBotsPage',
-    components: { BulkBotPicker, BulkLeaveDialog },
+    components: { BulkBotPicker, BulkJobBanner, BulkLeaveDialog },
     mixins: [leaveGuard],
     metaInfo() {
       return { title: this.title };
@@ -171,6 +180,7 @@
         selectedBots: [],
         destinationBot: '',
         inventoryPhase: 'destination',
+        activeJob: null,
       };
     },
     computed: {
@@ -244,6 +254,14 @@
         }
         return this.$t('back');
       },
+      canResumeJob() {
+        if (!this.activeJob || !this.action) return false;
+        return String(this.activeJob.actionSlug || '').toLowerCase()
+          === String(this.action.slug).toLowerCase();
+      },
+      botsStepLocked() {
+        return Boolean(this.activeJob && !this.canResumeJob);
+      },
     },
     watch: {
       '$route.params.action': {
@@ -251,6 +269,11 @@
         handler() {
           if (!this.action) {
             this.$router.replace({ name: 'multi-action' });
+            return;
+          }
+          this.refreshActiveJob();
+          if (this.canResumeJob) {
+            this.resumeJob();
             return;
           }
           this.hydrateFromSession();
@@ -274,6 +297,18 @@
       },
     },
     methods: {
+      refreshActiveJob() {
+        this.activeJob = isBulkJobActive() ? readBulkJob() : null;
+      },
+      resumeJob() {
+        const job = readBulkJob();
+        if (!job || !this.action) return;
+        writeSelectedBotNames(this.action.slug, job.botNames || []);
+        if (this.isInventory && job.params?.destinationBot) {
+          writeDestinationBotName(this.action.slug, job.params.destinationBot);
+        }
+        this.continueWithoutGuard(actionSetupRoute(this.action));
+      },
       hydrateFromSession() {
         this.selectedBots = readSelectedBotNames(this.action.slug);
         if (!this.isInventory) {
@@ -306,14 +341,16 @@
         writeSelectedBotNames(this.action.slug, cleaned);
       },
       continueToSources() {
-        if (!this.destinationBot) return;
+        if (this.botsStepLocked || !this.destinationBot) return;
         writeDestinationBotName(this.action.slug, this.destinationBot);
         this.inventoryPhase = 'sources';
       },
       goChangeDestination() {
+        if (this.botsStepLocked) return;
         this.inventoryPhase = 'destination';
       },
       continueToSetup() {
+        if (this.botsStepLocked) return;
         if (this.isInventory && !this.destinationBot) {
           this.inventoryPhase = 'destination';
           return;
