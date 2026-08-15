@@ -27,38 +27,50 @@
         <BotLink
           v-tooltip="steamFeatureTooltip('bot-fav-buttons-inventory')"
           icon="boxes"
+          gated
           :disabled="!steamFeaturesReady"
           :link="{ name: 'bot-inventory', params: { bot: bot.name } }"
+          @activate="openPluginFeature('bot-inventory')"
         ></BotLink>
         <BotLink
           v-tooltip="steamFeatureTooltip('bot-fav-buttons-friends')"
           icon="users"
+          gated
           :disabled="!steamFeaturesReady"
           :link="{ name: 'bot-friends', params: { bot: bot.name } }"
+          @activate="openPluginFeature('bot-friends')"
         ></BotLink>
         <BotLink
           v-tooltip="steamFeatureTooltip('bot-fav-buttons-community')"
           icon="globe"
+          gated
           :disabled="!steamFeaturesReady"
           :link="{ name: 'bot-community', params: { bot: bot.name } }"
+          @activate="openPluginFeature('bot-community')"
         ></BotLink>
         <BotLink
           v-tooltip="steamFeatureTooltip('bot-fav-buttons-games')"
           icon="gamepad"
+          gated
           :disabled="!steamFeaturesReady"
           :link="{ name: 'bot-games', params: { bot: bot.name } }"
+          @activate="openPluginFeature('bot-games')"
         ></BotLink>
         <BotLink
           v-tooltip="steamFeatureTooltip('bot-fav-buttons-wishlist')"
           icon="heart"
+          gated
           :disabled="!steamFeaturesReady"
           :link="{ name: 'bot-wishlist', params: { bot: bot.name } }"
+          @activate="openPluginFeature('bot-wishlist')"
         ></BotLink>
         <BotLink
           v-tooltip="steamFeatureTooltip('bot-fav-buttons-idle')"
           icon="clock"
+          gated
           :disabled="!steamFeaturesReady"
           :link="{ name: 'bot-idle', params: { bot: bot.name } }"
+          @activate="openPluginFeature('bot-idle')"
         ></BotLink>
         <BotLink v-tooltip="$t('bot-fav-buttons-bgr')" icon="key" :link="{ name: 'bot-bgr', params: { bot: bot.name } }"></BotLink>
         <BotLink v-tooltip="$t('bot-fav-buttons-2fa')" icon="lock" :link="{ name: 'bot-2fa', params: { bot: bot.name } }"></BotLink>
@@ -110,6 +122,7 @@
   import getUserInputType from '../../utils/getUserInputType';
   import { fetchIdleGamesConfig, normalizeIdleAppIds } from '../../features/bot-social/api/idle-games';
   import { loadGameStats } from '../../features/bot-social/cache/bot-social-queries';
+  import { ensureBotSocialPluginOrModal } from '../../features/bot-social/plugin-gate/guard';
 
   export default {
     name: 'BotProfile',
@@ -244,6 +257,12 @@
         const label = this.$t(labelKey);
         if (this.steamFeaturesReady) return label;
         return this.$t('bot-fav-buttons-needs-online', { action: label });
+      },
+      async openPluginFeature(routeName) {
+        if (!this.steamFeaturesReady || !this.bot) return;
+        const ok = await ensureBotSocialPluginOrModal();
+        if (!ok) return;
+        this.$router.push({ name: routeName, params: { bot: this.bot.name } });
       },
       async update(params = {}) {
         return this.$store.dispatch('bots/updateBot', { name: this.bot.name, ...params });

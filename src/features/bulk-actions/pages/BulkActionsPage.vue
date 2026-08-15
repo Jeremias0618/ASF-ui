@@ -99,6 +99,7 @@
     writeSelectedBotNames,
   } from '../utils/action-session';
   import { isBulkJobActive, readBulkJob } from '../utils/bulk-job-session';
+  import { ensureBotSocialPluginOrModal } from '../../bot-social/plugin-gate/guard';
   import BulkActionCard from '../components/action-card.vue';
   import BulkJobBanner from '../components/job-banner.vue';
 
@@ -151,7 +152,9 @@
       refreshActiveJob() {
         this.activeJob = isBulkJobActive() ? readBulkJob() : null;
       },
-      resumeActiveJob() {
+      async resumeActiveJob() {
+        const ok = await ensureBotSocialPluginOrModal();
+        if (!ok) return;
         const job = readBulkJob();
         if (!job || job.status !== 'running') {
           this.activeJob = null;
@@ -165,9 +168,11 @@
         }
         this.$router.push(actionSetupRoute(action));
       },
-      openAction(id) {
+      async openAction(id) {
         const action = getBulkAction(id);
         if (!action) return;
+        const ok = await ensureBotSocialPluginOrModal();
+        if (!ok) return;
         const job = readBulkJob();
         if (job && job.status === 'running') {
           const same = String(job.actionSlug || '').toLowerCase() === String(action.slug).toLowerCase();

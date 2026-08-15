@@ -10,6 +10,19 @@
     <span v-if="name" class="bot-action__label">{{ name }}</span>
     <FontAwesomeIcon v-if="icon" class="bot-action__icon" :icon="icon"></FontAwesomeIcon>
   </div>
+  <div
+    v-else-if="gated"
+    v-show="visible"
+    class="bot-action"
+    role="button"
+    tabindex="0"
+    @click="$emit('activate')"
+    @keydown.enter.prevent="$emit('activate')"
+    @keydown.space.prevent="$emit('activate')"
+  >
+    <span v-if="name" class="bot-action__label">{{ name }}</span>
+    <FontAwesomeIcon v-if="icon" class="bot-action__icon" :icon="icon"></FontAwesomeIcon>
+  </div>
   <router-link v-else v-show="visible" v-slot="{ navigate }" custom :to="link">
     <div class="bot-action" @click="navigate">
       <span v-if="name" class="bot-action__label">{{ name }}</span>
@@ -27,6 +40,7 @@
       link: Object,
       condition: Function,
       disabled: { type: Boolean, default: false },
+      gated: { type: Boolean, default: false },
     },
     computed: {
       visible() {

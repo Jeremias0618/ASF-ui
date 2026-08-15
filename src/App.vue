@@ -10,6 +10,7 @@
 
     <AppSideMenu></AppSideMenu>
     <AppModal></AppModal>
+    <PluginMissingModal></PluginMissingModal>
     <vue-snotify></vue-snotify>
   </div>
 </template>
@@ -18,6 +19,7 @@
   import { mapGetters, mapActions } from 'vuex';
   import AppSideMenu from './components/App/SideMenu.vue';
   import AppModal from './components/App/Modal.vue';
+  import PluginMissingModal from './features/bot-social/plugin-gate/missing-modal.vue';
   import HomeShell from './components/Home/Shell.vue';
   import { STATUS } from './utils/getStatus';
   import './style/home.scss';
@@ -31,7 +33,7 @@
       titleTemplate: 'ASF | %s',
     },
     components: {
-      AppSideMenu, AppModal, HomeShell,
+      AppSideMenu, AppModal, PluginMissingModal, HomeShell,
     },
     computed: {
       ...mapGetters({

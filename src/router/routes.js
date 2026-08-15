@@ -1,5 +1,6 @@
 import store from '../store';
 import * as storage from '../utils/storage';
+import { requireBotSocialPlugin } from '../features/bot-social/plugin-gate/guard';
 
 const routes = {
   asfBans: 'asf-bans',
@@ -248,6 +249,7 @@ export default [
       feature: 'inventory',
       modalSize: 'workspace',
     },
+    beforeEnter: requireBotSocialPlugin,
   },
   {
     path: '/bot/:bot/friends',
@@ -263,6 +265,7 @@ export default [
       feature: 'friends',
       modalSize: 'workspace',
     },
+    beforeEnter: requireBotSocialPlugin,
   },
   {
     path: '/bot/:bot/community',
@@ -278,6 +281,7 @@ export default [
       feature: 'community',
       modalSize: 'workspace',
     },
+    beforeEnter: requireBotSocialPlugin,
   },
   {
     path: '/bot/:bot/games',
@@ -293,6 +297,7 @@ export default [
       feature: 'games',
       modalSize: 'workspace',
     },
+    beforeEnter: requireBotSocialPlugin,
   },
   {
     path: '/bot/:bot/wishlist',
@@ -308,6 +313,7 @@ export default [
       feature: 'wishlist',
       modalSize: 'workspace',
     },
+    beforeEnter: requireBotSocialPlugin,
   },
   {
     path: '/bot/:bot/idle',
@@ -321,6 +327,7 @@ export default [
       arrows: true,
       closeRoute: routes.bots,
     },
+    beforeEnter: requireBotSocialPlugin,
   },
   {
     path: '/bot/:bot/social',
@@ -370,11 +377,13 @@ export default [
     path: '/multi-action/:action/setup',
     name: routes.multiActionSetup,
     component: () => import('../views/MultiActionSetup.vue'),
+    beforeEnter: requireBotSocialPlugin,
   },
   {
     path: '/multi-action/:action',
     name: routes.multiActionBots,
     component: () => import('../views/MultiActionBots.vue'),
+    beforeEnter: requireBotSocialPlugin,
   },
   {
     path: '/commands',
