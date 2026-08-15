@@ -36,11 +36,20 @@
         <router-link class="home2-btn home2-btn--primary" :to="{ name: 'bots' }">
           {{ $t('home-callout-bots-action') }}
         </router-link>
+        <router-link class="home2-btn home2-btn--accent" :to="{ name: 'multi-action' }">
+          <FontAwesomeIcon icon="layer-group" aria-hidden="true"></FontAwesomeIcon>
+          {{ $t('bulk-actions') }}
+        </router-link>
         <router-link class="home2-btn home2-btn--ghost" :to="{ name: 'commands' }">
           {{ $t('commands') }}
         </router-link>
+        <router-link class="home2-btn home2-btn--ghost" :to="{ name: 'log' }">
+          {{ $t('log') }}
+        </router-link>
       </div>
     </section>
+
+    <HomeQuickAccess></HomeQuickAccess>
 
     <section v-if="previewBots.length" class="home2-panel">
       <div class="home2-panel__head">
@@ -68,9 +77,11 @@
 
 <script>
   import { mapGetters } from 'vuex';
+  import HomeQuickAccess from './QuickAccess.vue';
 
   export default {
     name: 'HomeContent',
+    components: { HomeQuickAccess },
     computed: {
       ...mapGetters({
         bots: 'bots/bots',
@@ -223,6 +234,19 @@
         filter: brightness(0.95);
         outline: 2px solid rgba(9, 104, 229, 0.35);
         outline-offset: 2px;
+      }
+    }
+
+    &--accent {
+      background: rgba(9, 104, 229, 0.12);
+      border: 1px solid rgba(9, 104, 229, 0.28);
+      color: var(--h2-brand-600);
+      gap: 0.45rem;
+
+      &:hover,
+      &:focus-visible {
+        background: rgba(9, 104, 229, 0.18);
+        outline: none;
       }
     }
 
