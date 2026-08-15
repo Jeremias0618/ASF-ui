@@ -95,6 +95,18 @@
       close() {
         this.navigate({ name: this.$route.meta.closeRoute });
       },
+      /**
+       * Used by nested modal views via `$parent.back()` (Cancel, etc.).
+       * Prefer returning to the bot profile when a bot param exists.
+       */
+      back() {
+        const botName = this.$route.params?.bot;
+        if (botName && this.$route.name !== 'bot') {
+          this.backToBot();
+          return;
+        }
+        this.close();
+      },
       backToBot() {
         const botName = this.$route.params?.bot;
         if (!botName) return;
