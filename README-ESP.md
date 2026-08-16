@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://cdn.simpleicons.org/steam/1B2838" alt="ASF-ui" width="96" height="96" />
+  <img src=".github/previews/steam-logo-transparent.png" alt="ASF-ui" width="96" height="96" />
 </p>
 
 <h1 align="center">ASF-ui</h1>
