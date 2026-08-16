@@ -52,14 +52,17 @@ End users do **not** need Node.js. Download the prebuilt `www` bundle from [GitH
 
 ### CLI
 
-Stop ASF first. Replace `PATH_TO_YOUR_ARCHISTEAMFARM` with the folder that contains `ArchiSteamFarm.exe` and `www/`, then download and extract:
+Stop ASF first. Replace `PATH_TO_YOUR_ARCHISTEAMFARM` with the folder that contains `ArchiSteamFarm.exe` and `www/`, then download and extract.
+
+> [!NOTE]
+> On Windows PowerShell do **not** use `curl` or `unzip` (those are Linux commands; `curl` there is an alias for `Invoke-WebRequest`). Copy the **Windows** block.
 
 **Windows (PowerShell)**
 
 ```powershell
 cd "PATH_TO_YOUR_ARCHISTEAMFARM"
 
-Invoke-WebRequest -Uri "https://github.com/Jeremias0618/ASF-ui/releases/latest/download/ASF-ui.zip" -OutFile "ASF-ui.zip"
+curl.exe -L -o ASF-ui.zip "https://github.com/Jeremias0618/ASF-ui/releases/latest/download/ASF-ui.zip"
 Expand-Archive -Path "ASF-ui.zip" -DestinationPath "www" -Force
 Remove-Item "ASF-ui.zip"
 ```
@@ -75,15 +78,6 @@ rm ASF-ui.zip
 ```
 
 Start ASF and open `http://localhost:1242`.
-
-### Publish a release (maintainers)
-
-```bash
-git tag v1.0.0
-git push origin v1.0.0
-```
-
-GitHub Actions builds `dist/` (HTML, CSS, JS) and attaches **ASF-ui.zip** to the GitHub Release.
 
 ## Related
 
