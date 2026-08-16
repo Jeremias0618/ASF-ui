@@ -162,6 +162,7 @@
         { route: 'log', labelKey: 'log', icon: 'file-alt' },
         { route: 'plugins', labelKey: 'plugins', icon: 'puzzle-piece' },
         { route: 'releases', labelKey: 'releases', icon: 'code-branch' },
+        { route: 'credits', labelKey: 'credits', icon: 'heart' },
       ],
     },
     {

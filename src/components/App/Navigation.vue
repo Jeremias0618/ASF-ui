@@ -8,6 +8,7 @@
         <NavigationLink :name="$t('bulk-actions')" icon="layer-group" :to="{ name: 'multi-action' }"></NavigationLink>
         <NavigationLink :name="$t('commands')" icon="laptop" :to="{ name: 'commands' }"></NavigationLink>
         <NavigationLink :name="$t('releases')" icon="code-branch" :to="{ name: 'releases' }"></NavigationLink>
+        <NavigationLink :name="$t('credits')" icon="heart" :to="{ name: 'credits' }"></NavigationLink>
         <NavigationLink :name="$t('plugins')" icon="puzzle-piece" :to="{ name: 'plugins' }"></NavigationLink>
         <NavigationLink :name="$t('log')" icon="file-alt" :to="{ name: 'log' }"></NavigationLink>
       </div>

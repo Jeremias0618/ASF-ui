@@ -36,6 +36,7 @@ const routes = {
   passwordHash: 'password-hash',
   plugins: 'plugins',
   releases: 'releases',
+  credits: 'credits',
   setup: 'setup',
   uiConfig: 'ui-config',
   welcome: 'welcome',
@@ -111,6 +112,11 @@ export default [
     path: '/releases',
     name: routes.releases,
     component: () => import('../views/Releases.vue'),
+  },
+  {
+    path: '/credits',
+    name: routes.credits,
+    component: () => import('../features/credits/pages/CreditsPage.vue'),
   },
   {
     path: '/plugins',

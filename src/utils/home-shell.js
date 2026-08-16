@@ -30,6 +30,7 @@ export const HOME2_SHELL_ROUTES = new Set([
   'log',
   'plugins',
   'releases',
+  'credits',
   'asf-config',
   'asf-bans',
   'ui-config',

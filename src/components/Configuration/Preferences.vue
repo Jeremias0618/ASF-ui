@@ -89,6 +89,7 @@
           [this.$t('bots')]: 'bots',
           [this.$t('commands')]: 'commands',
           [this.$t('releases')]: 'releases',
+          [this.$t('credits')]: 'credits',
           [this.$t('plugins')]: 'plugins',
           [this.$t('log')]: 'log',
           [this.$t('asf-config')]: 'asf-config',

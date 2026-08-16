@@ -71,6 +71,14 @@ const SEARCH_PAGES = [
     keywords: 'releases versiones',
   },
   {
+    id: 'credits',
+    route: 'credits',
+    labelKey: 'credits',
+    descKey: 'home2-search-desc-credits',
+    icon: 'heart',
+    keywords: 'credits creditos about acerca colaboracion justarchi plugin',
+  },
+  {
     id: 'configuration',
     route: 'configuration',
     labelKey: 'configuration',
