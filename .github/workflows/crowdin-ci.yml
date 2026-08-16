@@ -9,6 +9,8 @@ permissions: {}
 
 jobs:
   upload:
+    # Upstream Crowdin secrets are not available on this fork.
+    if: github.repository == 'JustArchiNET/ASF-ui'
     environment: dev-crowdin
     runs-on: ubuntu-latest
 
