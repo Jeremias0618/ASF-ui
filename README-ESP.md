@@ -22,6 +22,9 @@
   </a>
   <img src="https://img.shields.io/badge/Vue-2.7-4FC08D?style=flat&logo=vuedotjs&logoColor=white" alt="Vue" />
   <img src="https://img.shields.io/badge/license-Apache--2.0-blue?style=flat" alt="License" />
+  <a href="https://github.com/Jeremias0618/ASF-ui/releases">
+    <img src="https://img.shields.io/github/downloads/Jeremias0618/ASF-ui/total?style=flat&label=descargas" alt="Descargas de GitHub Releases" />
+  </a>
 </p>
 
 <p align="center">
@@ -37,6 +40,19 @@
 
 > [!IMPORTANT]
 > Bot Social (amigos, comunidad, juegos, wishlist, transferencia de inventario) requiere el plugin **[ASFBotSocial](https://github.com/Jeremias0618/ASF-Plugin)**. La UI de stock de ASF (`www/`) no incluye esas pantallas.
+
+## Vista previa
+
+<table>
+  <tr>
+    <td align="center"><img src=".github/previews/Screenshot_1.png" alt="Dashboard" /><br/>Dashboard</td>
+    <td align="center"><img src=".github/previews/Screenshot_2.png" alt="Inventario" /><br/>Inventario</td>
+  </tr>
+  <tr>
+    <td align="center"><img src=".github/previews/Screenshot_5.png" alt="Logros" /><br/>Logros</td>
+    <td align="center"><img src=".github/previews/Screenshot_6.png" alt="Idle" /><br/>Idle</td>
+  </tr>
+</table>
 
 ## Instalación (release compilado)
 
