@@ -4,24 +4,33 @@
     <p class="bot-social__missing-text">{{ $t('bot-social-plugin-missing-body') }}</p>
     <a
       class="bot-social__missing-link"
+      :href="cliUrl"
+      target="_blank"
+      rel="noreferrer noopener"
+    >{{ $t('bot-social-plugin-guide') }}</a>
+    <a
+      class="bot-social__missing-link"
       :href="repoUrl"
       target="_blank"
       rel="noreferrer noopener"
-    >{{ repoUrl }}</a>
+    >{{ $t('bot-social-plugin-repo') }}</a>
     <button type="button" class="button button--confirm" @click="openModal">
-      {{ $t('bot-social-plugin-install') }}
+      {{ $t('bot-social-plugin-commands') }}
     </button>
   </div>
 </template>
 
 <script>
   import { openPluginMissingModal } from '../plugin-gate/bus';
-  import { PLUGIN_REPO_URL } from '../plugin-gate/constants';
+  import { PLUGIN_CLI_URL, PLUGIN_REPO_URL } from '../plugin-gate/constants';
 
   export default {
     name: 'BotSocialPluginMissing',
     data() {
-      return { repoUrl: PLUGIN_REPO_URL };
+      return {
+        cliUrl: PLUGIN_CLI_URL,
+        repoUrl: PLUGIN_REPO_URL,
+      };
     },
     methods: {
       openModal() {

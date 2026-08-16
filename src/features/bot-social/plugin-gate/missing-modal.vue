@@ -13,40 +13,91 @@
         aria-labelledby="plugin-gate-title"
         tabindex="-1"
       >
-        <p class="plugin-gate__eyebrow">ASFBotSocial</p>
-        <h2 id="plugin-gate-title" class="plugin-gate__title">
-          {{ $t('bot-social-plugin-missing-title') }}
-        </h2>
+        <header class="plugin-gate__header">
+          <div class="plugin-gate__heading">
+            <p class="plugin-gate__eyebrow">ASFBotSocial</p>
+            <h2 id="plugin-gate-title" class="plugin-gate__title">
+              {{ $t('bot-social-plugin-missing-title') }}
+            </h2>
+          </div>
+          <button
+            v-tooltip="$t('modal-close')"
+            type="button"
+            class="plugin-gate__close"
+            :aria-label="$t('modal-close')"
+            @click="close"
+          >
+            <FontAwesomeIcon icon="times" aria-hidden="true"></FontAwesomeIcon>
+          </button>
+        </header>
+
         <p class="plugin-gate__lead">{{ $t('bot-social-plugin-missing-body') }}</p>
 
-        <a
-          class="plugin-gate__repo"
-          :href="repoUrl"
-          target="_blank"
-          rel="noreferrer noopener"
-        >
-          <FontAwesomeIcon :icon="['fab', 'github']" aria-hidden="true"></FontAwesomeIcon>
-          <span>{{ repoUrl }}</span>
-        </a>
-
-        <p v-if="statusText" class="plugin-gate__status" :class="{ 'is-error': Boolean(error) }">
-          {{ statusText }}
-        </p>
+        <nav class="plugin-gate__links" :aria-label="$t('bot-social-plugin-repo')">
+          <a
+            class="plugin-gate__link"
+            :href="cliUrl"
+            target="_blank"
+            rel="noreferrer noopener"
+          >
+            <span class="plugin-gate__link-icon" aria-hidden="true">
+              <FontAwesomeIcon icon="book-open"></FontAwesomeIcon>
+            </span>
+            <span class="plugin-gate__link-copy">
+              <span class="plugin-gate__link-title">{{ $t('bot-social-plugin-guide') }}</span>
+              <span class="plugin-gate__link-url">{{ cliUrl }}</span>
+            </span>
+            <FontAwesomeIcon class="plugin-gate__link-go" icon="chevron-right" aria-hidden="true"></FontAwesomeIcon>
+          </a>
+          <a
+            class="plugin-gate__link"
+            :href="repoUrl"
+            target="_blank"
+            rel="noreferrer noopener"
+          >
+            <span class="plugin-gate__link-icon" aria-hidden="true">
+              <FontAwesomeIcon :icon="['fab', 'github']"></FontAwesomeIcon>
+            </span>
+            <span class="plugin-gate__link-copy">
+              <span class="plugin-gate__link-title">{{ $t('bot-social-plugin-repo') }}</span>
+              <span class="plugin-gate__link-url">{{ repoUrl }}</span>
+            </span>
+            <FontAwesomeIcon class="plugin-gate__link-go" icon="chevron-right" aria-hidden="true"></FontAwesomeIcon>
+          </a>
+        </nav>
 
         <div class="plugin-gate__actions">
-          <button type="button" class="button" :disabled="busy" @click="close">
+          <button type="button" class="button" @click="close">
             {{ $t('cancel') }}
           </button>
           <button
             ref="installBtn"
             type="button"
             class="button button--confirm"
-            :disabled="busy"
-            @click="install"
+            :aria-expanded="String(showCommands)"
+            aria-controls="plugin-gate-commands"
+            @click="toggleCommands"
           >
-            <FontAwesomeIcon v-if="busy" icon="spinner" spin aria-hidden="true"></FontAwesomeIcon>
-            <span>{{ busy ? $t('bot-social-plugin-installing') : $t('bot-social-plugin-install') }}</span>
+            {{ $t('bot-social-plugin-commands') }}
           </button>
+        </div>
+
+        <div
+          v-if="showCommands"
+          id="plugin-gate-commands"
+          class="plugin-gate__cli"
+        >
+          <p class="plugin-gate__cli-hint">
+            {{ homePath ? $t('bot-social-plugin-commands-hint') : $t('bot-social-plugin-path-unknown') }}
+          </p>
+          <div class="plugin-gate__cli-toolbar">
+            <span class="plugin-gate__cli-label">{{ cliLabel }}</span>
+            <button type="button" class="button button--small" @click="copyCommands">
+              <FontAwesomeIcon icon="clipboard" aria-hidden="true"></FontAwesomeIcon>
+              <span>{{ $t('bot-social-plugin-copy') }}</span>
+            </button>
+          </div>
+          <pre class="plugin-gate__cli-code" tabindex="0">{{ commands }}</pre>
         </div>
       </div>
     </div>
@@ -54,121 +105,77 @@
 </template>
 
 <script>
+  import copy from 'copy-to-clipboard';
   import { closePluginMissingModal, onPluginMissingModal } from './bus';
-  import { PLUGIN_REPO_URL, PLUGIN_ZIP } from './constants';
-  import { invalidatePluginDetect } from './detect';
-  import {
-    dllFromZipBuffer,
-    downloadDllFallback,
-    fetchLatestReleaseAsset,
-    readZipFromUser,
-    restartAsf,
-    triggerBrowserDownload,
-    writePluginDll,
-  } from './install';
+  import { PLUGIN_CLI_URL, PLUGIN_REPO_URL } from './constants';
+  import { isWindowsHomePath, resolveAsfHomePath } from './asf-home-path';
+  import { buildPluginInstallCommands } from './install-commands';
 
   export default {
     name: 'PluginMissingModal',
     data() {
       return {
         open: false,
-        busy: false,
-        error: '',
-        phase: '',
+        showCommands: false,
+        homePath: '',
+        cliUrl: PLUGIN_CLI_URL,
         repoUrl: PLUGIN_REPO_URL,
       };
     },
     computed: {
-      statusText() {
-        if (this.error) return this.error;
-        if (this.phase === 'download') return this.$t('bot-social-plugin-status-download');
-        if (this.phase === 'zip') return this.$t('bot-social-plugin-status-zip');
-        if (this.phase === 'picker') return this.$t('bot-social-plugin-status-picker');
-        if (this.phase === 'restart') return this.$t('bot-social-plugin-status-restart');
-        return '';
+      fallbackPath() {
+        return String(this.$i18n.locale || '').startsWith('es')
+          ? 'RUTA_DE_TU_ARCHISTEAMFARM'
+          : 'PATH_TO_YOUR_ARCHISTEAMFARM';
+      },
+      useWindowsCli() {
+        if (this.homePath) return isWindowsHomePath(this.homePath);
+        return /win/i.test(window.navigator.platform || window.navigator.userAgent || '');
+      },
+      commands() {
+        return buildPluginInstallCommands(this.homePath || this.fallbackPath, { windows: this.useWindowsCli });
+      },
+      cliLabel() {
+        return this.useWindowsCli ? 'PowerShell' : 'Linux / macOS';
       },
     },
     mounted() {
       this.unsubscribe = onPluginMissingModal(value => {
         this.open = Boolean(value);
         if (this.open) {
-          this.error = '';
-          this.phase = '';
+          this.showCommands = false;
+          this.homePath = '';
+          document.body.classList.add('plugin-gate-open');
+          this.loadHomePath();
           this.$nextTick(() => {
             const target = this.$refs.installBtn || this.$refs.panel;
             if (target && typeof target.focus === 'function') target.focus();
           });
+        } else {
+          document.body.classList.remove('plugin-gate-open');
         }
       });
     },
     beforeDestroy() {
+      document.body.classList.remove('plugin-gate-open');
       if (this.unsubscribe) this.unsubscribe();
     },
     methods: {
       close() {
-        if (this.busy) return;
         this.open = false;
+        this.showCommands = false;
+        document.body.classList.remove('plugin-gate-open');
         closePluginMissingModal();
       },
-      async install() {
-        if (this.busy) return;
-        this.busy = true;
-        this.error = '';
-        this.phase = 'download';
-
-        try {
-          const { downloadUrl } = await fetchLatestReleaseAsset();
-          triggerBrowserDownload(downloadUrl, PLUGIN_ZIP);
-
-          this.phase = 'zip';
-          let zipBuffer;
-          try {
-            zipBuffer = await readZipFromUser();
-          } catch (err) {
-            if (err && err.name === 'AbortError') {
-              this.phase = '';
-              return;
-            }
-            throw err;
-          }
-
-          const dllBytes = await dllFromZipBuffer(zipBuffer);
-          this.phase = 'picker';
-          try {
-            await writePluginDll(dllBytes);
-          } catch (err) {
-            if (err && err.name === 'AbortError') {
-              this.phase = '';
-              return;
-            }
-            if (String(err?.message) === 'picker-unsupported') {
-              downloadDllFallback(dllBytes);
-              this.error = this.$t('bot-social-plugin-fallback');
-              return;
-            }
-            throw err;
-          }
-
-          this.phase = 'restart';
-          invalidatePluginDetect();
-          await restartAsf();
-          this.$info(this.$t('restart-initiated'));
-          this.open = false;
-          closePluginMissingModal();
-          this.$router.push({ name: 'setup', params: { restart: true } });
-        } catch (err) {
-          const code = String(err?.message || '');
-          if (code === 'release-fetch' || code === 'asset-missing') {
-            this.error = this.$t('bot-social-plugin-error-github');
-          } else if (code === 'dll-not-in-zip' || code === 'truncated-zip') {
-            this.error = this.$t('bot-social-plugin-error-zip');
-          } else {
-            this.error = this.$t('bot-social-plugin-error-generic');
-          }
-        } finally {
-          this.busy = false;
-          if (this.error) this.phase = '';
-        }
+      async loadHomePath() {
+        this.homePath = await resolveAsfHomePath();
+      },
+      toggleCommands() {
+        this.showCommands = !this.showCommands;
+      },
+      copyCommands() {
+        copy(this.commands);
+        this.$info(this.$t('bot-social-plugin-copied'));
       },
     },
   };
@@ -178,15 +185,24 @@
   $plugin-gate-duration: 220ms;
   $plugin-gate-ease: cubic-bezier(0.16, 1, 0.3, 1);
 
+  body.plugin-gate-open {
+    .modal__close,
+    .modal__back,
+    .modal__arrow {
+      pointer-events: none;
+      visibility: hidden;
+    }
+  }
+
   .plugin-gate {
     align-items: center;
-    background: rgba(15, 23, 42, 0.62);
+    background: rgba(11, 16, 28, 0.72);
     display: flex;
     inset: 0;
     justify-content: center;
     padding: 1.25rem;
     position: fixed;
-    z-index: 2200;
+    z-index: 3200;
   }
 
   .plugin-gate__panel {
@@ -196,10 +212,11 @@
     box-shadow: 0 18px 48px rgba(15, 23, 42, 0.28);
     box-sizing: border-box;
     color: var(--h2-ink, var(--color-text-dark));
-    max-width: 28rem;
+    max-width: 36rem;
     outline: none;
-    padding: 1.35rem 1.4rem 1.2rem;
-    width: min(100%, 28rem);
+    padding: 1.15rem 1.25rem 1.2rem;
+    position: relative;
+    width: min(100%, 36rem);
   }
 
   .plugin-gate-enter-active,
@@ -239,12 +256,50 @@
     }
   }
 
+  .plugin-gate__header {
+    align-items: flex-start;
+    display: flex;
+    gap: 0.75rem;
+    justify-content: space-between;
+    margin: 0 0 0.7rem;
+  }
+
+  .plugin-gate__heading {
+    min-width: 0;
+    padding-right: 0.25rem;
+  }
+
+  .plugin-gate__close {
+    align-items: center;
+    appearance: none;
+    background: transparent;
+    border: 0;
+    border-radius: 0.55rem;
+    color: var(--h2-muted, var(--color-text-disabled));
+    cursor: pointer;
+    display: inline-flex;
+    flex: 0 0 auto;
+    font: inherit;
+    height: 2.75rem;
+    justify-content: center;
+    margin: -0.35rem -0.35rem 0 0;
+    padding: 0;
+    width: 2.75rem;
+
+    &:hover,
+    &:focus-visible {
+      background: var(--h2-soft, rgba(148, 163, 184, 0.12));
+      color: var(--h2-ink, var(--color-text-dark));
+      outline: none;
+    }
+  }
+
   .plugin-gate__eyebrow {
     color: var(--h2-muted, var(--color-text-disabled));
     font-size: 0.72rem;
     font-weight: 700;
     letter-spacing: 0.08em;
-    margin: 0 0 0.35rem;
+    margin: 0 0 0.3rem;
     text-transform: uppercase;
   }
 
@@ -252,45 +307,79 @@
     font-size: 1.15rem;
     font-weight: 700;
     line-height: 1.3;
-    margin: 0 0 0.55rem;
+    margin: 0;
   }
 
   .plugin-gate__lead {
     color: var(--h2-muted-2, var(--color-text));
     font-size: 0.9rem;
     line-height: 1.5;
-    margin: 0 0 0.9rem;
+    margin: 0 0 1rem;
   }
 
-  .plugin-gate__repo {
+  .plugin-gate__links {
+    display: grid;
+    gap: 0.5rem;
+    margin: 0 0 1.1rem;
+  }
+
+  .plugin-gate__link {
     align-items: center;
-    background: var(--h2-soft, rgba(148, 163, 184, 0.12));
+    background: var(--h2-soft, rgba(148, 163, 184, 0.1));
     border: 1px solid var(--h2-border, var(--color-border));
-    border-radius: 0.65rem;
-    color: var(--h2-ink, var(--color-text-dark));
-    display: flex;
-    font-size: 0.82rem;
-    gap: 0.55rem;
-    margin: 0 0 0.9rem;
-    padding: 0.7rem 0.8rem;
-    word-break: break-all;
+    border-radius: 0.75rem;
+    color: inherit;
+    display: grid;
+    gap: 0.7rem;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    min-height: 3.15rem;
+    padding: 0.65rem 0.75rem;
+    text-decoration: none;
 
     &:hover,
     &:focus-visible {
       border-color: var(--h2-brand, var(--color-theme));
-      color: var(--h2-brand, var(--color-theme));
+      outline: none;
     }
   }
 
-  .plugin-gate__status {
-    color: var(--h2-muted, var(--color-text-disabled));
-    font-size: 0.82rem;
-    line-height: 1.45;
-    margin: 0 0 1rem;
+  .plugin-gate__link-icon {
+    align-items: center;
+    background: rgba(148, 163, 184, 0.12);
+    border-radius: 0.5rem;
+    color: var(--h2-brand, var(--color-theme));
+    display: inline-flex;
+    flex: 0 0 auto;
+    height: 2rem;
+    justify-content: center;
+    width: 2rem;
+  }
 
-    &.is-error {
-      color: var(--color-button-cancel, #e11d48);
-    }
+  .plugin-gate__link-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 0.12rem;
+    min-width: 0;
+  }
+
+  .plugin-gate__link-title {
+    font-size: 0.88rem;
+    font-weight: 650;
+    line-height: 1.25;
+  }
+
+  .plugin-gate__link-url {
+    color: var(--h2-muted, var(--color-text-disabled));
+    font-size: 0.72rem;
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .plugin-gate__link-go {
+    color: var(--h2-muted, var(--color-text-disabled));
+    font-size: 0.75rem;
   }
 
   .plugin-gate__actions {
@@ -303,6 +392,59 @@
       align-items: center;
       display: inline-flex;
       gap: 0.4rem;
+      min-height: 2.75rem;
     }
+  }
+
+  .plugin-gate__cli {
+    border-top: 1px solid var(--h2-border, var(--color-border));
+    margin-top: 1rem;
+    padding-top: 0.95rem;
+  }
+
+  .plugin-gate__cli-hint {
+    color: var(--h2-muted-2, var(--color-text));
+    font-size: 0.82rem;
+    line-height: 1.45;
+    margin: 0 0 0.7rem;
+  }
+
+  .plugin-gate__cli-toolbar {
+    align-items: center;
+    display: flex;
+    gap: 0.5rem;
+    justify-content: space-between;
+    margin-bottom: 0.45rem;
+
+    .button {
+      align-items: center;
+      display: inline-flex;
+      gap: 0.35rem;
+      min-height: 2.25rem;
+    }
+  }
+
+  .plugin-gate__cli-label {
+    color: var(--h2-muted, var(--color-text-disabled));
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .plugin-gate__cli-code {
+    background: var(--h2-soft, rgba(15, 23, 42, 0.72));
+    border: 1px solid var(--h2-border, var(--color-border));
+    border-radius: 0.65rem;
+    color: var(--h2-ink, #e2e8f0);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.75rem;
+    line-height: 1.5;
+    margin: 0;
+    max-height: 14rem;
+    overflow: auto;
+    padding: 0.75rem 0.85rem;
+    white-space: pre-wrap;
+    word-break: break-word;
   }
 </style>
