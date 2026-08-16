@@ -1,11 +1,16 @@
 <p align="center">
-  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/vuejs/vuejs-original.svg" alt="ASF-ui" width="96" height="96" />
+  <img src="https://cdn.simpleicons.org/steam/1B2838" alt="ASF-ui" width="96" height="96" />
 </p>
 
 <h1 align="center">ASF-ui</h1>
 
 <p align="center">
-  Fork of the official ArchiSteamFarm web UI, with <strong>pnpm</strong> and Yeremi customizations.
+  Custom <strong>ArchiSteamFarm</strong> web UI (bot social, multi-action, and customizations).<br/>
+  Fork of the official interface — not a fork of the ASF core.
+</p>
+
+<p align="center">
+  <strong>English</strong> · <a href="README-ESP.md">Español</a>
 </p>
 
 <p align="center">
@@ -16,48 +21,79 @@
     <img src="https://img.shields.io/badge/upstream-JustArchiNET%2FASF--ui-2ea44f?style=flat&logo=github&logoColor=white" alt="Upstream" />
   </a>
   <img src="https://img.shields.io/badge/Vue-2.7-4FC08D?style=flat&logo=vuedotjs&logoColor=white" alt="Vue" />
-  <img src="https://img.shields.io/badge/pnpm-11.5-F69220?style=flat&logo=pnpm&logoColor=white" alt="pnpm" />
-  <img src="https://img.shields.io/badge/webpack-5-8DD6F9?style=flat&logo=webpack&logoColor=black" alt="webpack" />
   <img src="https://img.shields.io/badge/license-Apache--2.0-blue?style=flat" alt="License" />
 </p>
 
 <p align="center">
   <a href="https://hits.sh/github.com/Jeremias0618/ASF-ui/">
-    <img src="https://hits.sh/github.com/Jeremias0618/ASF-ui.svg?style=for-the-badge&label=Visitors&color=0e75b6" alt="Repository visitors" />
+    <img src="https://hits.sh/github.com/Jeremias0618/ASF-ui.svg?style=flat-square&label=visitors&color=0e75b6" alt="Repository visitors" />
   </a>
 </p>
 
 ---
 
-[Español](README-ESP.md)
+> [!IMPORTANT]
+> This is **not** the official [JustArchiNET/ASF-ui](https://github.com/JustArchiNET/ASF-ui) project. License is Apache-2.0 from upstream. Support is the fork maintainer’s responsibility.
 
 > [!IMPORTANT]
-> Not the official JustArchiNET project. Apache-2.0 from upstream; support is the fork maintainer’s responsibility.
+> Bot Social (friends, community, games, wishlist, inventory transfer) requires the companion plugin **[ASFBotSocial](https://github.com/Jeremias0618/ASF-Plugin)**. The stock ASF `www/` UI does not include those screens.
 
-## Quick start
+## Install (compiled release)
 
-Requires Node.js **>= 20** and **pnpm** 11.5+ (`corepack enable`).
+End users do **not** need Node.js. Download the prebuilt `www` bundle from [GitHub Releases](https://github.com/Jeremias0618/ASF-ui/releases) (`ASF-ui.zip`).
 
-```bash
-git clone https://github.com/Jeremias0618/ASF-ui.git
-cd ASF-ui
-git remote add upstream https://github.com/JustArchiNET/ASF-ui.git   # if missing
+1. Stop ArchiSteamFarm (or close the UI tab).
+2. Download **ASF-ui.zip** from the latest release.
+3. Extract it into the ASF **`www/`** folder (next to `ArchiSteamFarm.exe`), replacing existing files.
+4. Start ASF and open `http://localhost:1242` (hard-reload once).
 
-pnpm install
-pnpm run dev      # or: pnpm serve / pnpm start → http://localhost:8080
-pnpm run build    # → dist/
+> [!WARNING]
+> Official ASF updates can overwrite `www/`. After an ASF update, extract this UI again (or disable UI auto-update if you keep a custom `www/`).
+
+### CLI
+
+Stop ASF first. Replace `PATH_TO_YOUR_ARCHISTEAMFARM` with the folder that contains `ArchiSteamFarm.exe` and `www/`, then download and extract:
+
+**Windows (PowerShell)**
+
+```powershell
+cd "PATH_TO_YOUR_ARCHISTEAMFARM"
+
+Invoke-WebRequest -Uri "https://github.com/Jeremias0618/ASF-ui/releases/latest/download/ASF-ui.zip" -OutFile "ASF-ui.zip"
+Expand-Archive -Path "ASF-ui.zip" -DestinationPath "www" -Force
+Remove-Item "ASF-ui.zip"
 ```
 
-> [!NOTE]
-> Use **pnpm** only (`pnpm-lock.yaml`). Dev proxy forwards `/api` to ASF at `http://localhost:1242` (run the ASF exe for live data).
+**Linux / macOS**
 
-**Deploy:** copy `dist/` into `<ASF_install>/www/`, then hard-reload `http://localhost:1242`. Official ASF auto-updates may overwrite `www/`.
+```bash
+cd "PATH_TO_YOUR_ARCHISTEAMFARM"
 
-**Sync upstream:** `git fetch upstream && git merge upstream/main` → drop any reintroduced `package-lock.json` → `pnpm install && pnpm run build`.
+curl -L -o ASF-ui.zip "https://github.com/Jeremias0618/ASF-ui/releases/latest/download/ASF-ui.zip"
+unzip -o ASF-ui.zip -d www
+rm ASF-ui.zip
+```
 
-Related: [ASF-Plugin](https://github.com/Jeremias0618/ASF-Plugin) · [ArchiSteamFarm](https://github.com/JustArchiNET/ArchiSteamFarm)
+Start ASF and open `http://localhost:1242`.
+
+### Publish a release (maintainers)
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+GitHub Actions builds `dist/` (HTML, CSS, JS) and attaches **ASF-ui.zip** to the GitHub Release.
+
+## Related
+
+| Piece | Repo |
+|-------|------|
+| Plugin (required for Bot Social) | https://github.com/Jeremias0618/ASF-Plugin |
+| ASF core | https://github.com/JustArchiNET/ArchiSteamFarm |
+| Upstream UI | https://github.com/JustArchiNET/ASF-ui |
 
 ## License and credits
 
-- Upstream: [JustArchiNET/ASF-ui](https://github.com/JustArchiNET/ASF-ui) — Apache-2.0  
+- Upstream: [JustArchiNET/ASF-ui](https://github.com/JustArchiNET/ASF-ui) — Apache-2.0
 - Fork and Yeremi changes: [Jeremias0618/ASF-ui](https://github.com/Jeremias0618/ASF-ui)
