@@ -49,8 +49,15 @@
     <td align="center"><img src=".github/previews/Screenshot_2.png" alt="Inventory" /><br/>Inventory</td>
   </tr>
   <tr>
+    <td align="center"><img src=".github/previews/Screenshot_3.png" alt="Trade offers" /><br/>Trade offers</td>
+    <td align="center"><img src=".github/previews/Screenshot_4.png" alt="Games stats" /><br/>Games — stats</td>
+  </tr>
+  <tr>
     <td align="center"><img src=".github/previews/Screenshot_5.png" alt="Achievements" /><br/>Achievements</td>
     <td align="center"><img src=".github/previews/Screenshot_6.png" alt="Idle" /><br/>Idle</td>
+  </tr>
+  <tr>
+    <td align="center" colspan="2"><img src=".github/previews/Screenshot_7.png" alt="Batch transfer" /><br/>Batch actions — transfer inventory</td>
   </tr>
 </table>
 

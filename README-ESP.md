@@ -49,8 +49,15 @@
     <td align="center"><img src=".github/previews/Screenshot_2.png" alt="Inventario" /><br/>Inventario</td>
   </tr>
   <tr>
+    <td align="center"><img src=".github/previews/Screenshot_3.png" alt="Ofertas de intercambio" /><br/>Ofertas de intercambio</td>
+    <td align="center"><img src=".github/previews/Screenshot_4.png" alt="Juegos — stats" /><br/>Juegos — stats</td>
+  </tr>
+  <tr>
     <td align="center"><img src=".github/previews/Screenshot_5.png" alt="Logros" /><br/>Logros</td>
     <td align="center"><img src=".github/previews/Screenshot_6.png" alt="Idle" /><br/>Idle</td>
+  </tr>
+  <tr>
+    <td align="center" colspan="2"><img src=".github/previews/Screenshot_7.png" alt="Acciones por lote — transferir inventario" /><br/>Acciones por lote — transferir inventario</td>
   </tr>
 </table>
 
