@@ -80,7 +80,7 @@ Stop ASF first. Replace `PATH_TO_YOUR_ARCHISTEAMFARM` with the folder that conta
 > [!NOTE]
 > On Windows PowerShell do **not** use `curl` or `unzip` (those are Linux commands; `curl` there is an alias for `Invoke-WebRequest`). Copy the **Windows** block.
 
-**Windows (PowerShell)**
+**Windows (PowerShell)** 
 
 ```powershell
 cd "PATH_TO_YOUR_ARCHISTEAMFARM"
