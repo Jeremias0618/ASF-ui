@@ -3,13 +3,26 @@ import getLocaleForWiki from './getLocaleForWiki';
 import * as storage from './storage';
 import createVirtualDOM from './createVirtualDOM';
 
-export default async function loadParameterDescriptions(version, locale) {
-  const descriptionsCache = storage.get(`cache:parameter-descriptions:${locale}`);
-  if (descriptionsCache) {
-    const { timestamp, descriptions } = descriptionsCache;
-    if (timestamp > Date.now() - 6 * 60 * 60 * 1000) return descriptions;
-  }
+const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 
+// In-flight requests, so several modals asking at once (or fast bot switching) hit the wiki once.
+const pendingLoads = new Map();
+
+/**
+ * Returns descriptions from the local cache when it is still fresh, otherwise null.
+ * Synchronous: lets a form render with help text straight away when the cache is warm.
+ */
+export function peekParameterDescriptions(locale) {
+  const descriptionsCache = storage.get(`cache:parameter-descriptions:${locale}`);
+  if (!descriptionsCache) return null;
+
+  const { timestamp, descriptions } = descriptionsCache;
+  if (descriptions && timestamp > Date.now() - CACHE_TTL_MS) return descriptions;
+
+  return null;
+}
+
+async function fetchParameterDescriptions(version, locale) {
   const descriptions = {};
   const configWiki = await fetchWiki('Configuration', version, locale);
   const virtualDOM = createVirtualDOM(configWiki);
@@ -34,6 +47,20 @@ export default async function loadParameterDescriptions(version, locale) {
   storage.set(`cache:parameter-descriptions:${locale}`, { timestamp: Date.now(), descriptions });
 
   return descriptions;
+}
+
+export default function loadParameterDescriptions(version, locale) {
+  const cached = peekParameterDescriptions(locale);
+  if (cached) return Promise.resolve(cached);
+
+  const key = `${version}|${locale}`;
+  if (pendingLoads.has(key)) return pendingLoads.get(key);
+
+  // Failures are not cached: the entry is dropped once settled, so the next call retries.
+  const promise = fetchParameterDescriptions(version, locale).finally(() => pendingLoads.delete(key));
+  pendingLoads.set(key, promise);
+
+  return promise;
 }
 
 export function fixWikiLinks(links, page, locale) {

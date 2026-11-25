@@ -40,7 +40,7 @@
   import ConfigEditor from '../../components/Config/Editor.vue';
   import delay from '../../utils/delay';
   import botExists from '../../utils/botExists';
-  import { get } from '../../utils/storage';
+  import { peekParameterDescriptions } from '../../utils/loadParameterDescriptions';
   import { newBotCategories } from '../../utils/configCategories';
   import isSameConfig from '../../utils/isSameConfig';
   import unsavedChangesMixin from '../../mixins/unsaved-changes';
@@ -52,6 +52,8 @@
     components: { ConfigEditor },
     mixins: [unsavedChangesMixin],
     data() {
+      // The wiki cache may be missing or expired now that BotConfig no longer waits for it.
+      const descriptions = peekParameterDescriptions(this.$i18n.locale) || {};
       const fields = [
         {
           defaultValue: '',
@@ -66,15 +68,14 @@
           param: 'SteamLogin',
           paramName: 'SteamLogin',
           type: 'string',
-          description: get(`cache:parameter-descriptions:${this.$i18n.locale}`).descriptions.SteamLogin,
-
+          description: descriptions.SteamLogin,
         },
         {
           defaultValue: '',
           param: 'SteamPassword',
           paramName: 'SteamPassword',
           type: 'string',
-          description: get(`cache:parameter-descriptions:${this.$i18n.locale}`).descriptions.SteamPassword,
+          description: descriptions.SteamPassword,
         },
       ];
 

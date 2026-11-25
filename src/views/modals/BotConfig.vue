@@ -12,6 +12,14 @@
       :aria-label="$t('modal-loading')"
     ></AsfModalSkeleton>
 
+    <div v-else-if="loadError" class="bot-config__error" role="alert">
+      <p class="bot-config__error-title">{{ $t('bot-config-load-failed') }}</p>
+      <p class="bot-config__error-detail">{{ loadError }}</p>
+      <button type="button" class="button button--confirm bot-config__btn" @click="loadConfig">
+        <span>{{ $t('retry') }}</span>
+      </button>
+    </div>
+
     <template v-else>
       <div class="bot-config__body">
         <ConfigEditor
@@ -54,7 +62,7 @@
   import ConfigEditor from '../../components/Config/Editor.vue';
   import AsfModalSkeleton from '../../components/UI/ModalSkeleton.vue';
   import fetchConfigSchema from '../../utils/fetchConfigSchema';
-  import loadParameterDescriptions from '../../utils/loadParameterDescriptions';
+  import loadParameterDescriptions, { peekParameterDescriptions } from '../../utils/loadParameterDescriptions';
   import { downloadConfig } from '../../utils/download';
   import { botCategories } from '../../utils/configCategories';
   import isSameConfig from '../../utils/isSameConfig';
@@ -76,6 +84,7 @@
     data() {
       return {
         loading: true,
+        loadError: null,
         loadSeq: 0,
         saving: false,
         fields: [],
@@ -111,7 +120,11 @@
       $route: {
         immediate: true,
         async handler() {
-          if (!this.bot) return;
+          if (!this.bot) {
+            // Bot is gone: drop any load still in flight.
+            this.loadSeq += 1;
+            return;
+          }
           await this.loadConfig();
         },
       },
@@ -119,25 +132,60 @@
     created() {
       if (!this.bot) this.$router.replace({ name: 'bots' });
     },
+    beforeDestroy() {
+      // Late responses of a closed modal must not touch the component.
+      this.loadSeq += 1;
+    },
     methods: {
+      descriptionFor(key, descriptions) {
+        if (!descriptions) return '';
+        if (!descriptions[key]) return this.$t('description-not-found');
+        return descriptions[key].replace(/<a href="/g, '<a target="_blank" rel="noreferrer noopener" href="');
+      },
+      applyDescriptions(descriptions) {
+        // Update the existing field objects in place: keys, model and focus stay untouched.
+        this.fields.forEach(field => {
+          if (field.param === 'Name') return;
+          field.description = this.descriptionFor(field.param, descriptions);
+        });
+      },
+      loadDescriptions(seq, version, locale) {
+        // Wiki help is optional: it never blocks editing and a failure is not an editor error.
+        loadParameterDescriptions(version, locale)
+          .then(descriptions => {
+            if (seq !== this.loadSeq) return;
+            this.applyDescriptions(descriptions);
+          })
+          .catch(err => console.warn(`Could not load parameter descriptions: ${err.message}`));
+      },
       async loadConfig() {
         const seq = this.loadSeq + 1;
         this.loadSeq = seq;
+        // Captured now: this.bot may point to another bot (or none) by the time responses arrive.
+        const botName = this.bot.name;
+        const { version } = this;
+        const { locale } = this.$i18n;
+
         this.loading = true;
+        this.loadError = null;
         this.originalConfig = null;
+        this.originalName = '';
+        this.fields = [];
+        this.model = {};
 
         try {
           const [
             { body: fields },
-            { [this.bot.name]: { BotConfig: model } },
-            descriptions,
+            { [botName]: { BotConfig: model } },
           ] = await Promise.all([
             fetchConfigSchema('ArchiSteamFarm.Steam.Storage.BotConfig'),
-            this.$http.get(`bot/${this.bot.name}`),
-            loadParameterDescriptions(this.version, this.$i18n.locale),
+            this.$http.get(`bot/${botName}`),
           ]);
 
           if (seq !== this.loadSeq) return;
+
+          // Warm cache: help text is available right away, so the form renders complete.
+          const cachedDescriptions = peekParameterDescriptions(locale);
 
           Object.keys(model).forEach(key => {
             if (key.startsWith('s_')) delete model[key.substr(2)];
@@ -152,8 +200,8 @@
           }
 
           // Name lives outside BotConfig JSON; API exposes rename separately.
-          this.model = { Name: this.bot.name, ...model };
-          this.originalName = this.bot.name;
+          this.model = { Name: botName, ...model };
+          this.originalName = botName;
           this.originalConfig = JSON.parse(JSON.stringify(model));
 
           // if we got routed to bot-config with params, we propably
@@ -180,29 +228,38 @@
             type: 'string',
             description: this.$t('name-description'),
             checkBotNameUnique: true,
-            excludeBotName: this.bot.name,
+            excludeBotName: botName,
           };
 
           this.fields = [
             nameField,
             ...Object.keys(fields).map(key => {
-              const description = (!descriptions[key])
-                ? this.$t('description-not-found')
-                : descriptions[key].replace(/<a href="/g, '<a target="_blank" rel="noreferrer noopener" href="');
+              // Empty until the wiki answers (unless the cache is warm); see loadDescriptions().
+              const description = this.descriptionFor(key, cachedDescriptions);
 
               return { description, ...fields[key], ...(extendedFields[key] || []) };
             }),
           ];
 
           if (!this.displayCategories) this.fields = this.fields.sort((a, b) => a.paramName.localeCompare(b.paramName));
+
+          // The form is usable from here on. Help text arrives later and never blocks it.
+          if (!cachedDescriptions) this.loadDescriptions(seq, version, locale);
         } catch (err) {
-          if (seq === this.loadSeq) this.$error(err.message);
+          if (seq === this.loadSeq) {
+            // No usable model: show a retryable error instead of an empty form that could be saved.
+            this.fields = [];
+            this.model = {};
+            this.originalConfig = null;
+            this.loadError = err.message || this.$t('bot-config-load-failed');
+            this.$error(this.loadError);
+          }
         } finally {
           if (seq === this.loadSeq) this.loading = false;
         }
       },
       async onSave() {
-        if (this.saving) return;
+        if (this.saving || this.loading || this.loadError || !this.originalConfig) return;
 
         const newName = String(this.model.Name || '').trim();
         const oldName = this.bot.name;
