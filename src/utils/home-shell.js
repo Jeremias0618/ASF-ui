@@ -20,6 +20,7 @@ export const HOME2_SHELL_ROUTES = new Set([
   'bot-2fa',
   'bot-2fa-delete',
   'bot-input',
+  'bot-login',
   'password-encrypt',
   'password-hash',
   'commands',

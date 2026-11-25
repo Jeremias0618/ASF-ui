@@ -49,7 +49,7 @@
   import fetchConfigSchema from '../../utils/fetchConfigSchema';
   import loadParameterDescriptions from '../../utils/loadParameterDescriptions';
   import { downloadConfig } from '../../utils/download';
-  import delay from '../../utils/delay';
+  import { waitForBot } from '../../utils/botLogin';
   import botExists from '../../utils/botExists';
   import { botCategories } from '../../utils/configCategories';
   import unsavedChangesMixin from '../../mixins/unsaved-changes';
@@ -148,10 +148,14 @@
 
         try {
           await this.$http.post(`bot/${name}`, { botConfig: config });
-          await delay(1000);
-          await this.$store.dispatch('bots/updateBot', { name });
+
+          // Wait for ASF to list the new bot (instead of a fixed pause), then continue in the sign-in view.
+          // A bot saved as disabled is not started: the view offers to start it.
+          const created = await waitForBot(name);
           markClean();
-          this.$parent.close();
+
+          if (created) this.$router.replace({ name: 'bot-login', params: { bot: name } });
+          else this.$parent.close();
         } catch (err) {
           this.$error(err.message);
         } finally {

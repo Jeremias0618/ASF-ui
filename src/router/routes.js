@@ -14,6 +14,7 @@ const routes = {
   botCreate: 'bot-create',
   botDelete: 'bot-delete',
   botInput: 'bot-input',
+  botLogin: 'bot-login',
   botFriends: 'bot-friends',
   botCommunity: 'bot-community',
   botGames: 'bot-games',
@@ -223,6 +224,18 @@ export default [
     components: {
       default: () => import('../views/Bots.vue'),
       modal: () => import('../views/modals/BotInput.vue'),
+    },
+    meta: {
+      modal: true,
+      closeRoute: routes.bots,
+    },
+  },
+  {
+    path: '/bot/:bot/login',
+    name: routes.botLogin,
+    components: {
+      default: () => import('../views/Bots.vue'),
+      modal: () => import('../views/modals/BotLogin.vue'),
     },
     meta: {
       modal: true,

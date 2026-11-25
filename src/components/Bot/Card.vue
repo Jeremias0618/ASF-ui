@@ -30,7 +30,7 @@
 
 <script>
   import { mapGetters } from 'vuex';
-  import getUserInputType from '../../utils/getUserInputType';
+  import { getInputRoute, hasRequiredInput } from '../../utils/botLogin';
 
   const quickActionButtons = [
     { name: '2fa', icon: 'lock' },
@@ -80,10 +80,9 @@
       },
       async start() {
         try {
-          const inputType = getUserInputType(this.bot.requiredInput);
-
-          if (this.isRunningHeadless && inputType !== 'None') {
-            this.$router.push({ name: 'bot-input', params: { bot: this.bot.name, type: inputType } });
+          // Headless ASF stopped the bot while asking for input: answer it in the sign-in view.
+          if (this.isRunningHeadless && hasRequiredInput(this.bot)) {
+            this.$router.push(getInputRoute(this.bot));
             return;
           }
 

@@ -71,6 +71,8 @@ export const actions = {
       listRequestsInFlight -= 1;
     }
   },
+  // Resolves with the refreshed Bot, or null when the bot is gone, the request failed or a newer
+  // response already replaced this one (read the store in that case: it holds fresher data).
   async updateBot({ commit }, bot) {
     const { name } = bot;
     requestCounter += 1;
@@ -80,13 +82,20 @@ export const actions = {
 
     try {
       const response = await http.get(`bot/${encodeURIComponent(name)}`, {}, { timeout: BOT_REQUEST_TIMEOUT_MS });
-      if (requestId < lastAppliedListRequest || latestBotRequests.get(name) !== requestId) return;
+      if (requestId < lastAppliedListRequest || latestBotRequests.get(name) !== requestId) return null;
 
-      if (response[name]) commit('setBot', new Bot(response[name]));
-      else commit('removeBot', name);
+      if (response[name]) {
+        const updated = new Bot(response[name]);
+        commit('setBot', updated);
+        return updated;
+      }
+
+      commit('removeBot', name);
     } catch (err) {
       console.warn(err.message);
     }
+
+    return null;
   },
   async detectBots({ dispatch, getters }) {
     await dispatch('updateBots');

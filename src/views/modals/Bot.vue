@@ -78,6 +78,8 @@
         <BotAction v-if="bot.paused && bot.active" v-tooltip="$t('bot-title-resume', { bot: bot.name })" icon="play" @click="resume"></BotAction>
         <BotAction v-if="!bot.paused && bot.active" v-tooltip="$t('bot-title-pause', { bot: bot.name })" icon="pause" @click="pause"></BotAction>
 
+        <BotLink v-if="!bot.isConnected" v-tooltip="$t('bot-login-open')" icon="sign-in-alt" :link="{ name: 'bot-login', params: { bot: bot.name } }"></BotLink>
+
         <BotAction v-if="!bot.active" v-tooltip="$t('bot-title-start', { bot: bot.name })" icon="power-off" @click="start"></BotAction>
         <BotAction v-if="bot.active" v-tooltip="$t('bot-title-stop', { bot: bot.name })" icon="power-off" @click="stop"></BotAction>
 
@@ -119,7 +121,7 @@
   import BotGames from '../../components/Bot/Games.vue';
   import BotIdleGames from '../../components/Bot/IdleGames.vue';
   import BotLink from '../../components/Bot/Link.vue';
-  import getUserInputType from '../../utils/getUserInputType';
+  import { getInputRoute, hasRequiredInput } from '../../utils/botLogin';
   import { fetchIdleGamesConfig, normalizeIdleAppIds } from '../../features/bot-social/api/idle-games';
   import { loadGameStats } from '../../features/bot-social/cache/bot-social-queries';
   import { ensureBotSocialPluginOrModal } from '../../features/bot-social/plugin-gate/guard';
@@ -276,10 +278,9 @@
         await this.update({ paused: false });
       },
       async start() {
-        const inputType = getUserInputType(this.bot.requiredInput);
-
-        if (this.isRunningHeadless && inputType !== 'None') {
-          this.$router.push({ name: 'bot-input', params: { bot: this.bot.name, type: inputType } });
+        // Headless ASF stopped the bot while asking for input: answer it in the sign-in view.
+        if (this.isRunningHeadless && hasRequiredInput(this.bot)) {
+          this.$router.push(getInputRoute(this.bot));
           return;
         }
 

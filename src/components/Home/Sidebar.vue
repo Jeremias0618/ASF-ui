@@ -191,6 +191,7 @@
       'bot-2fa-delete',
       'bot-bgr',
       'bot-input',
+      'bot-login',
       'bot-inventory',
       'bot-friends',
       'bot-community',

@@ -38,7 +38,7 @@
 <script>
   import { mapGetters } from 'vuex';
   import ConfigEditor from '../../components/Config/Editor.vue';
-  import delay from '../../utils/delay';
+  import { waitForBot } from '../../utils/botLogin';
   import botExists from '../../utils/botExists';
   import { peekParameterDescriptions } from '../../utils/loadParameterDescriptions';
   import { newBotCategories } from '../../utils/configCategories';
@@ -142,11 +142,14 @@
         this.creating = true;
 
         try {
-          await this.$http.post(`bot/${this.model.Name}`, { botConfig: config });
-          await delay(1000);
-          await this.$store.dispatch('bots/updateBot', { name: this.model.Name });
+          const { Name: name } = this.model;
+          await this.$http.post(`bot/${name}`, { botConfig: config });
+
+          const created = await waitForBot(name);
           markClean();
-          this.$parent.close();
+
+          if (created) this.$router.replace({ name: 'bot-login', params: { bot: name } });
+          else this.$parent.close();
         } catch (err) {
           this.$error(err.message);
         } finally {

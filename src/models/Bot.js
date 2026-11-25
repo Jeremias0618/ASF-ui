@@ -22,6 +22,8 @@ export class Bot {
     this.walletCurrency = data.WalletCurrency;
     this.has2FA = data.HasMobileAuthenticator;
     this.requiredInput = data.RequiredInput;
+    // Only present while ASF has an active QR login session; ASF rotates and clears it. Memory only.
+    this.qrChallengeURL = data.QrChallengeURL || null;
     this.accountFlags = data.AccountFlags ?? 0;
     this.publicIP = data.PublicIP || null;
     this.isPlayingPossible = data.IsPlayingPossible !== false;

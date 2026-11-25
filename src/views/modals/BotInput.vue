@@ -27,7 +27,12 @@
 </template>
 
 <script>
-  import getUserInputType from '../../utils/getUserInputType';
+  import {
+    InputChangedError,
+    getInputRoute,
+    hasRequiredInput,
+    submitBotInput,
+  } from '../../utils/botLogin';
 
   export default {
     name: 'BotInput',
@@ -85,15 +90,28 @@
 
         this.submitting = true;
 
+        const botName = this.bot.name;
+
         try {
-          const inputType = getUserInputType(this.bot.requiredInput);
-          if (inputType === this.$route.params.type) await this.$http.post(`bot/${this.bot.name}/input`, { type: this.bot.requiredInput, value: this.code });
-          await this.$http.botAction(this.bot.name, 'start');
-          await this.$store.dispatch('bots/updateBot', { name: this.bot.name, active: true });
+          // Sends the value only while the bot still asks for this type, and restarts the bot only if
+          // ASF stopped it while asking. A stored value is not a completed sign-in (see submitBotInput).
+          await submitBotInput(botName, this.$route.params.type, this.code);
+          this.code = '';
 
           this.$router.back();
         } catch (err) {
-          this.$error(err.message);
+          if (err instanceof InputChangedError) {
+            this.$info(this.$t('bot-login-input-changed'));
+            this.code = '';
+            await this.$store.dispatch('bots/updateBot', { name: botName });
+
+            // Follow what ASF asks for now, or just leave when it stopped asking.
+            const bot = this.$store.getters['bots/bot'](botName);
+            if (bot && hasRequiredInput(bot)) this.$router.replace(getInputRoute(bot));
+            else this.$router.back();
+          } else {
+            this.$error(err.message);
+          }
         } finally {
           this.submitting = false;
         }
