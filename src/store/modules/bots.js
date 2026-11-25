@@ -1,3 +1,4 @@
+import Vue from 'vue';
 import * as http from '../../plugins/http';
 import { Bot } from '../../models/Bot';
 
@@ -7,7 +8,8 @@ export const state = {
 
 export const mutations = {
   setBots: (state, bots) => (state.bots = bots),
-  setBot: (state, bot) => (state.bots[bot.name] = bot),
+  setBot: (state, bot) => Vue.set(state.bots, bot.name, bot),
+  removeBot: (state, name) => Vue.delete(state.bots, name),
   updateBot: (state, { name, ...changes }) => {
     if (!state.bots[name]) return;
     Object.keys(changes).forEach(key => {
@@ -17,14 +19,12 @@ export const mutations = {
 };
 
 const POLL_INTERVAL_MS = 2500;
-// A poll is skipped while another request is in flight, unless that one looks stuck
-// (axios has no default timeout, so a hung request must not stop the polling forever).
-const POLL_STALE_MS = 15000;
+const BOT_REQUEST_TIMEOUT_MS = 15000;
 
 let requestCounter = 0;
-let lastAppliedRequest = 0;
-let requestsInFlight = 0;
-let lastRequestStartedAt = 0;
+let lastAppliedListRequest = 0;
+let listRequestsInFlight = 0;
+const latestBotRequests = new Map();
 
 export const actions = {
   init: async ({ dispatch }) => {
@@ -35,38 +35,55 @@ export const actions = {
   },
   // Explicit calls (after save, rename, login…) always send a fresh request.
   // Periodic polls ({ periodic: true }) never pile up behind a slow response.
-  updateBots: async ({ dispatch, commit, rootGetters }, options) => {
+  updateBots: async ({ state, dispatch, commit, rootGetters }, options) => {
     if (!rootGetters['auth/authenticated']) return;
 
     const periodic = !!(options && options.periodic);
-    if (periodic && requestsInFlight > 0 && Date.now() - lastRequestStartedAt < POLL_STALE_MS) return;
+    if (periodic && listRequestsInFlight > 0) return;
 
     requestCounter += 1;
     const requestId = requestCounter;
-    requestsInFlight += 1;
-    lastRequestStartedAt = Date.now();
+    listRequestsInFlight += 1;
 
     try {
-      const response = await http.get('bot/asf');
+      const response = await http.get('bot/asf', {}, { timeout: BOT_REQUEST_TIMEOUT_MS });
 
       // A newer request already applied its data; this response is older and must not overwrite it.
-      if (requestId < lastAppliedRequest) return;
-      lastAppliedRequest = requestId;
+      if (requestId < lastAppliedListRequest) return;
+      const bots = Object.fromEntries(Object.values(response).map(data => [data.BotName, new Bot(data)]));
 
-      // eslint-disable-next-line no-sequences
-      commit('setBots', Object.values(response).map(data => new Bot(data)).reduce((bots, bot) => ((bots[bot.name] = bot), bots), {}));
+      // Preserve individual bot updates that started after this list request.
+      latestBotRequests.forEach((botRequestId, name) => {
+        if (botRequestId <= requestId) {
+          latestBotRequests.delete(name);
+        } else if (state.bots[name]) {
+          bots[name] = state.bots[name];
+        } else {
+          delete bots[name];
+        }
+      });
+
+      commit('setBots', bots);
+      lastAppliedListRequest = requestId;
     } catch (err) {
       dispatch('auth/updateStatus', '', { root: true });
     } finally {
-      requestsInFlight -= 1;
+      listRequestsInFlight -= 1;
     }
   },
   async updateBot({ commit }, bot) {
+    const { name } = bot;
+    requestCounter += 1;
+    const requestId = requestCounter;
+    latestBotRequests.set(name, requestId);
     commit('updateBot', bot);
 
     try {
-      const [response] = await http.get(`bot/${bot.name}`);
-      commit('setBot', new Bot(response[bot.name]));
+      const response = await http.get(`bot/${encodeURIComponent(name)}`, {}, { timeout: BOT_REQUEST_TIMEOUT_MS });
+      if (requestId < lastAppliedListRequest || latestBotRequests.get(name) !== requestId) return;
+
+      if (response[name]) commit('setBot', new Bot(response[name]));
+      else commit('removeBot', name);
     } catch (err) {
       console.warn(err.message);
     }
