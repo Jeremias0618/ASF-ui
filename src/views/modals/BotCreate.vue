@@ -12,12 +12,12 @@
     <template v-else>
       <!-- The bot is already saved (stopped), but its sign-in could not be started: retry on the same bot -->
       <div v-if="createdName" class="bot-config__body bot-create__recovery" role="alert">
-        <p class="bot-create__notice bot-create__notice--warn">
+        <p v-if="!creating" class="bot-create__notice bot-create__notice--warn">
           <FontAwesomeIcon icon="exclamation-triangle" fixedWidth aria-hidden="true"></FontAwesomeIcon>
           <span>{{ $t('bot-create-start-failed-title', { bot: createdName }) }}</span>
         </p>
         <p v-if="startError" class="bot-create__detail">{{ startError }}</p>
-        <p class="bot-create__hint">{{ $t('bot-create-start-failed-text') }}</p>
+        <p v-if="!creating" class="bot-create__hint">{{ $t('bot-create-start-failed-text') }}</p>
       </div>
 
       <!-- Enter in the name field submits, with the same checks as the button -->
@@ -29,29 +29,45 @@
           @change="revision++"
         >
           <template #after-Name>
-            <div class="bot-create__method" role="radiogroup" :aria-label="$t('bot-create-method')">
-              <span class="bot-create__method-label">{{ $t('bot-create-method') }}</span>
-              <div class="bot-create__method-options">
-                <label class="bot-create__method-option" :class="{ 'is-active': method === METHOD.CREDENTIALS }">
-                  <input v-model="method" type="radio" name="bot-create-method" :value="METHOD.CREDENTIALS" :disabled="creating">
-                  <span>{{ $t('bot-create-method-credentials') }}</span>
-                </label>
-                <label class="bot-create__method-option" :class="{ 'is-active': method === METHOD.QR, 'is-disabled': !qrAvailable || !nameValid }">
-                  <input v-model="method" type="radio" name="bot-create-method" :value="METHOD.QR" :disabled="creating || !qrAvailable || !nameValid">
-                  <span>{{ $t('bot-create-method-qr') }}</span>
-                </label>
+            <!-- A regular row, laid out like "Bot status": same label column, same buttons -->
+            <div class="form-item form-item--config bot-create__method">
+              <div class="form-item__label">
+                <span id="bot-create-method-label" class="form-item__label-text">{{ $t('bot-create-method') }}</span>
               </div>
-              <p v-if="!qrAvailable" class="bot-create__notice bot-create__notice--warn">
-                <FontAwesomeIcon icon="exclamation-triangle" fixedWidth aria-hidden="true"></FontAwesomeIcon>
-                <span>{{ $t('bot-create-qr-headless') }}</span>
-              </p>
-              <template v-else-if="method === METHOD.QR">
-                <p class="bot-create__hint">{{ $t('bot-create-qr-hint') }}</p>
-                <p v-if="!useLoginKeys" class="bot-create__notice bot-create__notice--warn">
+
+              <div class="form-item__value">
+                <div
+                  class="form-item__buttons"
+                  role="radiogroup"
+                  aria-labelledby="bot-create-method-label"
+                  @keydown="onMethodKeydown"
+                >
+                  <button
+                    v-for="option in methodOptions"
+                    :key="option.value"
+                    type="button"
+                    role="radio"
+                    class="button"
+                    :class="{ 'button--active': method === option.value }"
+                    :aria-checked="method === option.value ? 'true' : 'false'"
+                    :tabindex="method === option.value ? 0 : -1"
+                    :data-method="option.value"
+                    :disabled="creating || option.disabled"
+                    @click.prevent="selectMethod(option.value)"
+                  >
+                    {{ option.label }}
+                  </button>
+                </div>
+
+                <p v-if="!qrAvailable" class="bot-create__notice bot-create__notice--warn">
+                  <FontAwesomeIcon icon="exclamation-triangle" fixedWidth aria-hidden="true"></FontAwesomeIcon>
+                  <span>{{ $t('bot-create-qr-headless') }}</span>
+                </p>
+                <p v-else-if="method === METHOD.QR && !useLoginKeys" class="bot-create__notice bot-create__notice--warn">
                   <FontAwesomeIcon icon="exclamation-triangle" fixedWidth aria-hidden="true"></FontAwesomeIcon>
                   <span>{{ $t('bot-create-qr-keys-warning') }}</span>
                 </p>
-              </template>
+              </div>
             </div>
           </template>
         </ConfigEditor>
@@ -160,6 +176,13 @@
 
         return this.method !== LOGIN_METHOD.QR || this.steamLogin !== '';
       },
+      // Credentials first. QR needs an interactive ASF and a bot name.
+      methodOptions() {
+        return [
+          { value: LOGIN_METHOD.CREDENTIALS, label: this.$t('bot-create-method-credentials'), disabled: false },
+          { value: LOGIN_METHOD.QR, label: this.$t('bot-create-method-qr'), disabled: !this.qrAvailable || !this.nameValid },
+        ];
+      },
       visibleFields() {
         const qr = this.method === LOGIN_METHOD.QR;
 
@@ -262,6 +285,38 @@
         if (!config.SteamLogin) delete config.SteamLogin;
 
         return { name: String(Name || '').trim(), config, enabled: config.Enabled === true };
+      },
+      selectMethod(value) {
+        const option = this.methodOptions.find(item => item.value === value);
+        if (this.creating || !option || option.disabled) return;
+
+        this.method = value;
+      },
+      // Arrow keys / Home / End move between the enabled options, as in a native radio group.
+      onMethodKeydown(event) {
+        const keys = {
+          ArrowRight: 1,
+          ArrowDown: 1,
+          ArrowLeft: -1,
+          ArrowUp: -1,
+        };
+        const enabled = this.methodOptions.filter(option => !option.disabled);
+        if (this.creating || !enabled.length) return;
+
+        let target;
+        if (event.key === 'Home') [target] = enabled;
+        else if (event.key === 'End') target = enabled[enabled.length - 1];
+        else if (keys[event.key]) {
+          const index = Math.max(0, enabled.findIndex(option => option.value === this.method));
+          target = enabled[(index + keys[event.key] + enabled.length) % enabled.length];
+        } else return;
+
+        event.preventDefault();
+        this.selectMethod(target.value);
+        this.$nextTick(() => {
+          const button = this.$el.querySelector(`[data-method="${target.value}"]`);
+          if (button) button.focus();
+        });
       },
       onEnter(event) {
         if (!event.target || event.target.id !== 'Name') return;
@@ -412,47 +467,23 @@
 </script>
 
 <style lang="scss">
+  /* The method row is a regular form row; the selected option keeps its colour while the form is busy. */
   .bot-create__method {
-    border: 1px solid var(--h2-border, var(--color-border));
-    border-radius: 0.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    margin: 0.35rem 0 0.75rem;
-    padding: 0.7rem 0.85rem;
-  }
-
-  .bot-create__method-label {
-    color: var(--h2-muted, var(--color-text-disabled));
-    font-size: 0.72rem;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-
-  .bot-create__method-options {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
-
-  .bot-create__method-option {
-    align-items: center;
-    border: 1px solid var(--h2-border, var(--color-border));
-    border-radius: 0.4rem;
-    cursor: pointer;
-    display: inline-flex;
-    gap: 0.45rem;
-    padding: 0.4rem 0.75rem;
-
-    &.is-active {
-      border-color: var(--h2-accent, var(--color-text));
-      font-weight: 650;
+    .form-item__buttons .button {
+      min-width: 8em;
     }
 
-    &.is-disabled {
-      cursor: not-allowed;
+    .form-item__buttons .button:disabled:not(.button--active) {
       opacity: 0.55;
+    }
+
+    .form-item__buttons .button--active:disabled {
+      background: var(--color-theme);
+      cursor: wait;
+    }
+
+    .bot-create__notice {
+      margin-top: 0.6rem;
     }
   }
 
