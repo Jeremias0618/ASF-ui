@@ -1,6 +1,7 @@
 <template>
   <div class="form-item__label">
     <span :id="labelId" class="form-item__label-text">{{ label }}</span>
+    <span v-if="required" class="form-item__required" aria-hidden="true">*</span>
     <button
       v-if="hasDescription"
       type="button"
@@ -31,6 +32,7 @@
       field: String,
       hasDescription: Boolean,
       helpOpen: Boolean,
+      required: Boolean,
     },
     computed: {
       labelId() {

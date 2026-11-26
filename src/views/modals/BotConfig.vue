@@ -21,7 +21,8 @@
     </div>
 
     <template v-else>
-      <div class="bot-config__body">
+      <!-- Enter in the name field saves, with the same checks as the button -->
+      <div class="bot-config__body" @keydown.enter="onEnter">
         <ConfigEditor
           :fields="fields"
           :model="model"
@@ -32,7 +33,7 @@
 
       <footer class="bot-config__footer">
         <div class="bot-config__footer-primary">
-          <button type="button" class="button button--confirm bot-config__btn" :disabled="saving" @click="onSave">
+          <button type="button" class="button button--confirm bot-config__btn" :disabled="saving || !nameValid" @click="onSave">
             <FontAwesomeIcon v-if="saving" icon="spinner" spin fixedWidth></FontAwesomeIcon>
             <template v-else>
               <FontAwesomeIcon icon="save" fixedWidth aria-hidden="true"></FontAwesomeIcon>
@@ -106,6 +107,10 @@
       displayTitle() {
         const name = (this.model && this.model.Name) || (this.bot && this.bot.viewableName) || '';
         return name;
+      },
+      // The bot name is required: empty or only spaces cannot be saved.
+      nameValid() {
+        return String((this.model && this.model.Name) || '').trim() !== '';
       },
       isDirty() {
         if (this.loading || this.saving || !this.originalConfig) return false;
@@ -229,6 +234,8 @@
             description: this.$t('name-description'),
             checkBotNameUnique: true,
             excludeBotName: botName,
+            required: true,
+            requiredHint: this.$t('bot-create-name-hint'),
           };
 
           this.fields = [
@@ -257,6 +264,12 @@
         } finally {
           if (seq === this.loadSeq) this.loading = false;
         }
+      },
+      onEnter(event) {
+        if (!event.target || event.target.id !== 'Name') return;
+
+        event.preventDefault();
+        this.onSave();
       },
       async onSave() {
         if (this.saving || this.loading || this.loadError || !this.originalConfig) return;

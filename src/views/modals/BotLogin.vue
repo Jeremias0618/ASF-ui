@@ -11,11 +11,42 @@
         <span>{{ $t('bot-login-insecure') }}</span>
       </p>
 
+      <p v-if="setup && setup.status === 'timeout'" class="bot-login__notice bot-login__notice--warn" role="alert">
+        <FontAwesomeIcon icon="exclamation-triangle" fixedWidth aria-hidden="true"></FontAwesomeIcon>
+        <span>{{ $t('bot-setup-timeout') }}</span>
+      </p>
+
       <!-- Connected: only shown once ASF reports IsConnectedAndLoggedOn -->
       <section v-if="phase === PHASE.CONNECTED" class="bot-login__section bot-login__section--ok">
         <FontAwesomeIcon icon="check-circle" class="bot-login__icon bot-login__icon--ok" aria-hidden="true"></FontAwesomeIcon>
         <h3 class="bot-login__heading">{{ $t('bot-login-connected-title') }}</h3>
         <p class="bot-login__text">{{ $t('bot-login-connected-text', { bot: bot.viewableName }) }}</p>
+
+        <!-- "Enabled" chosen in Create new bot, saved only now that Steam confirmed the connection -->
+        <p v-if="setupSaving" class="bot-login__notice">
+          <FontAwesomeIcon icon="spinner" spin fixedWidth aria-hidden="true"></FontAwesomeIcon>
+          <span>{{ $t('bot-setup-saving') }}</span>
+        </p>
+        <p v-else-if="setup && setup.status === 'done'" class="bot-login__notice">
+          <FontAwesomeIcon icon="check-circle" fixedWidth aria-hidden="true"></FontAwesomeIcon>
+          <span>{{ $t('bot-setup-saved') }}</span>
+        </p>
+        <template v-else-if="setup && setup.status === 'failed'">
+          <p class="bot-login__notice bot-login__notice--warn" role="alert">
+            <FontAwesomeIcon icon="exclamation-triangle" fixedWidth aria-hidden="true"></FontAwesomeIcon>
+            <span>{{ $t('bot-setup-failed', { error: setup.error }) }}</span>
+          </p>
+          <button type="button" class="button button--confirm bot-config__btn" @click="retrySetup">
+            <span>{{ $t('bot-setup-retry') }}</span>
+          </button>
+        </template>
+      </section>
+
+      <!-- The final save makes ASF restart the bot: wait for it to come back instead of showing the gap as a failure -->
+      <section v-else-if="setupRestarting" class="bot-login__section">
+        <FontAwesomeIcon icon="spinner" spin class="bot-login__icon" aria-hidden="true"></FontAwesomeIcon>
+        <h3 class="bot-login__heading">{{ $t('bot-setup-restarting-title') }}</h3>
+        <p class="bot-login__text">{{ $t('bot-setup-restarting-text') }}</p>
       </section>
 
       <!-- Stopped bot, ASF not headless: the method is sent in advance so ASF never asks it in its console -->
@@ -270,6 +301,16 @@
           ignoreQr: this.methodChosen && this.chosenMethod === LOGIN_METHOD.CREDENTIALS,
         });
       },
+      setup() {
+        return this.$store.state.bots.setups[this.$route.params.bot];
+      },
+      setupSaving() {
+        return !!this.setup && ['saving', 'reconnecting'].includes(this.setup.status);
+      },
+      // Saved, and ASF is restarting the bot to apply it: not connected for a moment.
+      setupRestarting() {
+        return !!this.setup && this.setup.status === 'reconnecting' && this.phase !== LOGIN_PHASE.CONNECTED;
+      },
       showMethodChoice() {
         return canChooseLoginMethod(this.bot, this.phase, { headless: this.isRunningHeadless });
       },
@@ -344,12 +385,14 @@
         return;
       }
 
-      // Coming from "Create new bot" with QR: the choice was already sent and the bot started, so a missing
-      // challenge is not an open console question (yet).
-      if (this.$route.params.started === LOGIN_METHOD.QR && this.bot.active) {
+      // Coming from "Create new bot": the method was already sent and the bot started, so a missing challenge
+      // is not an open console question (yet).
+      const { started } = this.$route.params;
+
+      if (Object.values(LOGIN_METHOD).includes(started) && this.bot.active) {
         this.attempted = true;
         this.methodChosen = true;
-        this.chosenMethod = LOGIN_METHOD.QR;
+        this.chosenMethod = started;
       }
     },
     beforeDestroy() {
@@ -362,6 +405,11 @@
       clearQrStallTimer() {
         if (this.qrStallTimer) clearTimeout(this.qrStallTimer);
         this.qrStallTimer = null;
+      },
+      // The final save of the user's "Enabled" failed: try it again (the next bot poll applies it), no recreation.
+      async retrySetup() {
+        await this.$store.dispatch('bots/retrySetup', this.$route.params.bot);
+        await this.$store.dispatch('bots/updateBots');
       },
       clearCredentials() {
         this.loginName = '';

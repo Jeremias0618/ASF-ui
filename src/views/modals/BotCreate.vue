@@ -10,21 +10,23 @@
     </h3>
 
     <template v-else>
-      <!-- The bot is already saved (stopped), but its QR sign-in could not be started: retry on the same bot -->
+      <!-- The bot is already saved (stopped), but its sign-in could not be started: retry on the same bot -->
       <div v-if="createdName" class="bot-config__body bot-create__recovery" role="alert">
         <p class="bot-create__notice bot-create__notice--warn">
           <FontAwesomeIcon icon="exclamation-triangle" fixedWidth aria-hidden="true"></FontAwesomeIcon>
-          <span>{{ $t('bot-create-qr-failed-title', { bot: createdName }) }}</span>
+          <span>{{ $t('bot-create-start-failed-title', { bot: createdName }) }}</span>
         </p>
         <p v-if="startError" class="bot-create__detail">{{ startError }}</p>
-        <p class="bot-create__hint">{{ $t('bot-create-qr-saved-text') }}</p>
+        <p class="bot-create__hint">{{ $t('bot-create-start-failed-text') }}</p>
       </div>
 
-      <div v-else class="bot-config__body">
+      <!-- Enter in the name field submits, with the same checks as the button -->
+      <div v-else class="bot-config__body" @keydown.enter="onEnter">
         <ConfigEditor
           :fields="visibleFields"
           :model="model"
           :categories="displayCategories ? categories : null"
+          @change="revision++"
         >
           <template #after-Name>
             <div class="bot-create__method" role="radiogroup" :aria-label="$t('bot-create-method')">
@@ -34,8 +36,8 @@
                   <input v-model="method" type="radio" name="bot-create-method" :value="METHOD.CREDENTIALS" :disabled="creating">
                   <span>{{ $t('bot-create-method-credentials') }}</span>
                 </label>
-                <label class="bot-create__method-option" :class="{ 'is-active': method === METHOD.QR, 'is-disabled': !qrAvailable }">
-                  <input v-model="method" type="radio" name="bot-create-method" :value="METHOD.QR" :disabled="creating || !qrAvailable">
+                <label class="bot-create__method-option" :class="{ 'is-active': method === METHOD.QR, 'is-disabled': !qrAvailable || !nameValid }">
+                  <input v-model="method" type="radio" name="bot-create-method" :value="METHOD.QR" :disabled="creating || !qrAvailable || !nameValid">
                   <span>{{ $t('bot-create-method-qr') }}</span>
                 </label>
               </div>
@@ -43,7 +45,13 @@
                 <FontAwesomeIcon icon="exclamation-triangle" fixedWidth aria-hidden="true"></FontAwesomeIcon>
                 <span>{{ $t('bot-create-qr-headless') }}</span>
               </p>
-              <p v-else-if="method === METHOD.QR" class="bot-create__hint">{{ $t('bot-create-qr-hint') }}</p>
+              <template v-else-if="method === METHOD.QR">
+                <p class="bot-create__hint">{{ $t('bot-create-qr-hint') }}</p>
+                <p v-if="!useLoginKeys" class="bot-create__notice bot-create__notice--warn">
+                  <FontAwesomeIcon icon="exclamation-triangle" fixedWidth aria-hidden="true"></FontAwesomeIcon>
+                  <span>{{ $t('bot-create-qr-keys-warning') }}</span>
+                </p>
+              </template>
             </div>
           </template>
         </ConfigEditor>
@@ -51,7 +59,7 @@
 
       <footer class="bot-config__footer">
         <div class="bot-config__footer-primary">
-          <button type="button" class="button button--confirm bot-config__btn" :disabled="creating" @click="onCreate">
+          <button type="button" class="button button--confirm bot-config__btn" :disabled="creating || !canSubmit" @click="onCreate">
             <FontAwesomeIcon v-if="creating" icon="spinner" spin fixedWidth></FontAwesomeIcon>
             <template v-else>
               <FontAwesomeIcon :icon="primaryIcon" fixedWidth aria-hidden="true"></FontAwesomeIcon>
@@ -86,15 +94,16 @@
     startWithLoginMethod,
     waitForBot,
   } from '../../utils/botLogin';
+  import { clearPendingSetup, registerPendingSetup } from '../../utils/pendingBotSetup';
   import botExists from '../../utils/botExists';
   import { botCategories } from '../../utils/configCategories';
   import unsavedChangesMixin from '../../mixins/unsaved-changes';
   import { markClean } from '../../utils/unsaved-changes';
   import '../../style/bot-form-modal.scss';
 
-  // With QR sign-in there is no username/password to save. "Enabled" is not offered either: the bot is saved
-  // stopped and started from here, and saving it enabled would make ASF start it before the QR choice arrives.
-  const QR_HIDDEN_FIELDS = ['SteamLogin', 'SteamPassword', 'Enabled'];
+  // With QR sign-in there is no password to save. The Steam username is kept: ASF checks that the account
+  // that approves the QR is that one, and needs it to reconnect with the saved session after a restart.
+  const QR_HIDDEN_FIELDS = ['SteamPassword'];
 
   export default {
     name: 'BotCreate',
@@ -106,9 +115,12 @@
         method: LOGIN_METHOD.CREDENTIALS,
         loading: true,
         creating: false,
-        // Set once the bot is saved: from then on "create" means "retry the QR start" on this very bot.
+        // Set once the bot is saved (stopped) but its start failed: "create" then means "retry" on this very bot.
         createdName: null,
+        createdMethod: null,
         startError: '',
+        // The editor adds and deletes keys of `model` in place, which Vue 2 cannot observe: it bumps this on each edit.
+        revision: 0,
         fields: [],
         model: {},
         categories: botCategories,
@@ -125,10 +137,40 @@
       qrAvailable() {
         return !this.isRunningHeadless;
       },
-      visibleFields() {
-        if (this.method !== LOGIN_METHOD.QR) return this.fields;
+      // What the form holds right now. Everything that depends on the model reads it through here.
+      current() {
+        return this.revision >= 0 ? { ...this.model } : {};
+      },
+      trimmedName() {
+        return String(this.current.Name || '').trim();
+      },
+      nameValid() {
+        return this.trimmedName !== '';
+      },
+      // The Steam sign-in name: not the bot name, not the profile alias.
+      steamLogin() {
+        return String(this.current.SteamLogin || '').trim();
+      },
+      useLoginKeys() {
+        return this.current.UseLoginKeys !== false;
+      },
+      canSubmit() {
+        if (this.createdName) return true;
+        if (!this.nameValid) return false;
 
-        return this.fields.filter(field => !QR_HIDDEN_FIELDS.includes(field.param));
+        return this.method !== LOGIN_METHOD.QR || this.steamLogin !== '';
+      },
+      visibleFields() {
+        const qr = this.method === LOGIN_METHOD.QR;
+
+        return this.fields
+          .filter(field => !(qr && QR_HIDDEN_FIELDS.includes(field.param)))
+          .map(field => {
+            if (field.param === 'Name') return { ...field, required: true, requiredHint: this.$t('bot-create-name-hint') };
+            if (field.param === 'SteamLogin' && qr) return { ...field, required: true, requiredHint: this.$t('bot-create-steamlogin-hint') };
+
+            return field;
+          });
       },
       primaryLabel() {
         if (this.createdName) return this.$t('bot-login-try-again');
@@ -143,8 +185,12 @@
       isDirty() {
         // Once saved there is nothing left to lose here: the configuration is already on disk.
         if (this.loading || this.creating || this.createdName) return false;
-        return Object.keys(this.model).some(key => {
-          const value = this.model[key];
+
+        // "Enabled" starts on by default, so it does not count as an edit.
+        return Object.keys(this.current).some(key => {
+          if (key === 'Enabled') return false;
+
+          const value = this.current[key];
           if (value === null || value === undefined || value === '') return false;
           if (Array.isArray(value) && value.length === 0) return false;
           if (typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length === 0) return false;
@@ -158,6 +204,10 @@
     watch: {
       qrAvailable(value) {
         // ASF changed to a mode without QR while this form was open.
+        if (!value && !this.createdName) this.method = LOGIN_METHOD.CREDENTIALS;
+      },
+      nameValid(value) {
+        // QR needs a name first; without one the form goes back to credentials.
         if (!value && !this.createdName) this.method = LOGIN_METHOD.CREDENTIALS;
       },
     },
@@ -185,6 +235,9 @@
             checkBotNameUnique: true,
           },
           ...Object.keys(fields).map(key => {
+            // The user's choice is applied once Steam confirms the connection; say so, not what the wiki says.
+            if (key === 'Enabled') return { ...fields[key], description: this.$t('bot-create-enabled-help') };
+
             const description = (!descriptions[key])
               ? this.$t('description-not-found')
               : descriptions[key].replace(/<a href="/g, '<a target="_blank" rel="noreferrer noopener" href="');
@@ -193,40 +246,48 @@
           }),
         ];
 
-        this.model = {};
+        // A new bot is meant to start with ASF: "Enabled" is on unless the user turns it off.
+        this.model = { Enabled: true };
         this.loading = false;
       },
-      // The configuration to save. With QR sign-in the Steam credentials are left out even if they were typed
-      // before switching, and the bot is saved stopped so ASF cannot start it before the QR choice is sent.
+      // What the user asked for. With QR the password is left out even if it was typed before switching.
       buildConfig() {
-        const { Name: name, ...config } = JSON.parse(JSON.stringify(this.model));
+        const { Name, ...config } = JSON.parse(JSON.stringify(this.model));
 
         if (this.method === LOGIN_METHOD.QR) {
           QR_HIDDEN_FIELDS.forEach(field => delete config[field]);
-          config.Enabled = false;
         }
 
-        return { name, config };
+        if (typeof config.SteamLogin === 'string') config.SteamLogin = config.SteamLogin.trim();
+        if (!config.SteamLogin) delete config.SteamLogin;
+
+        return { name: String(Name || '').trim(), config, enabled: config.Enabled === true };
+      },
+      onEnter(event) {
+        if (!event.target || event.target.id !== 'Name') return;
+
+        event.preventDefault();
+        this.onCreate();
       },
       onCancel() {
         // Cancelling after saving keeps the bot: only its sign-in is left to do.
-        if (this.createdName) this.$info(this.$t('bot-create-qr-kept', { bot: this.createdName }));
+        if (this.createdName) this.$info(this.$t('bot-create-kept', { bot: this.createdName }));
 
         markClean();
         this.$parent.close();
       },
-      // Continues in the sign-in view, which draws the QR. `started` tells it the QR choice was already sent.
+      // Continues in the sign-in view. `started` tells it which method was already sent and the bot started.
       goToLogin(name, started) {
         markClean();
         this.$router.replace({ name: 'bot-login', params: started ? { bot: name, started } : { bot: name } });
       },
-      // Sends the QR choice and starts a bot that is already saved (stopped). Shared by the first try and retries.
-      async startSavedBot(name) {
+      // Sends the sign-in method and starts a bot that is already saved (stopped). Shared by the first try and retries.
+      async startSavedBot(name, method) {
         const listed = await waitForBot(name);
-        if (!listed) throw new Error(this.$t('bot-create-qr-not-listed', { bot: name }));
+        if (!listed) throw new Error(this.$t('bot-create-not-listed', { bot: name }));
 
         try {
-          await startWithLoginMethod(name, { method: LOGIN_METHOD.QR });
+          await startWithLoginMethod(name, { method });
         } catch (err) {
           // Already running: a previous try got further than it seemed. The sign-in view shows the real state.
           if (err instanceof InputChangedError) {
@@ -237,12 +298,12 @@
           throw err;
         }
 
-        this.goToLogin(name, LOGIN_METHOD.QR);
+        this.goToLogin(name, method);
       },
-      async retryQr() {
+      async retryStart() {
         if (this.creating) return;
 
-        if (!this.qrAvailable) {
+        if (this.createdMethod === LOGIN_METHOD.QR && !this.qrAvailable) {
           this.startError = this.$t('bot-create-qr-headless');
           return;
         }
@@ -251,7 +312,7 @@
         this.startError = '';
 
         try {
-          await this.startSavedBot(this.createdName);
+          await this.startSavedBot(this.createdName, this.createdMethod);
         } catch (err) {
           this.startError = err.message;
         } finally {
@@ -261,11 +322,12 @@
       async onCreate() {
         if (this.creating) return;
         if (this.createdName) {
-          await this.retryQr();
+          await this.retryStart();
           return;
         }
 
-        const { name, config } = this.buildConfig();
+        // Every check runs again here: the disabled button is not the only way in (Enter, a stale click).
+        const { name, config, enabled } = this.buildConfig();
         const { method } = this;
 
         if (!name) {
@@ -283,28 +345,44 @@
           return;
         }
 
+        if (method === LOGIN_METHOD.QR && !config.SteamLogin) {
+          this.$error(this.$t('bot-create-steamlogin-hint'));
+          return;
+        }
+
         if (method === LOGIN_METHOD.QR && !this.qrAvailable) {
           this.$error(this.$t('bot-create-qr-headless'));
           return;
         }
 
+        // ASF starts an enabled bot the moment its file appears, before the sign-in method can be sent (it would
+        // ask it in its console). So an enabled bot is saved stopped and started from here; the user's choice is
+        // saved once Steam confirms the connection. QR always starts now; credentials only if they are in the form.
+        const startNow = method === LOGIN_METHOD.QR || (enabled && !!config.SteamLogin && !!config.SteamPassword);
+        const payload = enabled ? { ...config, Enabled: false } : config;
+
         this.creating = true;
 
         try {
           try {
-            await this.$http.post(`bot/${name}`, { botConfig: config });
+            await this.$http.post(`bot/${name}`, { botConfig: payload });
           } catch (err) {
             // Nothing was saved: the form stays as it is.
             this.$error(err.message);
             return;
           }
 
-          if (method === LOGIN_METHOD.QR) {
-            // From here on the bot exists; a failure below must not be reported as "could not create".
+          // From here on the bot exists: a failure below must not be reported as "could not create".
+          clearPendingSetup(name);
+          this.$store.commit('bots/clearSetup', name);
+          if (enabled) registerPendingSetup(name, { enabled: true });
+
+          if (startNow) {
             this.createdName = name;
+            this.createdMethod = method;
 
             try {
-              await this.startSavedBot(name);
+              await this.startSavedBot(name, method);
             } catch (err) {
               this.startError = err.message;
             }

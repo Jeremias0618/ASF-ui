@@ -140,6 +140,9 @@
           // eslint-disable-next-line vue/no-mutating-props
           this.model[field] = value;
         }
+
+        // The model is edited in place (keys are added and deleted): tell the parent, Vue cannot see it.
+        this.$emit('change', field);
       },
       isDefault(value, fieldSchema) {
         return this.isEqual(value, fieldSchema.defaultValue, fieldSchema.type);
