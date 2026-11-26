@@ -18,6 +18,57 @@
         <p class="bot-login__text">{{ $t('bot-login-connected-text', { bot: bot.viewableName }) }}</p>
       </section>
 
+      <!-- Stopped bot, ASF not headless: the method is sent in advance so ASF never asks it in its console -->
+      <section v-else-if="showMethodChoice" class="bot-login__section">
+        <p v-if="phase === PHASE.STOPPED" class="bot-login__notice bot-login__notice--warn">
+          <FontAwesomeIcon icon="exclamation-triangle" fixedWidth aria-hidden="true"></FontAwesomeIcon>
+          <span>{{ $t('bot-login-stopped-text') }}</span>
+        </p>
+        <h3 class="bot-login__heading">{{ $t('bot-login-method-title') }}</h3>
+        <p class="bot-login__text">{{ $t('bot-login-method-text') }}</p>
+
+        <div v-if="!credentialsOpen" class="bot-login__choices">
+          <button type="button" class="button button--confirm bot-config__btn" :disabled="starting" @click="startWithMethod(LOGIN_METHOD.QR)">
+            <FontAwesomeIcon v-if="starting" icon="spinner" spin fixedWidth></FontAwesomeIcon>
+            <span v-else>{{ $t('bot-login-method-qr') }}</span>
+          </button>
+          <button type="button" class="button bot-config__btn bot-config__btn--secondary" :disabled="starting" @click="credentialsOpen = true">
+            <span>{{ $t('bot-login-method-credentials') }}</span>
+          </button>
+        </div>
+
+        <form v-else class="bot-login__form" autocomplete="off" @submit.prevent="startWithCredentials">
+          <p class="bot-login__hint">{{ $t('bot-login-method-credentials-hint') }}</p>
+          <label class="bot-login__label" for="bot-login-name">{{ $t('input-label-login') }}</label>
+          <input
+            id="bot-login-name"
+            v-model="loginName"
+            class="form-item__input bot-login__input bot-login__input--plain"
+            type="text"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+            :disabled="starting"
+          >
+          <label class="bot-login__label" for="bot-login-password">{{ $t('input-label-password') }}</label>
+          <input
+            id="bot-login-password"
+            v-model="loginPassword"
+            class="form-item__input bot-login__input bot-login__input--plain"
+            type="password"
+            autocomplete="new-password"
+            :disabled="starting"
+          >
+          <button type="submit" class="button button--confirm bot-config__btn" :disabled="starting">
+            <FontAwesomeIcon v-if="starting" icon="spinner" spin fixedWidth></FontAwesomeIcon>
+            <span v-else>{{ $t('bot-login-method-credentials-start') }}</span>
+          </button>
+          <button type="button" class="button bot-config__btn bot-config__btn--ghost" :disabled="starting" @click="closeCredentials">
+            <span>{{ $t('bot-login-method-back') }}</span>
+          </button>
+        </form>
+      </section>
+
       <!-- Steam Guard / authenticator code -->
       <section v-else-if="phase === PHASE.CODE" class="bot-login__section">
         <h3 class="bot-login__heading">{{ $t(`input-label-${inputKey}`) }}</h3>
@@ -59,9 +110,16 @@
 
       <!-- QR requested but no active session -->
       <section v-else-if="phase === PHASE.QR_PENDING" class="bot-login__section">
-        <FontAwesomeIcon icon="spinner" spin class="bot-login__icon" aria-hidden="true"></FontAwesomeIcon>
-        <h3 class="bot-login__heading">{{ $t('bot-login-qr-pending-title') }}</h3>
-        <p class="bot-login__text">{{ $t('bot-login-qr-pending-text') }}</p>
+        <template v-if="consolePending">
+          <FontAwesomeIcon icon="exclamation-triangle" class="bot-login__icon bot-login__icon--warn" aria-hidden="true"></FontAwesomeIcon>
+          <h3 class="bot-login__heading">{{ $t('bot-login-qr-console-title') }}</h3>
+          <p class="bot-login__text">{{ $t('bot-login-qr-console-text') }}</p>
+        </template>
+        <template v-else>
+          <FontAwesomeIcon icon="spinner" spin class="bot-login__icon" aria-hidden="true"></FontAwesomeIcon>
+          <h3 class="bot-login__heading">{{ $t('bot-login-qr-pending-title') }}</h3>
+          <p class="bot-login__text">{{ $t('bot-login-qr-pending-text') }}</p>
+        </template>
       </section>
 
       <!-- Mobile approval vs code: ASF only asks this in its console -->
@@ -145,16 +203,21 @@
   import getUserInputType from '../../utils/getUserInputType';
   import {
     InputChangedError,
+    LOGIN_METHOD,
     LOGIN_PHASE,
+    canChooseLoginMethod,
     getInputRoute,
     normalizeLoginCode,
     resolveLoginPhase,
+    startWithLoginMethod,
     submitBotInput,
   } from '../../utils/botLogin';
   import '../../style/bot-form-modal.scss';
 
   // Right after sending a code ASF clears the request; a request showing up again later means Steam refused it.
   const REJECT_GRACE_MS = 4000;
+  // A QR session normally shows up within a couple of seconds; longer than this means ASF is asking in its console.
+  const QR_STALL_MS = 8000;
   const LOCAL_HOSTS = ['localhost', '127.0.0.1', '[::1]', '::1'];
 
   export default {
@@ -168,8 +231,17 @@
     data() {
       return {
         PHASE: LOGIN_PHASE,
-        // Codes live only here, in memory: never in storage, route params or logs.
+        LOGIN_METHOD,
+        // Codes and credentials live only here, in memory: never in storage, route params or logs.
         code: '',
+        loginName: '',
+        loginPassword: '',
+        credentialsOpen: false,
+        // This view sent the method for the running attempt, so a missing QR is not an open console question (yet).
+        methodChosen: false,
+        chosenMethod: null,
+        qrStalled: false,
+        qrStallTimer: null,
         submitting: false,
         starting: false,
         stopping: false,
@@ -193,7 +265,17 @@
         // The bot can disappear (deleted elsewhere) while this watched value is still evaluated.
         if (!this.bot) return LOGIN_PHASE.DISABLED;
 
-        return resolveLoginPhase(this.bot, { attempted: this.attempted });
+        return resolveLoginPhase(this.bot, {
+          attempted: this.attempted,
+          ignoreQr: this.methodChosen && this.chosenMethod === LOGIN_METHOD.CREDENTIALS,
+        });
+      },
+      showMethodChoice() {
+        return canChooseLoginMethod(this.bot, this.phase, { headless: this.isRunningHeadless });
+      },
+      // Running, not headless, no QR session and no method sent from here (or it stalled): ASF waits in its console.
+      consolePending() {
+        return !this.isRunningHeadless && this.bot.active && (!this.methodChosen || this.qrStalled);
       },
       inputType() {
         return getUserInputType(this.bot.requiredInput);
@@ -229,6 +311,21 @@
       phase(value) {
         if (value !== LOGIN_PHASE.CODE) this.code = '';
 
+        this.clearQrStallTimer();
+        this.qrStalled = false;
+
+        if (value === LOGIN_PHASE.QR_PENDING && this.bot && this.bot.active) {
+          this.qrStallTimer = setTimeout(() => {
+            this.qrStalled = true;
+          }, QR_STALL_MS);
+        }
+
+        // Whatever ended or replaced the attempt, the next one starts with a fresh choice.
+        if (![LOGIN_PHASE.QR_PENDING, LOGIN_PHASE.QR, LOGIN_PHASE.CONNECTING, LOGIN_PHASE.CODE, LOGIN_PHASE.CREDENTIAL].includes(value)) {
+          this.methodChosen = false;
+          this.chosenMethod = null;
+        }
+
         if (value === LOGIN_PHASE.CONNECTED) {
           this.awaitingResult = false;
           this.rejected = false;
@@ -247,10 +344,75 @@
     beforeDestroy() {
       this.destroyed = true;
       this.code = '';
+      this.clearCredentials();
+      this.clearQrStallTimer();
     },
     methods: {
+      clearQrStallTimer() {
+        if (this.qrStallTimer) clearTimeout(this.qrStallTimer);
+        this.qrStallTimer = null;
+      },
+      clearCredentials() {
+        this.loginName = '';
+        this.loginPassword = '';
+      },
+      closeCredentials() {
+        this.clearCredentials();
+        this.credentialsOpen = false;
+      },
+      startWithCredentials() {
+        const login = this.loginName.trim();
+        const password = this.loginPassword;
+
+        // Both or none: ASF would otherwise ask for the missing one in its console.
+        if (!!login !== !!password) {
+          this.$error(this.$t('bot-login-method-credentials-incomplete'));
+          return Promise.resolve();
+        }
+
+        return this.startWithMethod(LOGIN_METHOD.CREDENTIALS, { login, password });
+      },
+      async startWithMethod(method, { login = '', password = '' } = {}) {
+        if (this.starting || !this.bot) return;
+
+        const { name } = this.bot;
+        this.starting = true;
+        this.rejected = false;
+        this.awaitingResult = false;
+
+        try {
+          await startWithLoginMethod(name, { method, login, password });
+
+          // The view moved on to another bot or was closed while waiting.
+          if (this.destroyed || this.$route.params.bot !== name) return;
+
+          this.attempted = true;
+          this.chosenMethod = method;
+          this.methodChosen = true;
+          this.qrStalled = false;
+        } catch (err) {
+          if (err instanceof InputChangedError) {
+            this.$info(this.$t('bot-login-input-changed'));
+            await this.refresh();
+          } else {
+            this.$error(err.message);
+          }
+        } finally {
+          // The secrets are never needed again, whatever the outcome.
+          this.clearCredentials();
+          this.credentialsOpen = false;
+
+          if (!this.destroyed) this.starting = false;
+        }
+      },
       resetLocalState() {
         this.code = '';
+        this.clearCredentials();
+        this.credentialsOpen = false;
+        this.methodChosen = false;
+        this.chosenMethod = null;
+        this.qrStalled = false;
+        this.clearQrStallTimer();
         this.attempted = false;
         this.awaitingResult = false;
         this.rejected = false;
@@ -365,6 +527,13 @@
     gap: 0.85rem;
   }
 
+  .bot-login__choices {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    justify-content: center;
+  }
+
   .bot-login__section {
     align-items: center;
     display: flex;
@@ -447,5 +616,12 @@
     letter-spacing: 0.2em;
     text-align: center;
     text-transform: uppercase;
+
+    // Account credentials are case sensitive: show them exactly as typed.
+    &--plain {
+      letter-spacing: normal;
+      text-align: left;
+      text-transform: none;
+    }
   }
 </style>

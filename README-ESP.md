@@ -45,19 +45,29 @@
 
 El asistente usa solo el **IPC oficial de ASF** (`Bot`, `Bot/Input`, `Bot/Start`, `Bot/Stop`). Funciona con ASF de stock y **no** necesita `ASFBotSocial`. El éxito solo se muestra cuando ASF informa `IsConnectedAndLoggedOn`.
 
-| Caso | ASF de stock | Requiere `ASFBotSocial` | Dónde se completa |
+La tabla distingue lo que admite la API de lo que se probó de principio a fin (ASF oficial 6.3.10.3, no headless, con cuentas de prueba que no pueden iniciar sesión).
+
+| Caso | Lo que admite la API | Probado de principio a fin | Dónde se completa |
 | --- | --- | --- | --- |
-| Crear / iniciar / cancelar el bot | Sí | No | Web |
-| Usuario, contraseña y PIN parental de Steam (`Login`, `Password`, `SteamParentalCode`) | Sí | No | Web (`Bot/Input`) |
-| Código de Steam Guard por correo, código 2FA móvil, código de respaldo | Sí (cuando ASF lo pide) | No | Web (`Bot/Input`) |
-| Mostrar un QR que ASF ya generó | Sí | No | Escanearlo con la app de Steam |
-| QR o credenciales (`Y/N`) | Solo con consola no headless; en headless nunca pregunta y usa credenciales | No | **Consola de ASF** |
-| Aprobación móvil o código (`Y/N`) | Solo con consola no headless | No | **Consola de ASF** |
+| Crear / iniciar / detener el bot | Sí | Sí | Web |
+| Elegir **QR** o **credenciales** antes de iniciar un bot detenido (`Input QrCodeLogin = Y/N`) | Sí, solo con ASF no headless y si ASF no está ya preguntando | Sí: `Y` muestra el QR en la web, `N` sigue por credenciales | Web |
+| Enviar usuario y contraseña por adelantado (`Login`, `Password`) | Sí (se guardan en memoria, nunca en disco) | Sí: el intento arranca; la cuenta usada era inválida | Web |
+| Responder una pregunta `Y/N` que ASF **ya tiene abierta** en su consola | No (ASF la lee de la consola) | Sí: el asistente la detecta y no ofrece botones | **Consola de ASF** (o cancelar y volver a elegir desde la web) |
+| Código de Steam Guard por correo, código 2FA móvil, código de respaldo, PIN parental | Sí, cuando ASF lo pide (o enviado por adelantado) | No: requiere una cuenta válida | Web (`Bot/Input`) |
+| QR en modo headless / servicio | ASF nunca pregunta; usa credenciales | No | Consola de ASF / configuración |
+| Aprobación móvil o código (`Y/N`) | Solo es una pregunta de consola | No | **Consola de ASF** |
 | La aprobación en sí, cuando Steam la ofrece | Sí | No | App móvil de Steam; el asistente sigue consultando |
+| Inicio de sesión válido completo hasta «Conectado» | Sí | **No** | - |
 | Cryptkey | No | No | Consola de ASF / argumentos de arranque |
 
-Las respuestas a las dos preguntas `Y/N` que ASF ya está esperando no se pueden enviar desde la web: ASF las lee de su consola y ni el IPC ni las interfaces de plugin exponen esa espera. Cuando el asistente no puede continuar, indica qué decisión está pendiente. Nada de esto lee logs, escribe en stdin ni modifica ASF.
+Notas sobre la elección de método:
 
+- Solo se muestra con el bot detenido y ASF no headless. Si ASF ya está esperando en su consola, el asistente lo indica y la pregunta debe responderse allí.
+- Una respuesta por adelantado es de **un solo uso**: ASF la consume y, si el inicio falla, puede volver a preguntar en su consola. Enviarla antes no equivale a contestar una pregunta que ya está abierta.
+- `N` solo avanza si el bot ya tiene credenciales: guardadas en su configuración, o enviadas por adelantado desde el formulario.
+- ASF no cancela una sesión QR al detener un bot, así que puede seguir publicando un desafío viejo. Si eliges credenciales, el asistente ignora cualquier QR publicado durante ese intento.
+
+Nada de esto lee logs, escribe en stdin ni modifica ASF.
 ## Vista previa
 
 <table>

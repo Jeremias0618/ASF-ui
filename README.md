@@ -45,19 +45,29 @@
 
 The wizard only uses the **official ASF IPC** (`Bot`, `Bot/Input`, `Bot/Start`, `Bot/Stop`). It works with stock ASF and does **not** need `ASFBotSocial`. Success is shown only when ASF reports `IsConnectedAndLoggedOn`.
 
-| Case | Stock ASF | Needs `ASFBotSocial` | Where it is finished |
+The table separates what the API admits from what was actually exercised end to end (official ASF 6.3.10.3, non-headless, with test accounts that cannot log in).
+
+| Case | What the API admits | Tested end to end | Where it is finished |
 | --- | --- | --- | --- |
-| Create / start / cancel the bot | Yes | No | Web |
-| Steam username, password, parental PIN (`Login`, `Password`, `SteamParentalCode`) | Yes | No | Web (`Bot/Input`) |
-| Steam Guard e-mail code, mobile 2FA code, backup code | Yes (when ASF asks for it) | No | Web (`Bot/Input`) |
-| Show a QR challenge ASF already generated | Yes | No | Scan it with the Steam app |
-| QR vs credentials (`Y/N`) | Only in a non-headless console; headless never asks and uses credentials | No | **ASF console** |
-| Mobile approval vs code (`Y/N`) | Only in a non-headless console | No | **ASF console** |
+| Create / start / stop the bot | Yes | Yes | Web |
+| Choose **QR** or **credentials** before starting a stopped bot (`Input QrCodeLogin = Y/N`) | Yes, only in a non-headless ASF and when ASF is not already asking | Yes: `Y` shows the QR in the web, `N` goes on to credentials | Web |
+| Send username and password in advance (`Login`, `Password`) | Yes (kept in memory, never saved) | Yes: the attempt starts; the account used was invalid | Web |
+| Answer a `Y/N` question that ASF **already has open** in its console | No (ASF reads it from the console) | Yes: the wizard shows it and offers no buttons | **ASF console** (or cancel and choose again from the web) |
+| Steam Guard e-mail code, mobile 2FA code, backup code, parental PIN | Yes, when ASF asks (or sent in advance) | No: needs a valid account | Web (`Bot/Input`) |
+| QR in headless / service mode | ASF never asks; it uses credentials | No | ASF console / config |
+| Mobile approval vs code (`Y/N`) | Only a console question | No | **ASF console** |
 | Approval itself, once Steam offers it | Yes | No | Steam mobile app; the wizard keeps polling |
+| Full valid sign-in until "Connected" | Yes | **No** | - |
 | Cryptkey | No | No | ASF console / startup arguments |
 
-Answers to the two `Y/N` questions that ASF is already waiting for cannot be sent from the web: ASF reads them from its console, and neither the IPC nor the plugin interfaces expose that wait. When the wizard cannot continue it says which decision is pending. Nothing here parses logs, writes to stdin or modifies ASF.
+Notes on the method choice:
 
+- It is only shown when the bot is stopped and ASF is not headless. If ASF is already waiting in its console, the wizard says so and the question must be answered there.
+- A pre-answer is **single use**: ASF consumes it, and if the sign-in fails it may ask again in its console. Sending it in advance is not the same as answering a question that is already open.
+- `N` only advances when the bot already has credentials: saved in its config, or sent in advance from the form.
+- ASF does not cancel a QR session when a bot is stopped, so it can keep publishing a stale challenge. When you pick credentials, the wizard ignores any QR challenge published during that attempt.
+
+Nothing here parses logs, writes to stdin or modifies ASF.
 ## Preview
 
 <table>
