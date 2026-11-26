@@ -1,16 +1,22 @@
 import Vue from 'vue';
 import * as http from '../../plugins/http';
 import { Bot } from '../../models/Bot';
+import findBotWithSameAccount from '../../utils/botAccount';
 import {
   applyPendingSetup,
   clearPendingSetup,
+  getPendingSetup,
   getPendingSetupNames,
 } from '../../utils/pendingBotSetup';
 
 export const state = {
   bots: {},
   // Final save of the "Enabled" a user chose for a bot created stopped (see utils/pendingBotSetup).
-  // name -> { status: 'saving' | 'reconnecting' | 'done' | 'failed' | 'timeout', error?, since?, sawDisconnect? }
+  // name -> { status: 'duplicate' | 'needs-login' | 'saving' | 'reconnecting' | 'done' | 'failed' | 'timeout', ... }
+  //   duplicate: another bot already uses this Steam account (other); nothing is enabled automatically.
+  //   needs-login: connected, but the Steam username was not saved yet; the user is asked for it (error?).
+  //   done: saved? (a save was written), stopped? (saved disabled, so ASF stopped it), reconnect? (the saved
+  //   session lets it connect again by itself when ASF restarts).
   setups: {},
 };
 
@@ -35,6 +41,52 @@ let requestCounter = 0;
 let lastAppliedListRequest = 0;
 let listRequestsInFlight = 0;
 const latestBotRequests = new Map();
+
+// Writes the pending configuration and reports how it went. Disabled bots are stopped by ASF when their
+// configuration changes (they stay down, as chosen); enabled ones are restarted and must reconnect.
+function finishSetup(commit, name, pending, { steamLogin }) {
+  const saved = true;
+  const reconnect = pending.enabled && pending.loginKeys;
+
+  return applyPendingSetup(name, { steamLogin })
+    .then(() => {
+      clearPendingSetup(name);
+
+      if (!pending.enabled) {
+        commit('setSetup', {
+          name,
+          status: 'done',
+          saved,
+          stopped: true,
+          reconnect: false,
+        });
+        return;
+      }
+
+      commit('setSetup', {
+        name,
+        status: 'reconnecting',
+        since: Date.now(),
+        sawDisconnect: false,
+        saved,
+        stopped: false,
+        reconnect,
+      });
+    })
+    .catch(err => {
+      // Asking for the username again is possible; the rest is retried with the usual button.
+      if (steamLogin) {
+        commit('setSetup', {
+          name,
+          status: 'needs-login',
+          disabledChoice: !pending.enabled,
+          error: err.message,
+        });
+      } else {
+        commit('setSetup', { name, status: 'failed', error: err.message });
+      }
+    });
+}
 
 export const actions = {
   init: async ({ dispatch }) => {
@@ -108,7 +160,7 @@ export const actions = {
 
     return null;
   },
-  // Applies the pending "Enabled" of bots whose connection Steam has confirmed, whatever view is open.
+  // Handles the user's choices for new bots whose connection Steam has confirmed, whatever view is open.
   async processSetups({ state, commit, getters }) {
     const now = Date.now();
 
@@ -117,19 +169,37 @@ export const actions = {
       const bot = getters.bot(name);
       if (!bot || !bot.isConnected || state.setups[name]) return;
 
-      commit('setSetup', { name, status: 'saving' });
+      const pending = getPendingSetup(name);
+      if (!pending) return;
 
-      applyPendingSetup(name)
-        .then(() => {
-          clearPendingSetup(name);
-          commit('setSetup', {
-            name,
-            status: 'reconnecting',
-            since: Date.now(),
-            sawDisconnect: false,
-          });
-        })
-        .catch(err => commit('setSetup', { name, status: 'failed', error: err.message }));
+      // The same Steam account behind two bots: the new one is not enabled (nor its username saved) automatically.
+      const other = findBotWithSameAccount(getters.bots, name, bot.steamid);
+      if (other) {
+        commit('setSetup', { name, status: 'duplicate', other: other.name });
+        return;
+      }
+
+      // The Steam username was not typed in the form: ask for it before saving anything else.
+      if (pending.needsLogin) {
+        commit('setSetup', { name, status: 'needs-login', disabledChoice: !pending.enabled });
+        return;
+      }
+
+      // Disabled and nothing else to save: the bot was already created like that.
+      if (!pending.enabled) {
+        clearPendingSetup(name);
+        commit('setSetup', {
+          name,
+          status: 'done',
+          saved: false,
+          stopped: false,
+          reconnect: false,
+        });
+        return;
+      }
+
+      commit('setSetup', { name, status: 'saving' });
+      finishSetup(commit, name, pending, {});
     });
 
     // ASF restarts the bot after the save: it must come back before the setup is reported as done.
@@ -144,11 +214,25 @@ export const actions = {
         commit('setSetup', { name, ...setup, sawDisconnect: true });
       } else if (connected && (setup.sawDisconnect || now - setup.since > 10000)) {
         // Either it went down and came back, or ASF finished the restart between two polls.
-        commit('setSetup', { name, status: 'done' });
+        commit('setSetup', { name, ...setup, status: 'done' });
       } else if (now - setup.since > 90000) {
-        commit('setSetup', { name, status: 'timeout' });
+        commit('setSetup', { name, ...setup, status: 'timeout' });
       }
     });
+  },
+  // Saves the Steam username asked after the QR (together with the chosen "Enabled").
+  async saveSetupLogin({ commit }, { name, steamLogin }) {
+    const pending = getPendingSetup(name);
+    const login = String(steamLogin || '').trim();
+    if (!pending || !login) return;
+
+    commit('setSetup', { name, status: 'saving' });
+    await finishSetup(commit, name, pending, { steamLogin: login });
+  },
+  // The user dealt with a duplicated account (stopped the bot): the pending choice is dropped.
+  dismissSetup({ commit }, name) {
+    clearPendingSetup(name);
+    commit('clearSetup', name);
   },
   // Lets the user try the final save again without recreating the bot.
   retrySetup({ commit }, name) {

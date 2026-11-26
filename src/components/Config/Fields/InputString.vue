@@ -38,6 +38,9 @@
       >
         {{ schema.requiredHint }}
       </p>
+      <p v-else-if="schema.hint" :id="field ? `${field}-hint` : undefined" class="form-item__hint">
+        {{ schema.hint }}
+      </p>
     </div>
 
     <input-description v-if="hasDescription" :shown="showDescription" :description="description"></input-description>
@@ -70,6 +73,7 @@
         if (!this.field) return undefined;
         if (this.nameInUse) return `${this.field}-error`;
         if (this.requiredMissing && this.schema.requiredHint) return `${this.field}-hint`;
+        if (this.schema.hint) return `${this.field}-hint`;
         return undefined;
       },
       nameInUse() {

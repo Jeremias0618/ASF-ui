@@ -42,21 +42,35 @@
                   aria-labelledby="bot-create-method-label"
                   @keydown="onMethodKeydown"
                 >
-                  <button
+                  <!-- The wrapper carries the tooltip and the not-allowed cursor: a disabled button gets no mouse events -->
+                  <span
                     v-for="option in methodOptions"
                     :key="option.value"
-                    type="button"
-                    role="radio"
-                    class="button"
-                    :class="{ 'button--active': method === option.value }"
-                    :aria-checked="method === option.value ? 'true' : 'false'"
-                    :tabindex="method === option.value ? 0 : -1"
-                    :data-method="option.value"
-                    :disabled="creating || option.disabled"
-                    @click.prevent="selectMethod(option.value)"
+                    class="bot-create__method-option"
+                    :class="{ 'is-unavailable': !!option.reason }"
                   >
-                    {{ option.label }}
-                  </button>
+                    <button
+                      type="button"
+                      role="radio"
+                      class="button"
+                      :class="{ 'button--active': method === option.value, 'is-unavailable': !!option.reason }"
+                      :aria-checked="method === option.value ? 'true' : 'false'"
+                      :aria-disabled="option.reason ? 'true' : undefined"
+                      :aria-describedby="option.reason ? `bot-create-method-${option.value}-reason` : undefined"
+                      :tabindex="method === option.value || option.reason ? 0 : -1"
+                      :data-method="option.value"
+                      :disabled="creating"
+                      @click.prevent="selectMethod(option.value)"
+                    >
+                      {{ option.label }}
+                    </button>
+                    <span
+                      v-if="option.reason"
+                      :id="`bot-create-method-${option.value}-reason`"
+                      class="bot-create__method-reason"
+                      role="tooltip"
+                    >{{ option.reason }}</span>
+                  </span>
                 </div>
 
                 <p v-if="!qrAvailable" class="bot-create__notice bot-create__notice--warn">
@@ -163,24 +177,39 @@
       nameValid() {
         return this.trimmedName !== '';
       },
-      // The Steam sign-in name: not the bot name, not the profile alias.
-      steamLogin() {
-        return String(this.current.SteamLogin || '').trim();
-      },
+
       useLoginKeys() {
         return this.current.UseLoginKeys !== false;
       },
       canSubmit() {
         if (this.createdName) return true;
-        if (!this.nameValid) return false;
-
-        return this.method !== LOGIN_METHOD.QR || this.steamLogin !== '';
+        // With QR the Steam username is optional: it is asked after scanning when it was left out.
+        return this.nameValid;
       },
       // Credentials first. QR needs an interactive ASF and a bot name.
+      // Why QR cannot be chosen right now (shown as a tooltip and read as the button's description).
+      qrReason() {
+        if (!this.qrAvailable) return this.$t('bot-create-qr-disabled-headless');
+        if (!this.nameValid) return this.$t('bot-create-qr-disabled-name');
+
+        return '';
+      },
       methodOptions() {
+        const { qrReason } = this;
+
         return [
-          { value: LOGIN_METHOD.CREDENTIALS, label: this.$t('bot-create-method-credentials'), disabled: false },
-          { value: LOGIN_METHOD.QR, label: this.$t('bot-create-method-qr'), disabled: !this.qrAvailable || !this.nameValid },
+          {
+            value: LOGIN_METHOD.CREDENTIALS,
+            label: this.$t('bot-create-method-credentials'),
+            disabled: false,
+            reason: '',
+          },
+          {
+            value: LOGIN_METHOD.QR,
+            label: this.$t('bot-create-method-qr'),
+            disabled: !!qrReason,
+            reason: qrReason,
+          },
         ];
       },
       visibleFields() {
@@ -190,7 +219,7 @@
           .filter(field => !(qr && QR_HIDDEN_FIELDS.includes(field.param)))
           .map(field => {
             if (field.param === 'Name') return { ...field, required: true, requiredHint: this.$t('bot-create-name-hint') };
-            if (field.param === 'SteamLogin' && qr) return { ...field, required: true, requiredHint: this.$t('bot-create-steamlogin-hint') };
+            if (field.param === 'SteamLogin' && qr) return { ...field, hint: this.$t('bot-create-steamlogin-qr-hint') };
 
             return field;
           });
@@ -400,11 +429,6 @@
           return;
         }
 
-        if (method === LOGIN_METHOD.QR && !config.SteamLogin) {
-          this.$error(this.$t('bot-create-steamlogin-hint'));
-          return;
-        }
-
         if (method === LOGIN_METHOD.QR && !this.qrAvailable) {
           this.$error(this.$t('bot-create-qr-headless'));
           return;
@@ -430,7 +454,13 @@
           // From here on the bot exists: a failure below must not be reported as "could not create".
           clearPendingSetup(name);
           this.$store.commit('bots/clearSetup', name);
-          if (enabled) registerPendingSetup(name, { enabled: true });
+          // Always remembered: it also drives the duplicated-account check and, when the Steam username was
+          // left out, the step that asks for it once Steam confirms the connection.
+          registerPendingSetup(name, {
+            enabled,
+            needsLogin: !config.SteamLogin,
+            loginKeys: config.UseLoginKeys !== false,
+          });
 
           if (startNow) {
             this.createdName = name;
@@ -473,8 +503,49 @@
       min-width: 8em;
     }
 
-    .form-item__buttons .button:disabled:not(.button--active) {
-      opacity: 0.55;
+    .bot-create__method-option {
+      display: inline-flex;
+      position: relative;
+
+      &.is-unavailable {
+        cursor: not-allowed;
+      }
+
+      // Same look as a disabled button, but still focusable so the reason can be read from the keyboard.
+      .button.is-unavailable {
+        cursor: not-allowed;
+        opacity: 0.55;
+
+        &:hover {
+          background: var(--color-button-default);
+        }
+      }
+
+      .bot-create__method-reason {
+        background: var(--color-background-tooltip, #111827);
+        border-radius: 0.3rem;
+        bottom: calc(100% + 0.4rem);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+        color: var(--color-text-tooltip, #f9fafb);
+        font-size: 0.8rem;
+        left: 0;
+        line-height: 1.35;
+        max-width: 18rem;
+        opacity: 0;
+        padding: 0.4rem 0.6rem;
+        pointer-events: none;
+        position: absolute;
+        transition: opacity 0.15s;
+        visibility: hidden;
+        width: max-content;
+        z-index: 20;
+      }
+
+      &:hover .bot-create__method-reason,
+      &:focus-within .bot-create__method-reason {
+        opacity: 1;
+        visibility: visible;
+      }
     }
 
     .form-item__buttons .button--active:disabled {

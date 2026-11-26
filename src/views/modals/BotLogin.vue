@@ -16,8 +16,55 @@
         <span>{{ $t('bot-setup-timeout') }}</span>
       </p>
 
+      <!-- Another bot already signs in with this Steam account: nothing is enabled or saved for the new one -->
+      <section v-if="setupDuplicate" class="bot-login__section" role="alert">
+        <FontAwesomeIcon icon="exclamation-triangle" class="bot-login__icon bot-login__icon--warn" aria-hidden="true"></FontAwesomeIcon>
+        <h3 class="bot-login__heading">{{ $t('bot-setup-duplicate-title') }}</h3>
+        <p class="bot-login__text">{{ $t('bot-setup-duplicate-text', { other: setup.other }) }}</p>
+        <p class="bot-login__hint">{{ $t('bot-setup-duplicate-help', { bot: bot.viewableName, other: setup.other }) }}</p>
+        <div class="bot-login__choices">
+          <button type="button" class="button button--confirm bot-config__btn" :disabled="resolving" @click="stopDuplicate">
+            <FontAwesomeIcon v-if="resolving" icon="spinner" spin fixedWidth></FontAwesomeIcon>
+            <span v-else>{{ $t('bot-setup-duplicate-stop') }}</span>
+          </button>
+          <button type="button" class="button bot-config__btn bot-config__btn--secondary" :disabled="resolving" @click="deleteDuplicate">
+            <span>{{ $t('bot-setup-duplicate-delete') }}</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Connected, but the Steam username was not saved yet: asked once, only the sign-in name -->
+      <section v-else-if="setupNeedsLogin" class="bot-login__section">
+        <FontAwesomeIcon icon="check-circle" class="bot-login__icon bot-login__icon--ok" aria-hidden="true"></FontAwesomeIcon>
+        <h3 class="bot-login__heading">{{ $t('bot-setup-login-title') }}</h3>
+        <p class="bot-login__text">{{ $t('bot-setup-login-text', { bot: bot.viewableName }) }}</p>
+        <p v-if="setup.error" class="bot-login__notice bot-login__notice--warn" role="alert">
+          <FontAwesomeIcon icon="exclamation-triangle" fixedWidth aria-hidden="true"></FontAwesomeIcon>
+          <span>{{ $t('bot-setup-login-error', { error: setup.error }) }}</span>
+        </p>
+        <form class="bot-login__form" autocomplete="off" @submit.prevent="submitSteamLogin">
+          <label class="bot-login__label" for="bot-login-steamlogin">{{ $t('input-label-login') }}</label>
+          <input
+            id="bot-login-steamlogin"
+            ref="steamLoginInput"
+            v-model="steamLoginInput"
+            class="form-item__input bot-login__input bot-login__input--plain"
+            type="text"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+            aria-describedby="bot-login-steamlogin-hint"
+          >
+          <p id="bot-login-steamlogin-hint" class="bot-login__hint">{{ $t('bot-setup-login-hint') }}</p>
+          <p v-if="setup.disabledChoice" class="bot-login__hint">{{ $t('bot-setup-login-disabled-note') }}</p>
+          <button type="submit" class="button button--confirm bot-config__btn" :disabled="!steamLoginInput.trim()">
+            <span>{{ $t('bot-setup-login-submit') }}</span>
+          </button>
+        </form>
+      </section>
+
       <!-- Connected: only shown once ASF reports IsConnectedAndLoggedOn -->
-      <section v-if="phase === PHASE.CONNECTED" class="bot-login__section bot-login__section--ok">
+      <section v-else-if="phase === PHASE.CONNECTED" class="bot-login__section bot-login__section--ok">
         <FontAwesomeIcon icon="check-circle" class="bot-login__icon bot-login__icon--ok" aria-hidden="true"></FontAwesomeIcon>
         <h3 class="bot-login__heading">{{ $t('bot-login-connected-title') }}</h3>
         <p class="bot-login__text">{{ $t('bot-login-connected-text', { bot: bot.viewableName }) }}</p>
@@ -27,10 +74,20 @@
           <FontAwesomeIcon icon="spinner" spin fixedWidth aria-hidden="true"></FontAwesomeIcon>
           <span>{{ $t('bot-setup-saving') }}</span>
         </p>
-        <p v-else-if="setup && setup.status === 'done'" class="bot-login__notice">
-          <FontAwesomeIcon icon="check-circle" fixedWidth aria-hidden="true"></FontAwesomeIcon>
-          <span>{{ $t('bot-setup-saved') }}</span>
-        </p>
+        <template v-else-if="setup && setup.status === 'done'">
+          <p v-if="setup.stopped" class="bot-login__notice">
+            <FontAwesomeIcon icon="check-circle" fixedWidth aria-hidden="true"></FontAwesomeIcon>
+            <span>{{ $t('bot-setup-stopped') }}</span>
+          </p>
+          <p v-else-if="setup.saved" class="bot-login__notice">
+            <FontAwesomeIcon icon="check-circle" fixedWidth aria-hidden="true"></FontAwesomeIcon>
+            <span>{{ $t('bot-setup-saved') }}</span>
+          </p>
+          <p v-if="setup.reconnect" class="bot-login__notice">
+            <FontAwesomeIcon icon="check-circle" fixedWidth aria-hidden="true"></FontAwesomeIcon>
+            <span>{{ $t('bot-setup-reconnect-ready') }}</span>
+          </p>
+        </template>
         <template v-else-if="setup && setup.status === 'failed'">
           <p class="bot-login__notice bot-login__notice--warn" role="alert">
             <FontAwesomeIcon icon="exclamation-triangle" fixedWidth aria-hidden="true"></FontAwesomeIcon>
@@ -215,8 +272,8 @@
 
     <footer class="bot-config__footer">
       <div class="bot-config__footer-primary">
-        <button type="button" class="button bot-config__btn" :class="phase === PHASE.CONNECTED ? 'button--confirm' : 'bot-config__btn--secondary'" @click="$parent.close()">
-          <span>{{ phase === PHASE.CONNECTED ? $t('bot-login-done') : $t('modal-close') }}</span>
+        <button type="button" class="button bot-config__btn" :class="connectedOk ? 'button--confirm' : 'bot-config__btn--secondary'" @click="$parent.close()">
+          <span>{{ connectedOk ? $t('bot-login-done') : $t('modal-close') }}</span>
         </button>
 
         <button v-if="canCancel" type="button" class="button bot-config__btn bot-config__btn--ghost" :disabled="stopping" @click="cancel">
@@ -259,6 +316,15 @@
         title: this.bot ? `${this.bot.viewableName} · ${this.$t('bot-login-eyebrow')}` : this.$t('bot-login-eyebrow'),
       };
     },
+    // Closing the window (or moving to another bot) with a step of the setup still open.
+    beforeRouteLeave(to, from, next) {
+      this.notifyPendingSetup();
+      next();
+    },
+    beforeRouteUpdate(to, from, next) {
+      if (to.params.bot !== from.params.bot) this.notifyPendingSetup();
+      next();
+    },
     data() {
       return {
         PHASE: LOGIN_PHASE,
@@ -273,6 +339,8 @@
         chosenMethod: null,
         qrStalled: false,
         qrStallTimer: null,
+        steamLoginInput: '',
+        resolving: false,
         submitting: false,
         starting: false,
         stopping: false,
@@ -303,6 +371,17 @@
       },
       setup() {
         return this.$store.state.bots.setups[this.$route.params.bot];
+      },
+      setupDuplicate() {
+        return !!this.setup && this.setup.status === 'duplicate';
+      },
+      // Connected, with the Steam username still to be asked.
+      setupNeedsLogin() {
+        return !!this.setup && this.setup.status === 'needs-login' && this.phase === LOGIN_PHASE.CONNECTED;
+      },
+      // The plain "all done" state: not while a step of the setup is still open.
+      connectedOk() {
+        return this.phase === LOGIN_PHASE.CONNECTED && !this.setupDuplicate && !this.setupNeedsLogin;
       },
       setupSaving() {
         return !!this.setup && ['saving', 'reconnecting'].includes(this.setup.status);
@@ -348,6 +427,11 @@
         handler(active) {
           if (active) this.attempted = true;
         },
+      },
+      // Kept while the save can still fail (the step comes back with an error); dropped once it went through.
+      'setup.status': 'onSetupStatus',
+      setupNeedsLogin(value) {
+        if (value) this.focusSteamLogin();
       },
       phase(value) {
         if (value !== LOGIN_PHASE.CODE) this.code = '';
@@ -402,9 +486,58 @@
       this.clearQrStallTimer();
     },
     methods: {
+      onSetupStatus(value) {
+        if (['reconnecting', 'done'].includes(value)) this.steamLoginInput = '';
+      },
+      focusSteamLogin() {
+        this.$nextTick(() => this.$refs.steamLoginInput && this.$refs.steamLoginInput.focus());
+      },
       clearQrStallTimer() {
         if (this.qrStallTimer) clearTimeout(this.qrStallTimer);
         this.qrStallTimer = null;
+      },
+      // Leaving with a step of the setup still open: say what is left, the bot itself is fine.
+      notifyPendingSetup() {
+        const { setup, bot } = this;
+        if (!setup || !bot) return;
+
+        if (setup.status === 'needs-login') {
+          this.$info(this.$t('bot-setup-login-pending', { bot: bot.viewableName }));
+        } else if (setup.status === 'duplicate') {
+          this.$info(this.$t('bot-setup-duplicate-pending', { bot: bot.viewableName, other: setup.other }));
+        }
+      },
+      async submitSteamLogin() {
+        const steamLogin = this.steamLoginInput.trim();
+
+        if (!steamLogin) {
+          this.$error(this.$t('bot-setup-login-empty'));
+          return;
+        }
+
+        await this.$store.dispatch('bots/saveSetupLogin', { name: this.$route.params.bot, steamLogin });
+      },
+      // Stops the new bot (its configuration stays, disabled) so the existing one can use the account again.
+      async stopDuplicate() {
+        if (this.resolving || !this.bot) return;
+
+        const { name } = this.bot;
+        this.resolving = true;
+
+        try {
+          await this.$http.botAction(name, 'stop');
+          await this.$store.dispatch('bots/dismissSetup', name);
+          this.attempted = true;
+          await this.$store.dispatch('bots/updateBot', { name });
+        } catch (err) {
+          this.$error(err.message);
+        } finally {
+          if (!this.destroyed) this.resolving = false;
+        }
+      },
+      // Deleting needs its own confirmation, as anywhere else.
+      deleteDuplicate() {
+        this.$router.push({ name: 'bot-delete', params: { bot: this.$route.params.bot } });
       },
       // The final save of the user's "Enabled" failed: try it again (the next bot poll applies it), no recreation.
       async retrySetup() {

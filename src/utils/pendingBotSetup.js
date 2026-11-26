@@ -21,11 +21,18 @@ function storage() {
   }
 }
 
-export function registerPendingSetup(name, { enabled }) {
+// enabled: what the user picked for "Bot status". needsLogin: the Steam username was not saved with the bot (QR
+// without it), so it still has to be asked once connected. loginKeys: the session is kept for the next start.
+export function registerPendingSetup(name, { enabled, needsLogin = false, loginKeys = true }) {
   const store = storage();
   if (!store) return;
 
-  store.setItem(`${KEY_PREFIX}${name}`, JSON.stringify({ enabled: !!enabled, createdAt: Date.now() }));
+  store.setItem(`${KEY_PREFIX}${name}`, JSON.stringify({
+    enabled: !!enabled,
+    needsLogin: !!needsLogin,
+    loginKeys: loginKeys !== false,
+    createdAt: Date.now(),
+  }));
 }
 
 export function clearPendingSetup(name) {
@@ -46,7 +53,11 @@ export function getPendingSetup(name) {
       return null;
     }
 
-    return entry;
+    return {
+      ...entry,
+      needsLogin: entry.needsLogin === true,
+      loginKeys: entry.loginKeys !== false,
+    };
   } catch (err) {
     return null;
   }
@@ -67,14 +78,15 @@ export function getPendingSetupNames() {
 }
 
 /**
- * Writes the pending "Enabled" into the bot configuration, keeping everything else.
+ * Writes the pending "Enabled" (and, when it was asked afterwards, the Steam username) into the bot
+ * configuration, keeping everything else.
  *
  * POST /Api/Bot/{bot} replaces the whole configuration, so the current one is read first. ASF keeps the
  * stored Steam login, password and parental code when the request does not carry them (BotController.BotPost),
  * which is what keeps the QR account name. Saving makes ASF restart the bot (Bot.OnConfigChanged: Stop,
  * reload, InitStart), so it reconnects with the saved session instead of staying as it is.
  */
-export async function applyPendingSetup(name) {
+export async function applyPendingSetup(name, { steamLogin } = {}) {
   const pending = getPendingSetup(name);
   if (!pending) return false;
 
@@ -90,6 +102,7 @@ export async function applyPendingSetup(name) {
   });
 
   botConfig.Enabled = pending.enabled;
+  if (steamLogin) botConfig.SteamLogin = steamLogin;
 
   await http.post(`bot/${encodeURIComponent(name)}`, { botConfig });
 
