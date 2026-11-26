@@ -49,6 +49,14 @@
           @activate="openPluginFeature('bot-community')"
         ></BotLink>
         <BotLink
+          v-tooltip="steamFeatureTooltip('bot-fav-buttons-reviews')"
+          icon="pen-square"
+          gated
+          :disabled="!steamFeaturesReady"
+          :link="{ name: 'bot-reviews', params: { bot: bot.name } }"
+          @activate="openPluginFeature('bot-reviews')"
+        ></BotLink>
+        <BotLink
           v-tooltip="steamFeatureTooltip('bot-fav-buttons-games')"
           icon="gamepad"
           gated

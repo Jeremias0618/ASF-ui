@@ -42,6 +42,7 @@ const ROUTE_SIZE_FALLBACK = Object.freeze({
   'bot-inventory': MODAL_SIZE.WORKSPACE,
   'bot-friends': MODAL_SIZE.WORKSPACE,
   'bot-community': MODAL_SIZE.WORKSPACE,
+  'bot-reviews': MODAL_SIZE.WORKSPACE,
   'bot-games': MODAL_SIZE.WORKSPACE,
   'bot-wishlist': MODAL_SIZE.WORKSPACE,
   'password-encrypt': MODAL_SIZE.DIALOG,

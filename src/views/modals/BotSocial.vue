@@ -6,6 +6,7 @@
       'bot-social--inventory': feature === 'inventory',
       'bot-social--games': feature === 'games',
       'bot-social--wishlist': feature === 'wishlist',
+      'bot-social--reviews': feature === 'reviews',
     }"
   >
     <header class="bot-social__header">
@@ -20,6 +21,7 @@
         'bot-social__body--inventory': feature === 'inventory',
         'bot-social__body--games': feature === 'games',
         'bot-social__body--wishlist': feature === 'wishlist',
+        'bot-social__body--reviews': feature === 'reviews',
       }"
     >
       <InventoryTab
@@ -39,6 +41,12 @@
         :plugin-missing="pluginMissing"
         @plugin-missing="pluginMissing = true"
       ></CommunityTab>
+      <OwnReviewsTab
+        v-else-if="feature === 'reviews'"
+        :bot-name="bot.name"
+        :plugin-missing="pluginMissing"
+        @plugin-missing="pluginMissing = true"
+      ></OwnReviewsTab>
       <GamesTab
         v-else-if="feature === 'games'"
         :bot-name="bot.name"
@@ -60,16 +68,17 @@
   import CommunityTab from '../../features/bot-social/components/CommunityTab.vue';
   import GamesTab from '../../features/bot-social/components/GamesTab.vue';
   import InventoryTab from '../../features/bot-social/components/InventoryTab.vue';
+  import OwnReviewsTab from '../../features/bot-social/components/OwnReviewsTab.vue';
   import WishlistTab from '../../features/bot-social/components/WishlistTab.vue';
   import { isPluginMissingError } from '../../features/bot-social/api/bot-social';
   import { loadStatus } from '../../features/bot-social/cache/bot-social-queries';
 
-  const FEATURES = new Set(['inventory', 'friends', 'community', 'games', 'wishlist']);
+  const FEATURES = new Set(['inventory', 'friends', 'community', 'reviews', 'games', 'wishlist']);
 
   export default {
     name: 'BotSocial',
     components: {
-      InventoryTab, FriendsTab, CommunityTab, GamesTab, WishlistTab,
+      InventoryTab, FriendsTab, CommunityTab, OwnReviewsTab, GamesTab, WishlistTab,
     },
     data() {
       return {

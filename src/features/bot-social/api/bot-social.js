@@ -1,4 +1,4 @@
-import { get, post } from '../../../plugins/http';
+import { get, post, put } from '../../../plugins/http';
 import { STEAM_APP_ID, STEAM_COMMUNITY_CONTEXT_ID } from '../constants/steam-inventory';
 
 const inventoryBase = botName => `bot/${encodeURIComponent(botName)}/Inventory`;
@@ -74,6 +74,41 @@ export function actSharedFile(botName, { url, vote, favorite }) {
   });
 }
 
+/** Page (1-based, 10 per page — fixed by Steam) of the reviews written by this bot account. */
+export function fetchOwnReviews(botName, page = 1) {
+  return get(`${socialBase(botName)}/OwnReviews`, { page });
+}
+
+/** Full detail of the review this bot account wrote for one app. */
+export function fetchOwnReviewDetail(botName, appId) {
+  return get(`${socialBase(botName)}/OwnReviews/${encodeURIComponent(appId)}`);
+}
+
+/** Raw text, recommendation and settings Steam's edit form holds for the review of one app. */
+export function fetchOwnReviewEditor(botName, appId) {
+  return get(`${socialBase(botName)}/OwnReviews/${encodeURIComponent(appId)}/Editor`);
+}
+
+/** Publish a new review as this bot (one bot per request; author = the bot session). */
+export function publishOwnReview(botName, {
+  appId, recommended, text, language,
+}) {
+  return post(`${socialBase(botName)}/OwnReviews`, {
+    AppId: appId,
+    Recommended: recommended,
+    Text: text,
+    Language: language || null,
+  });
+}
+
+/** Edit the text and/or recommendation of this bot's review of one app. */
+export function editOwnReview(botName, appId, { recommended, text, confirmRatingReset }) {
+  return put(`${socialBase(botName)}/OwnReviews/${encodeURIComponent(appId)}`, {
+    Recommended: recommended,
+    Text: text,
+    ConfirmRatingReset: Boolean(confirmRatingReset),
+  });
+}
 export function fetchGames(botName) {
   return get(`${socialBase(botName)}/Games`);
 }
