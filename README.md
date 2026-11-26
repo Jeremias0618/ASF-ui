@@ -41,6 +41,23 @@
 > [!IMPORTANT]
 > Bot Social (friends, community, games, wishlist, inventory transfer) requires the companion plugin **[ASFBotSocial](https://github.com/Jeremias0618/ASF-Plugin)**. The stock ASF `www/` UI does not include those screens.
 
+## Steam sign-in wizard (`/bot/<name>/login`)
+
+The wizard only uses the **official ASF IPC** (`Bot`, `Bot/Input`, `Bot/Start`, `Bot/Stop`). It works with stock ASF and does **not** need `ASFBotSocial`. Success is shown only when ASF reports `IsConnectedAndLoggedOn`.
+
+| Case | Stock ASF | Needs `ASFBotSocial` | Where it is finished |
+| --- | --- | --- | --- |
+| Create / start / cancel the bot | Yes | No | Web |
+| Steam username, password, parental PIN (`Login`, `Password`, `SteamParentalCode`) | Yes | No | Web (`Bot/Input`) |
+| Steam Guard e-mail code, mobile 2FA code, backup code | Yes (when ASF asks for it) | No | Web (`Bot/Input`) |
+| Show a QR challenge ASF already generated | Yes | No | Scan it with the Steam app |
+| QR vs credentials (`Y/N`) | Only in a non-headless console; headless never asks and uses credentials | No | **ASF console** |
+| Mobile approval vs code (`Y/N`) | Only in a non-headless console | No | **ASF console** |
+| Approval itself, once Steam offers it | Yes | No | Steam mobile app; the wizard keeps polling |
+| Cryptkey | No | No | ASF console / startup arguments |
+
+Answers to the two `Y/N` questions that ASF is already waiting for cannot be sent from the web: ASF reads them from its console, and neither the IPC nor the plugin interfaces expose that wait. When the wizard cannot continue it says which decision is pending. Nothing here parses logs, writes to stdin or modifies ASF.
+
 ## Preview
 
 <table>

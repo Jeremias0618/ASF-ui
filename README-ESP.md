@@ -41,6 +41,23 @@
 > [!IMPORTANT]
 > Bot Social (amigos, comunidad, juegos, wishlist, transferencia de inventario) requiere el plugin **[ASFBotSocial](https://github.com/Jeremias0618/ASF-Plugin)**. La UI de stock de ASF (`www/`) no incluye esas pantallas.
 
+## Asistente de inicio de sesión en Steam (`/bot/<nombre>/login`)
+
+El asistente usa solo el **IPC oficial de ASF** (`Bot`, `Bot/Input`, `Bot/Start`, `Bot/Stop`). Funciona con ASF de stock y **no** necesita `ASFBotSocial`. El éxito solo se muestra cuando ASF informa `IsConnectedAndLoggedOn`.
+
+| Caso | ASF de stock | Requiere `ASFBotSocial` | Dónde se completa |
+| --- | --- | --- | --- |
+| Crear / iniciar / cancelar el bot | Sí | No | Web |
+| Usuario, contraseña y PIN parental de Steam (`Login`, `Password`, `SteamParentalCode`) | Sí | No | Web (`Bot/Input`) |
+| Código de Steam Guard por correo, código 2FA móvil, código de respaldo | Sí (cuando ASF lo pide) | No | Web (`Bot/Input`) |
+| Mostrar un QR que ASF ya generó | Sí | No | Escanearlo con la app de Steam |
+| QR o credenciales (`Y/N`) | Solo con consola no headless; en headless nunca pregunta y usa credenciales | No | **Consola de ASF** |
+| Aprobación móvil o código (`Y/N`) | Solo con consola no headless | No | **Consola de ASF** |
+| La aprobación en sí, cuando Steam la ofrece | Sí | No | App móvil de Steam; el asistente sigue consultando |
+| Cryptkey | No | No | Consola de ASF / argumentos de arranque |
+
+Las respuestas a las dos preguntas `Y/N` que ASF ya está esperando no se pueden enviar desde la web: ASF las lee de su consola y ni el IPC ni las interfaces de plugin exponen esa espera. Cuando el asistente no puede continuar, indica qué decisión está pendiente. Nada de esto lee logs, escribe en stdin ni modifica ASF.
+
 ## Vista previa
 
 <table>
