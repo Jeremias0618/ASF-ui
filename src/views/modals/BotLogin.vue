@@ -339,7 +339,18 @@
       },
     },
     created() {
-      if (!this.bot) this.$router.replace({ name: 'bots' });
+      if (!this.bot) {
+        this.$router.replace({ name: 'bots' });
+        return;
+      }
+
+      // Coming from "Create new bot" with QR: the choice was already sent and the bot started, so a missing
+      // challenge is not an open console question (yet).
+      if (this.$route.params.started === LOGIN_METHOD.QR && this.bot.active) {
+        this.attempted = true;
+        this.methodChosen = true;
+        this.chosenMethod = LOGIN_METHOD.QR;
+      }
     },
     beforeDestroy() {
       this.destroyed = true;

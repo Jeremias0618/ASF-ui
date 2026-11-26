@@ -51,6 +51,7 @@ La tabla distingue lo que admite la API de lo que se probó de principio a fin (
 | --- | --- | --- | --- |
 | Crear / iniciar / detener el bot | Sí | Sí | Web |
 | Elegir **QR** o **credenciales** antes de iniciar un bot detenido (`Input QrCodeLogin = Y/N`) | Sí, solo con ASF no headless y si ASF no está ya preguntando | Sí: `Y` muestra el QR en la web, `N` sigue por credenciales | Web |
+| **Crear nuevo bot** con *Escanear QR*: guarda el bot detenido (`Enabled: false`, sin credenciales de Steam), luego envía `QrCodeLogin = Y` y lo inicia | Sí, solo con ASF no headless | Sí: el QR aparece en la web sin escribir `Y` en la consola, en ASF oficial sin `ASFBotSocial`; si falla el arranque el bot se conserva y *Reintentar* lo reutiliza | Web |
 | Enviar usuario y contraseña por adelantado (`Login`, `Password`) | Sí (se guardan en memoria, nunca en disco) | Sí: el intento arranca; la cuenta usada era inválida | Web |
 | Responder una pregunta `Y/N` que ASF **ya tiene abierta** en su consola | No (ASF la lee de la consola) | Sí: el asistente la detecta y no ofrece botones | **Consola de ASF** (o cancelar y volver a elegir desde la web) |
 | Código de Steam Guard por correo, código 2FA móvil, código de respaldo, PIN parental | Sí, cuando ASF lo pide (o enviado por adelantado) | No: requiere una cuenta válida | Web (`Bot/Input`) |
@@ -64,6 +65,7 @@ Notas sobre la elección de método:
 
 - Solo se muestra con el bot detenido y ASF no headless. Si ASF ya está esperando en su consola, el asistente lo indica y la pregunta debe responderse allí.
 - Una respuesta por adelantado es de **un solo uso**: ASF la consume y, si el inicio falla, puede volver a preguntar en su consola. Enviarla antes no equivale a contestar una pregunta que ya está abierta.
+- En *Crear nuevo bot*, iniciar ahora y arrancar automáticamente al reiniciar ASF son decisiones distintas: un bot creado con QR se guarda con `Enabled` desactivado, porque guardarlo activado haría que ASF lo arrancara antes de recibir la elección del QR. Actívalo después en la configuración del bot. Si ASF es headless, la opción QR queda deshabilitada y el formulario indica el motivo.
 - `N` solo avanza si el bot ya tiene credenciales: guardadas en su configuración, o enviadas por adelantado desde el formulario.
 - ASF no cancela una sesión QR al detener un bot, así que puede seguir publicando un desafío viejo. Si eliges credenciales, el asistente ignora cualquier QR publicado durante ese intento.
 

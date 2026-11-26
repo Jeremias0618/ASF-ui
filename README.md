@@ -51,6 +51,7 @@ The table separates what the API admits from what was actually exercised end to 
 | --- | --- | --- | --- |
 | Create / start / stop the bot | Yes | Yes | Web |
 | Choose **QR** or **credentials** before starting a stopped bot (`Input QrCodeLogin = Y/N`) | Yes, only in a non-headless ASF and when ASF is not already asking | Yes: `Y` shows the QR in the web, `N` goes on to credentials | Web |
+| **Create new bot** with *Scan QR code*: saves the bot stopped (`Enabled: false`, no Steam credentials), then sends `QrCodeLogin = Y` and starts it | Yes, only in a non-headless ASF | Yes: the QR shows in the web with no `Y` typed in the console, on official ASF without `ASFBotSocial`; a failed start keeps the bot and *Try again* reuses it | Web |
 | Send username and password in advance (`Login`, `Password`) | Yes (kept in memory, never saved) | Yes: the attempt starts; the account used was invalid | Web |
 | Answer a `Y/N` question that ASF **already has open** in its console | No (ASF reads it from the console) | Yes: the wizard shows it and offers no buttons | **ASF console** (or cancel and choose again from the web) |
 | Steam Guard e-mail code, mobile 2FA code, backup code, parental PIN | Yes, when ASF asks (or sent in advance) | No: needs a valid account | Web (`Bot/Input`) |
@@ -64,6 +65,7 @@ Notes on the method choice:
 
 - It is only shown when the bot is stopped and ASF is not headless. If ASF is already waiting in its console, the wizard says so and the question must be answered there.
 - A pre-answer is **single use**: ASF consumes it, and if the sign-in fails it may ask again in its console. Sending it in advance is not the same as answering a question that is already open.
+- In *Create new bot*, starting now and starting automatically when ASF restarts are different decisions: a bot created with QR is saved with `Enabled` off, because saving it enabled would make ASF start it before the QR choice arrives. Turn it on later in the bot configuration. If ASF is headless the QR option is disabled and the form says why.
 - `N` only advances when the bot already has credentials: saved in its config, or sent in advance from the form.
 - ASF does not cancel a QR session when a bot is stopped, so it can keep publishing a stale challenge. When you pick credentials, the wizard ignores any QR challenge published during that attempt.
 
